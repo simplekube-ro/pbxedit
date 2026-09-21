@@ -28,7 +28,7 @@ rules:
     - Cite the rule ID (S1–S5, M1–M6, D1–D2) wherever a requirement implements one.
     - Every requirement has at least one WHEN/THEN scenario concrete enough to become a test fixture.
   tasks:
-    - Test-first: each behaviour task is preceded by the task that writes its failing test.
+    - "Test-first: each behaviour task is preceded by the task that writes its failing test."
     - Every operation task asserts on the model, asserts the rule set is clean, and runs plutil -lint on the output.
 
 operations:
