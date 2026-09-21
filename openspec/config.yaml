@@ -1,0 +1,41 @@
+schema: spec-driven
+
+context: |
+  pbxedit is a Swift command-line tool that manages file membership in an
+  Xcode project.pbxproj: add, move, remove, lint (with --fix), query.
+  The approved design is docs/design.md — read it before writing any artifact.
+  It is authoritative for architecture, rule IDs (S1–S5, M1–M6, D1–D2) and
+  v1 scope; a change that departs from it updates docs/design.md in the same
+  change.
+
+  Tech stack: Swift 6 language mode, SwiftPM, macOS CLI.
+  Dependencies: swift-argument-parser and Yams only. Adding a third needs a
+  stated reason in the proposal.
+  Layers, each depending only on the previous: PBXSyntax (lossless syntax
+  tree, knows nothing about Xcode) -> PBXModel (typed view, exact-ID object
+  table, path-based lookup) -> PBXOps (pure functions producing a Plan,
+  invariant check before write) -> CLI.
+  Non-negotiables: serialize(parse(bytes)) == bytes; object IDs are opaque
+  strings matched exactly; file lookup is by resolved path, never basename;
+  the tool edits project.pbxproj and nothing else.
+  Build and test: swift build, swift test.
+
+rules:
+  proposal:
+    - One capability per change. If a proposal needs two, split it into a dependency chain.
+    - Include a "Non-goals" section; check it against "Out of scope for v1" in docs/design.md.
+  specs:
+    - Cite the rule ID (S1–S5, M1–M6, D1–D2) wherever a requirement implements one.
+    - Every requirement has at least one WHEN/THEN scenario concrete enough to become a test fixture.
+  tasks:
+    - Test-first: each behaviour task is preceded by the task that writes its failing test.
+    - Every operation task asserts on the model, asserts the rule set is clean, and runs plutil -lint on the output.
+
+operations:
+  apply:
+    guidance:
+      - Red, green, refactor. Do not mark a task complete without reading the swift test summary.
+      - Add a regression fixture for any failure listed in the Motivation table of docs/design.md that the change touches.
+  archive:
+    guidance:
+      - If the shipped behaviour departed from docs/design.md, the design doc is updated before archiving.
