@@ -45,28 +45,37 @@ covers the one gap the automated tests record (a rename in a name-only group
 has no Xcode-captured fixture; see the archived `move-command` design).
 
 Run it once per release, on the commit to be tagged, with the newest Xcode
-you have:
+you have. The starting projects must be files Xcode itself last saved, so
+that the only bytes Xcode could want to change are the ones pbxedit wrote;
+and the `lint --fix` project must carry only damage `--fix` repairs, since
+Xcode silently deletes whatever damage is left (dangling children, unphased
+build files, unreachable references) and that would show as a diff:
 
 ```sh
 xcodebuild -version                       # record below
 swift build && P="$PWD/.build/debug/pbxedit"
-W=$(mktemp -d) && mkdir -p "$W/App.xcodeproj" "$W/Repair.xcodeproj"
-cp Tests/Fixtures/move/app.pbxproj "$W/App.xcodeproj/project.pbxproj"
-cp Tests/Fixtures/repair/app.pbxproj "$W/Repair.xcodeproj/project.pbxproj"
+W=$(mktemp -d) && mkdir -p "$W/ops/App.xcodeproj" "$W/repair/App.xcodeproj"
+cp Tests/Fixtures/xcode27/platform-filters-after-xcode27-save.pbxproj "$W/ops/App.xcodeproj/project.pbxproj"
+cp Tests/Fixtures/xcode27/repair-fixable.pbxproj "$W/repair/App.xcodeproj/project.pbxproj"
 cd "$W" && git init -q && git add -A && git commit -qm base
-mkdir -p App/Features App/Views && touch App/Views/Bar.swift App/Features/Foo.swift
+mkdir -p ops/App/Features ops/App/Views && touch ops/App/Views/Bar.swift ops/App/Features/Foo.swift
+cd ops
 "$P" add App/Views/Bar.swift --project App.xcodeproj                          # pbxedit add
 "$P" move App/Views/Foo.swift App/Features/Foo.swift --project App.xcodeproj  # pbxedit move
 "$P" remove App/Services/Rate.swift --project App.xcodeproj                   # pbxedit remove
-"$P" lint --fix --project Repair.xcodeproj                                    # pbxedit lint --fix
-git add -A && git commit -qm "pbxedit add, move, remove, lint --fix"
-open App.xcodeproj Repair.xcodeproj
+cd ../repair
+"$P" lint --fix --project App.xcodeproj                                       # pbxedit lint --fix
+cd .. && git add -A && git commit -qm "pbxedit add, move, remove, lint --fix"
+open ops/App.xcodeproj repair/App.xcodeproj
 ```
 
-(`Tests/Fixtures/move/app.pbxproj` is the project the `add`, `move` and
-`remove` oracle scenarios run on; `Tests/Fixtures/repair/app.pbxproj` is the
-mixed-damage project `lint --fix` repairs. Each command prints
-`project.pbxproj: modified`.)
+(`Tests/Fixtures/xcode27/platform-filters-after-xcode27-save.pbxproj` is the
+`move` fixture as Xcode 27 saved it — every platform-filter spelling, a
+synchronized folder, five targets; `repair-fixable.pbxproj` is the same file
+with one group child removed, an M3 orphan `lint --fix` restores byte for
+byte. Both projects are named `App.xcodeproj`, as the file's own comments
+say; a different name makes Xcode rewrite those comments. Each command
+prints `project.pbxproj: modified`.)
 
 In each Xcode window: wait for indexing, touch the project (rename a file
 in the navigator and rename it back, or change and revert a build setting)
