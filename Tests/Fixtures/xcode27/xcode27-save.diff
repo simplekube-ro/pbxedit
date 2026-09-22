@@ -1,0 +1,125 @@
+diff --git a/App.xcodeproj/project.pbxproj b/App.xcodeproj/project.pbxproj
+index ab52cfc..06e2d1e 100644
+--- a/App.xcodeproj/project.pbxproj
++++ b/App.xcodeproj/project.pbxproj
+@@ -25,14 +25,14 @@
+ 		BB0000000000000000000121 /* TV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000241 /* TV2.swift */; platformFilters = (tvos, ); };
+ 		BB0000000000000000000130 /* OnlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000250 /* OnlyApp.swift */; };
+ 		BB0000000000000000000131 /* OnlyExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000251 /* OnlyExt.swift */; };
+-		BB0000000000000000000140 /* F1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000260 /* F1.swift */; platformFilters = (ios, ); };
++		BB0000000000000000000140 /* F1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000260 /* F1.swift */; platformFilter = ios; };
+ 		BB0000000000000000000141 /* F2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000261 /* F2.swift */; };
+ 		BB0000000000000000000150 /* AppKit.h in Headers */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000270 /* AppKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
+ 		BB0000000000000000000151 /* Kit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000271 /* Kit.swift */; };
+ 		BB0000000000000000000160 /* Thing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000280 /* Thing.swift */; };
+ 		BB0000000000000000000170 /* SlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000300 /* SlowTests.swift */; };
+ 		BB0000000000000000000180 /* RateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000310 /* RateTests.swift */; };
+-		BB0000000000000000000190 /* Panel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000320 /* Panel.swift */; platformFilters = (ios, ); };
++		BB0000000000000000000190 /* Panel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000320 /* Panel.swift */; platformFilter = ios; };
+ 		BB0000000000000000000200 /* Common.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000330 /* Common.swift */; };
+ 		BB0000000000000000000210 /* StateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000340 /* StateTests.swift */; };
+ 		BB0000000000000000000220 /* Top.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000350 /* Top.swift */; };
+@@ -87,7 +87,11 @@
+ /* End PBXFileReference section */
+ 
+ /* Begin PBXFileSystemSynchronizedRootGroup section */
+-		AA0000000000000000000301 /* Generated */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Generated; sourceTree = "<group>"; };
++		AA0000000000000000000301 /* Generated */ = {
++			isa = PBXFileSystemSynchronizedRootGroup;
++			path = Generated;
++			sourceTree = "<group>";
++		};
+ /* End PBXFileSystemSynchronizedRootGroup section */
+ 
+ /* Begin PBXFrameworksBuildPhase section */
+diff --git a/Repair.xcodeproj/project.pbxproj b/Repair.xcodeproj/project.pbxproj
+index d453631..113663b 100644
+--- a/Repair.xcodeproj/project.pbxproj
++++ b/Repair.xcodeproj/project.pbxproj
+@@ -7,6 +7,7 @@
+ 	objects = {
+ 
+ /* Begin PBXBuildFile section */
++		0D60865B3062C57A007CDD31 /* Twice.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000403 /* Twice.swift */; };
+ 		BB0000000000000000000010 /* AppMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000110 /* AppMain.swift */; };
+ 		BB0000000000000000000020 /* Foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000120 /* Foo.swift */; };
+ 		BB0000000000000000000030 /* Shared.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000130 /* Shared.swift */; };
+@@ -25,13 +26,11 @@
+ 		BB0000000000000000000121 /* TV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000241 /* TV2.swift */; platformFilters = (tvos, ); };
+ 		BB0000000000000000000130 /* OnlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000250 /* OnlyApp.swift */; };
+ 		BB0000000000000000000131 /* OnlyExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000251 /* OnlyExt.swift */; };
+-		BB0000000000000000000140 /* F1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000260 /* F1.swift */; platformFilters = (ios, ); };
++		BB0000000000000000000140 /* F1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000260 /* F1.swift */; platformFilter = ios; };
+ 		BB0000000000000000000141 /* F2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000261 /* F2.swift */; };
+ 		BB0000000000000000000150 /* AppKit.h in Headers */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000270 /* AppKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
+ 		BB0000000000000000000151 /* Kit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000271 /* Kit.swift */; };
+-		BB0000000000000000000400 /* Rate2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000400 /* Rate2.swift */; platformFilters = (ios, ); };
+-		BB0000000000000000000401 = {isa = PBXBuildFile; fileRef = AA0000000000000000000401 /* Mixed3.swift */; };
+-		BB0000000000000000000402 = {isa = PBXBuildFile; fileRef = AA0000000000000000000402 /* fixture.json */; };
++		BB0000000000000000000400 /* Rate2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000400 /* Rate2.swift */; platformFilter = ios; };
+ 		BB0000000000000000000403 /* Twice.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000403 /* Twice.swift */; };
+ 		BB0000000000000000000406 /* Baz.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000406 /* Baz.swift */; };
+ 		BB0000000000000000000407 /* A.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000407 /* A.swift */; };
+@@ -72,14 +71,17 @@
+ 		AA0000000000000000000407 /* A.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = A.swift; path = App/Features/A.swift; sourceTree = SOURCE_ROOT; };
+ 		AA0000000000000000000408 /* C.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = C.swift; path = App/Features/C.swift; sourceTree = SOURCE_ROOT; };
+ 		AA0000000000000000000409 /* B.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = B.swift; path = App/Features/B.swift; sourceTree = SOURCE_ROOT; };
+-		AA0000000000000000000410 /* Old.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/Legacy/Old.swift; sourceTree = "<group>"; };
+ 		AA0000000000000000000411 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+ 		AA0000000000000000000412 /* Dup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dup.swift; sourceTree = "<group>"; };
+ 		AA0000000000000000000413 /* Gen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Gen.swift; path = Tools/Generated/Gen.swift; sourceTree = SOURCE_ROOT; };
+ /* End PBXFileReference section */
+ 
+ /* Begin PBXFileSystemSynchronizedRootGroup section */
+-		AA0000000000000000000301 /* Generated */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Generated; sourceTree = "<group>"; };
++		AA0000000000000000000301 /* Generated */ = {
++			isa = PBXFileSystemSynchronizedRootGroup;
++			path = Generated;
++			sourceTree = "<group>";
++		};
+ /* End PBXFileSystemSynchronizedRootGroup section */
+ 
+ /* Begin PBXFrameworksBuildPhase section */
+@@ -195,7 +197,6 @@
+ 			isa = PBXGroup;
+ 			children = (
+ 				AA0000000000000000000160 /* Foundation.framework */,
+-				DEAD0002 /* Vanished.framework */,
+ 			);
+ 			name = Frameworks;
+ 			sourceTree = "<group>";
+@@ -271,7 +272,6 @@
+ 				AA0000000000000000000250 /* OnlyApp.swift */,
+ 				AA0000000000000000000251 /* OnlyExt.swift */,
+ 				AA0000000000000000000401 /* Mixed3.swift */,
+-				AA0000000000000000000412 /* Dup.swift */,
+ 			);
+ 			path = Mixed;
+ 			sourceTree = "<group>";
+@@ -387,7 +387,7 @@
+ 				BuildIndependentTargetsInParallel = 1;
+ 				LastUpgradeCheck = 2700;
+ 			};
+-			buildConfigurationList = FF0000000000000000000001 /* Build configuration list for PBXProject "App" */;
++			buildConfigurationList = FF0000000000000000000001 /* Build configuration list for PBXProject "Repair" */;
+ 			developmentRegion = en;
+ 			hasScannedForEncodings = 0;
+ 			knownRegions = (
+@@ -453,7 +453,7 @@
+ 				BB0000000000000000000050 /* ExtensionMain.swift in Sources */,
+ 				BB0000000000000000000113 /* Cache.swift in Sources */,
+ 				BB0000000000000000000131 /* OnlyExt.swift in Sources */,
+-				BB0000000000000000000403 /* Twice.swift in Sources */,
++				0D60865B3062C57A007CDD31 /* Twice.swift in Sources */,
+ 			);
+ 			runOnlyForDeploymentPostprocessing = 0;
+ 		};
+@@ -531,7 +531,7 @@
+ /* End XCBuildConfiguration section */
+ 
+ /* Begin XCConfigurationList section */
+-		FF0000000000000000000001 /* Build configuration list for PBXProject "App" */ = {
++		FF0000000000000000000001 /* Build configuration list for PBXProject "Repair" */ = {
+ 			isa = XCConfigurationList;
+ 			buildConfigurations = (
+ 				1000000000000000000000A1 /* Debug */,

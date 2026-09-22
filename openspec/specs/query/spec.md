@@ -6,7 +6,7 @@ Answer, without reading the project file by hand, which targets build a given fi
 ## Requirements
 
 ### Requirement: Membership of a path
-`pbxedit query <path>` SHALL report, for the file reference resolving to that path: its ID, its resolved path, the path of group names leading to it, every group that lists it, and its memberships — one entry per build file for each build phase listing it and each target owning that phase, giving the target (ID and name), the phase (ID and name), the build file ID and its `platformFilters` (the array, or the single `platformFilter` as a one-element array, or empty). Facts SHALL be reported as found, including a reference with no group or a build file with no phase (rule M3 and rule M1 inputs, reported without judgement). When several references resolve to the path (rule M4's input), the first in object order is reported. Memberships SHALL be ordered by target name, then phase name, then build file ID.
+`pbxedit query <path>` SHALL report, for the file reference resolving to that path: its ID, its resolved path, the path of group names leading to it, every group that lists it, and its memberships — one entry per build file for each build phase listing it and each target owning that phase, giving the target (ID and name), the phase (ID and name), the build file ID and its `platformFilters`, read as `platform-filters` reads them (the `platformFilters` array, or the single `platformFilter` as a one-element array, or empty), so the report is the same whichever key the file uses. Facts SHALL be reported as found, including a reference with no group or a build file with no phase (rule M3 and rule M1 inputs, reported without judgement). When several references resolve to the path (rule M4's input), the first in object order is reported. Memberships SHALL be ordered by target name, then phase name, then build file ID.
 
 #### Scenario: Ordinary member
 - **WHEN** `App/Views/Foo.swift` is built by target `App` in its Sources phase (fixture `model/app.pbxproj`)
@@ -15,6 +15,10 @@ Answer, without reading the project file by hand, which targets build a given fi
 #### Scenario: Shared source with platform filters
 - **WHEN** `App/Shared.swift` has build files in the Sources phases of `App` and of `AppExtension`, the latter with `platformFilters = (ios, maccatalyst, )` (fixture `model/app.pbxproj`)
 - **THEN** the report lists two memberships, `App` first then `AppExtension`, the second with `platformFilters` `[ios, maccatalyst]`
+
+#### Scenario: Singular key reported as the same array
+- **WHEN** `App/Filtered/F1.swift` (`platformFilter = ios;`) and `AppKit/Kit.swift` (`platformFilter = maccatalyst;`) are queried in `xcode27/platform-filters-after-xcode27-save.pbxproj`
+- **THEN** their memberships report `platformFilters` `[ios]` and `[maccatalyst]`, in text as `platforms: ios` and `platforms: maccatalyst`
 
 #### Scenario: Build file in no phase
 - **WHEN** `AppTests/FooTests.swift` has a build file `BF01` that no phase lists (fixture `rules/m1-no-phase.pbxproj`)

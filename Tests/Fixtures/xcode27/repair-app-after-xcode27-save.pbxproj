@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D60865B3062C57A007CDD31 /* Twice.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000403 /* Twice.swift */; };
 		BB0000000000000000000010 /* AppMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000110 /* AppMain.swift */; };
 		BB0000000000000000000020 /* Foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000120 /* Foo.swift */; };
 		BB0000000000000000000030 /* Shared.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000130 /* Shared.swift */; };
@@ -29,7 +30,12 @@
 		BB0000000000000000000141 /* F2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000261 /* F2.swift */; };
 		BB0000000000000000000150 /* AppKit.h in Headers */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000270 /* AppKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BB0000000000000000000151 /* Kit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000271 /* Kit.swift */; };
-		BB0000000000000000000160 /* Thing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000280 /* Thing.swift */; };
+		BB0000000000000000000400 /* Rate2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000400 /* Rate2.swift */; platformFilter = ios; };
+		BB0000000000000000000403 /* Twice.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000403 /* Twice.swift */; };
+		BB0000000000000000000406 /* Baz.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000406 /* Baz.swift */; };
+		BB0000000000000000000407 /* A.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000407 /* A.swift */; };
+		BB0000000000000000000408 /* C.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000408 /* C.swift */; };
+		BB0000000000000000000409 /* B.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000409 /* B.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,12 +63,25 @@
 		AA0000000000000000000261 /* F2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = F2.swift; sourceTree = "<group>"; };
 		AA0000000000000000000270 /* AppKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppKit.h; sourceTree = "<group>"; };
 		AA0000000000000000000271 /* Kit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Kit.swift; sourceTree = "<group>"; };
-		AA0000000000000000000280 /* Thing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Thing.swift; sourceTree = "<group>"; };
-		AA0000000000000000000290 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
+		AA0000000000000000000400 /* Rate2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rate2.swift; sourceTree = "<group>"; };
+		AA0000000000000000000401 /* Mixed3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mixed3.swift; sourceTree = "<group>"; };
+		AA0000000000000000000402 /* fixture.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = fixture.json; sourceTree = "<group>"; };
+		AA0000000000000000000403 /* Twice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Twice.swift; sourceTree = "<group>"; };
+		AA0000000000000000000406 /* Baz.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Baz.swift; path = App/Views/Baz.swift; sourceTree = SOURCE_ROOT; };
+		AA0000000000000000000407 /* A.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = A.swift; path = App/Features/A.swift; sourceTree = SOURCE_ROOT; };
+		AA0000000000000000000408 /* C.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = C.swift; path = App/Features/C.swift; sourceTree = SOURCE_ROOT; };
+		AA0000000000000000000409 /* B.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = B.swift; path = App/Features/B.swift; sourceTree = SOURCE_ROOT; };
+		AA0000000000000000000411 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		AA0000000000000000000412 /* Dup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dup.swift; sourceTree = "<group>"; };
+		AA0000000000000000000413 /* Gen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Gen.swift; path = Tools/Generated/Gen.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AA0000000000000000000301 /* Generated */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Generated; sourceTree = "<group>"; };
+		AA0000000000000000000301 /* Generated */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Generated;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +110,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		268288C32DBBA68C6C2C542B /* Tools */ = {
+			isa = PBXGroup;
+			children = (
+				6880D8D8984BD43B9B8D01F0 /* Generated */,
+			);
+			path = Tools;
+			sourceTree = "<group>";
+		};
+		6880D8D8984BD43B9B8D01F0 /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000413 /* Gen.swift */,
+			);
+			path = Generated;
+			sourceTree = "<group>";
+		};
 		AA0000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
@@ -99,6 +134,8 @@
 				AA0000000000000000000004 /* Tests */,
 				AA0000000000000000000007 /* Frameworks */,
 				AA0000000000000000000008 /* Products */,
+				AA0000000000000000000411 /* README.md */,
+				268288C32DBBA68C6C2C542B /* Tools */,
 			);
 			sourceTree = "<group>";
 		};
@@ -107,7 +144,6 @@
 			children = (
 				AA0000000000000000000110 /* AppMain.swift */,
 				AA0000000000000000000130 /* Shared.swift */,
-				AA0000000000000000000290 /* App.entitlements */,
 				AA0000000000000000000003 /* Views */,
 				AA0000000000000000000009 /* Extension */,
 				AA0000000000000000000010 /* Resources */,
@@ -115,9 +151,8 @@
 				AA0000000000000000000014 /* tvOS */,
 				AA0000000000000000000015 /* Mixed */,
 				AA0000000000000000000016 /* Filtered */,
-				AA0000000000000000000017 /* Features */,
-				AA0000000000000000000019 /* Empty */,
 				AA0000000000000000000301 /* Generated */,
+				F6888A1D307AC540CCAE4539 /* Features */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -125,7 +160,9 @@
 		AA0000000000000000000003 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				AA0000000000000000000406 /* Baz.swift */,
 				AA0000000000000000000120 /* Foo.swift */,
+				AA0000000000000000000403 /* Twice.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -151,6 +188,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000150 /* Bar.swift */,
+				AA0000000000000000000402 /* fixture.json */,
 			);
 			path = Foo;
 			sourceTree = "<group>";
@@ -214,6 +252,7 @@
 				AA0000000000000000000232 /* Cache.swift */,
 				AA0000000000000000000231 /* Fetch.swift */,
 				AA0000000000000000000230 /* Rate.swift */,
+				AA0000000000000000000400 /* Rate2.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -232,6 +271,7 @@
 			children = (
 				AA0000000000000000000250 /* OnlyApp.swift */,
 				AA0000000000000000000251 /* OnlyExt.swift */,
+				AA0000000000000000000401 /* Mixed3.swift */,
 			);
 			path = Mixed;
 			sourceTree = "<group>";
@@ -241,31 +281,19 @@
 			children = (
 				AA0000000000000000000260 /* F1.swift */,
 				AA0000000000000000000261 /* F2.swift */,
+				AA0000000000000000000412 /* Dup.swift */,
 			);
 			path = Filtered;
 			sourceTree = "<group>";
 		};
-		AA0000000000000000000017 /* Features */ = {
+		F6888A1D307AC540CCAE4539 /* Features */ = {
 			isa = PBXGroup;
 			children = (
-				AA0000000000000000000018 /* New */,
+				AA0000000000000000000407 /* A.swift */,
+				AA0000000000000000000409 /* B.swift */,
+				AA0000000000000000000408 /* C.swift */,
 			);
 			path = Features;
-			sourceTree = "<group>";
-		};
-		AA0000000000000000000018 /* New */ = {
-			isa = PBXGroup;
-			children = (
-				AA0000000000000000000280 /* Thing.swift */,
-			);
-			path = New;
-			sourceTree = "<group>";
-		};
-		AA0000000000000000000019 /* Empty */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Empty;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -359,7 +387,7 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastUpgradeCheck = 2700;
 			};
-			buildConfigurationList = FF0000000000000000000001 /* Build configuration list for PBXProject "App" */;
+			buildConfigurationList = FF0000000000000000000001 /* Build configuration list for PBXProject "Repair" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -408,7 +436,12 @@
 				BB0000000000000000000130 /* OnlyApp.swift in Sources */,
 				BB0000000000000000000140 /* F1.swift in Sources */,
 				BB0000000000000000000141 /* F2.swift in Sources */,
-				BB0000000000000000000160 /* Thing.swift in Sources */,
+				BB0000000000000000000403 /* Twice.swift in Sources */,
+				BB0000000000000000000406 /* Baz.swift in Sources */,
+				BB0000000000000000000407 /* A.swift in Sources */,
+				BB0000000000000000000408 /* C.swift in Sources */,
+				BB0000000000000000000409 /* B.swift in Sources */,
+				BB0000000000000000000400 /* Rate2.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -420,6 +453,7 @@
 				BB0000000000000000000050 /* ExtensionMain.swift in Sources */,
 				BB0000000000000000000113 /* Cache.swift in Sources */,
 				BB0000000000000000000131 /* OnlyExt.swift in Sources */,
+				0D60865B3062C57A007CDD31 /* Twice.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -497,7 +531,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		FF0000000000000000000001 /* Build configuration list for PBXProject "App" */ = {
+		FF0000000000000000000001 /* Build configuration list for PBXProject "Repair" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1000000000000000000000A1 /* Debug */,

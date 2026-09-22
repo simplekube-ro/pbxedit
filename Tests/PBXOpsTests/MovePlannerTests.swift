@@ -265,13 +265,14 @@ final class MovePlannerTests: XCTestCase {
         XCTAssertEqual(result.fileReference(rateTests), project.fileReference(rateTests))
     }
 
-    // Spec: Platform directory change (2.1).
+    // Spec: Platform directory change (2.1); the fixture spells the lone ios
+    // as Xcode does, `platformFilter = ios;` (platform-filter-canonical-form).
     func testAPlatformDirectoryChangeRewritesTheFiltersOnTheKeptBuildFile() throws {
         let (plan, project, _) = try plan("App/iOS/Panel.swift", "App/Shared/Panel.swift")
         XCTAssertEqual(plan.steps, [
             .removeChild(panel, from: iOS),
             .addChild(panel, to: shared, position: .last),
-            .setAttribute(key: "platformFilters", of: panelBuildFile, to: nil),
+            .setAttribute(key: "platformFilter", of: panelBuildFile, to: nil),
             .removeChild(iOS, from: appGroup),
             .deleteObject(iOS),
         ])
@@ -282,16 +283,21 @@ final class MovePlannerTests: XCTestCase {
                        ["\(panelBuildFile) platformFilters removed (was ios)"])
         XCTAssertTrue(plan.changes.contains { $0.action == .reusedBuildFile && $0.object == panelBuildFile })
         let result = try applied(plan, to: project)
+        XCTAssertNil(result.buildFile(panelBuildFile)?.platformFilter)
         XCTAssertNil(result.buildFile(panelBuildFile)?.platformFilters)
         XCTAssertEqual(result.buildFiles(for: panel).map(\.id), [panelBuildFile])
         XCTAssertEqual(MembershipReport(project: result, path: "App/Shared/Panel.swift").memberships.map(\.platformFilters), [[]])
-        // The other way round gains the filter.
+        // The other way round gains the filter, spelled as Xcode spells a lone ios.
         let (back, _, _) = try self.plan("App/Shared/Common.swift", "App/iOS/Common.swift")
         XCTAssertEqual(back.steps.filter { if case .setAttribute = $0 { return true } else { return false } },
-                       [.setAttribute(key: "platformFilters", of: "BB0000000000000000000200", to: .array([.string("ios")]))])
+                       [.setAttribute(key: "platformFilter", of: "BB0000000000000000000200", to: .string("ios"))])
         XCTAssertEqual(back.changes.filter { $0.action == .setAttribute }.map(\.detail), ["platformFilters = ios (was none)"])
         let gained = try applied(back, to: project)
-        XCTAssertEqual(gained.buildFile("BB0000000000000000000200")?.platformFilters, ["ios"])
+        XCTAssertEqual(gained.buildFile("BB0000000000000000000200")?.platformFilter, "ios")
+        XCTAssertNil(gained.buildFile("BB0000000000000000000200")?.platformFilters)
+        XCTAssertEqual(PlatformFilters.read(from: try XCTUnwrap(gained.buildFile("BB0000000000000000000200"))), ["ios"])
+        XCTAssertTrue(String(decoding: gained.serialize(), as: UTF8.self).contains(
+            "\t\tBB0000000000000000000200 /* Common.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000330 /* Common.swift */; platformFilter = ios; };\n"))
     }
 
     // Spec: Keep membership (2.1).

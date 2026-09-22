@@ -41,7 +41,7 @@ public struct TargetMembers: Equatable, Sendable {
             for entry in phase.files {
                 let buildFile = project.buildFile(entry)
                 let fileRef = buildFile?.fileRef
-                let filters = buildFile?.platformFilters ?? buildFile?.platformFilter.map { [$0] } ?? []
+                let filters = buildFile.map(PlatformFilters.read) ?? []
                 let path = fileRef.flatMap { TargetMembers.displayPath(of: $0, in: project) }
                 members.append((members.count, Member(buildFile: entry, fileReference: fileRef, path: path, phase: ref, platformFilters: filters)))
             }

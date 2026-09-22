@@ -247,17 +247,23 @@ public enum MovePlanner {
             let filters = try platformFilters(for: to, kind: kind, target: target, conventions: conventions, in: project)
             var decided = false
             for entry in membership.buildFiles where entry.phases.contains(where: { $0.targets.contains { $0.id == target.id } }) {
-                let existing = entry.platformFilters ?? entry.platformFilter.map { [$0] } ?? []
+                let existing = PlatformFilters.read(from: entry.buildFile)
                 guard existing != filters.value else { continue }
                 if !decided {
                     builder.decide(Decision(path: to, attribute: "platformFilters", value: "\(target.name ?? target.id.rawValue): \(describe(filters.value))",
                                             source: filters.source))
                     decided = true
                 }
-                let value: NewValue? = filters.value.isEmpty ? nil : .array(filters.value.map { .string($0) })
-                builder.add(.setAttribute(key: "platformFilters", of: entry.buildFile.id, to: value), touching: [entry.buildFile.id])
-                if entry.buildFile.platformFilter != nil {
-                    builder.add(.setAttribute(key: "platformFilter", of: entry.buildFile.id, to: nil), touching: [entry.buildFile.id])
+                // The new value in the spelling Xcode writes (platform-filters
+                // design D2): set its key, then clear whichever of the two
+                // keys the build file carries but should not.
+                let spelling = PlatformFilters.spelling(of: filters.value)
+                if let key = spelling.key, let value = spelling.value {
+                    builder.add(.setAttribute(key: key, of: entry.buildFile.id, to: value), touching: [entry.buildFile.id])
+                }
+                for other in [PlatformFilters.singularKey, PlatformFilters.pluralKey]
+                where other != spelling.key && entry.buildFile.object.attributes?[other] != nil {
+                    builder.add(.setAttribute(key: other, of: entry.buildFile.id, to: nil), touching: [entry.buildFile.id])
                 }
                 let detail = filters.value.isEmpty ? "platformFilters removed (was \(describe(existing)))"
                     : "platformFilters = \(describe(filters.value)) (was \(describe(existing)))"

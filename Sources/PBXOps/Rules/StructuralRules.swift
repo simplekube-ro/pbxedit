@@ -92,7 +92,9 @@ struct S3Rule: Rule {
     }
 }
 
-/// S4: `platformFilters` is a property-list array of known platform names.
+/// S4: `platformFilters` is a property-list array of known platform names,
+/// and `platformFilter` — the singular key Xcode writes for a lone `ios` or
+/// `maccatalyst` — is one of those two strings (platform-filters design D3).
 struct S4Rule: Rule {
     let id = RuleID.S4
 
@@ -102,11 +104,26 @@ struct S4Rule: Rule {
     func evaluate(_ project: Project) -> [Finding] {
         var findings: [Finding] = []
         let known = S4Rule.knownPlatforms.joined(separator: ", ")
+        let singular = PlatformFilters.singularValues.joined(separator: ", ")
         var seen: Set<ObjectID> = []
         for object in project.objects where seen.insert(object.id).inserted {
-            guard let value = object.attributes?["platformFilters"] else { continue }
+            guard let attributes = object.attributes else { continue }
             let path = object.isa == Kind.buildFile
                 ? object.id("fileRef").flatMap(project.pathString) : project.pathString(of: object.id)
+            if let value = attributes["platformFilter"] {
+                if let name = value.stringValue {
+                    if !PlatformFilters.singularValues.contains(name) {
+                        findings.append(Finding(
+                            rule: .S4, object: object.id, path: path,
+                            message: "\(project.describe(object)) has '\(name)' in 'platformFilter', which Xcode writes only for: \(singular)"))
+                    }
+                } else {
+                    findings.append(Finding(
+                        rule: .S4, object: object.id, path: path,
+                        message: "\(project.describe(object)) has a 'platformFilter' that is not a string; Xcode writes it only for: \(singular)"))
+                }
+            }
+            guard let value = attributes["platformFilters"] else { continue }
             guard let array = value.array else {
                 findings.append(Finding(
                     rule: .S4, object: object.id, path: path,

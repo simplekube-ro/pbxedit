@@ -25,14 +25,14 @@
 		BB0000000000000000000121 /* TV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000241 /* TV2.swift */; platformFilters = (tvos, ); };
 		BB0000000000000000000130 /* OnlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000250 /* OnlyApp.swift */; };
 		BB0000000000000000000131 /* OnlyExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000251 /* OnlyExt.swift */; };
-		BB0000000000000000000140 /* F1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000260 /* F1.swift */; platformFilters = (ios, ); };
+		BB0000000000000000000140 /* F1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000260 /* F1.swift */; platformFilter = ios; };
 		BB0000000000000000000141 /* F2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000261 /* F2.swift */; };
 		BB0000000000000000000150 /* AppKit.h in Headers */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000270 /* AppKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BB0000000000000000000151 /* Kit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000271 /* Kit.swift */; };
 		BB0000000000000000000160 /* Thing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000280 /* Thing.swift */; };
 		BB0000000000000000000170 /* SlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000300 /* SlowTests.swift */; };
 		BB0000000000000000000180 /* RateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000310 /* RateTests.swift */; };
-		BB0000000000000000000190 /* Panel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000320 /* Panel.swift */; platformFilters = (ios, ); };
+		BB0000000000000000000190 /* Panel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000320 /* Panel.swift */; platformFilter = ios; };
 		BB0000000000000000000200 /* Common.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000330 /* Common.swift */; };
 		BB0000000000000000000210 /* StateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000340 /* StateTests.swift */; };
 		BB0000000000000000000220 /* Top.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000350 /* Top.swift */; };
