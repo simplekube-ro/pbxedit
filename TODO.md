@@ -103,7 +103,7 @@ For each change, on a branch named after it:
 ### 10. release-distribution
 - [x] Public name decided — stays `pbxedit` (2026-09-22); no renames needed
 - [x] Licence chosen — MIT (2026-09-22): `LICENSE` added, README licence section, corpus is MIT throughout so `Tests/Fixtures/NOTICE` is compatible
-- [ ] (pending-user) Homebrew tap repository and `TAP_TOKEN` secret created
+- [ ] (pending-user) Homebrew tap repository and `TAP_TOKEN` secret created — tap `simplekube-ro/homebrew-tap` exists with `Formula/pbxedit.rb` (2026-09-22); the token is created but `gh secret list --repo simplekube-ro/pbxedit` does not show `TAP_TOKEN` yet
 - [ ] Artifacts re-verified
 - [ ] Applied
 - [ ] `oracle` job is a required check, and shown to fail on a deliberately bad write
@@ -111,7 +111,7 @@ For each change, on a branch named after it:
 - [ ] `v1.0.0` cut after change 9; Xcode version for the manual open-and-save check recorded
 - [ ] Archived, merged
 
-*Status 2026-09-22: on the `release-distribution` branch, artifacts re-verified (`openspec validate --strict` green; drift fixed in D1/D3, the spec's version and oracle scenarios and the proposal's timing) and tasks 2.1, 2.2, 3.1 and 6.2 applied — `pbxedit --version` (`Sources/pbxedit/Version.swift`, `0.1.0-dev`, `PBXEDIT_BUILD_HASH`), the `ORACLE_REQUIRED` mode of `CLITests.OracleTests`, `docs/RELEASING.md`; 111 syntax + 64 model + 206 ops + 99 CLI tests, 0 failures; universal build proven locally (`lipo -archs` → `x86_64 arm64`, both slices `minos 13.0`). Pending the user: the three decisions above, then `.github/workflows/release.yml`, the `oracle` job in `ci.yml`, the tap formula (all drafted under `docs/release/` — `release.yml`, `ci-oracle-job.yml`, `Formula/pbxedit.rb`, `README-sections.md` — ready to move into place once the name and tap are decided; writing a workflow file was refused by the session's permission classifier), branch protection, `TAP_TOKEN`, README sections, the rehearsal and the first releases. Not archived.*
+*Status 2026-09-22: on the `release-distribution` branch, artifacts re-verified (`openspec validate --strict` green; drift fixed in D1/D3, the spec's version and oracle scenarios and the proposal's timing) and tasks 2.1, 2.2, 3.1 and 6.2 applied — `pbxedit --version` (`Sources/pbxedit/Version.swift`, `0.1.0-dev`, `PBXEDIT_BUILD_HASH`), the `ORACLE_REQUIRED` mode of `CLITests.OracleTests`, `docs/RELEASING.md`; 111 syntax + 64 model + 206 ops + 99 CLI tests, 0 failures; universal build proven locally (`lipo -archs` → `x86_64 arm64`, both slices `minos 13.0`). Since then: name and licence decided, `LICENSE` and `README.md` added, `.github/workflows/release.yml` and the `oracle` job in `ci.yml` in place, the tap created with its formula. Pending: the `TAP_TOKEN` secret, the first push (CI green, then `oracle` required in branch protection), task 3.3, the rehearsal, the first releases, archive. Not archived.*
 
 ## After v1 — adoption in RandomPlayer
 
