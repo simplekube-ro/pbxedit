@@ -41,3 +41,32 @@ jobs:
           swift --version
       - name: Oracle
         run: swift test --filter 'CLITests.OracleTests|CLITests.OracleGateTests'
+
+  # The README's pinning snippet, run against the latest release: it must
+  # fetch and verify the archive with the published checksum, and refuse a
+  # wrong one. Advisory (not a required check): it depends on GitHub Releases.
+  pinning:
+    name: pinning snippet (latest release)
+    runs-on: macos-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Latest release
+        run: |
+          V="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName' | sed 's/^v//')"
+          echo "V=$V" >> "$GITHUB_ENV"
+          echo "latest release: $V"
+      - name: Right checksum fetches and verifies
+        run: |
+          SUM="$(curl -fsSL "https://github.com/$GITHUB_REPOSITORY/releases/download/v$V/pbxedit-$V-macos-universal.tar.gz.sha256" | cut -d' ' -f1)"
+          curl -fsSL -o pbxedit.tgz "https://github.com/$GITHUB_REPOSITORY/releases/download/v$V/pbxedit-$V-macos-universal.tar.gz"
+          echo "$SUM  pbxedit.tgz" | shasum -a 256 -c - && mkdir -p .tools && tar -xzf pbxedit.tgz -C .tools
+          [ "$(.tools/pbxedit --version)" = "$V" ]
+      - name: Wrong checksum is refused
+        run: |
+          rm -rf .tools2 && mkdir .tools2
+          if echo "0000000000000000000000000000000000000000000000000000000000000000  pbxedit.tgz" | shasum -a 256 -c - && tar -xzf pbxedit.tgz -C .tools2; then
+            echo "::error::a wrong checksum was accepted"; exit 1
+          fi
+          [ -z "$(ls -A .tools2)" ]

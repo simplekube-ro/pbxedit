@@ -169,6 +169,10 @@ Run on `main` `64b9fe7` (the `v1.0.0` candidate) with Xcode 27.0 (27A266a), foll
 
 Of the 20 object IDs pbxedit touched and the 18 Xcode touched, only `Rate2.swift`'s pair overlaps, and there Xcode changed the fixture-authored filter spelling; pbxedit's own edits (phase entry, comment) were left alone. The check is re-run after the fix; its result is recorded below when it passes.
 
+### Manual open-and-save check, second run (task 7.2)
+
+On `main` `e418e90` (PR #7 merged: the platform-filter fix and the rewritten § 2), Xcode 27.0 (27A266a), following § 2 as now written: `ops/App.xcodeproj` from `platform-filters-after-xcode27-save.pbxproj` after `add`, `move`, `remove`; `repair/App.xcodeproj` from `repair-fixable.pbxproj` after `lint --fix`. Xcode opened both, was made to rewrite the project (rename and rename back), saved and quit — its `xcuserdata` and `project.xcworkspace` appeared in both — and `git diff --exit-code -- '*.pbxproj'` exited 0: **no diff**. `v1.0.0` tagged on that commit.
+
 ### Release checklist (task 6.2)
 
 `docs/RELEASING.md` has the four scenario items as sections 1–4 (`Bump the version`, `Manual Xcode open-and-save check` with the `Xcode version used:` field, `Tag`, `Verify the Homebrew formula`), pinned by `CLITests.ReleasingDocumentTests` (3 tests), which also checks that the manual check exercises `add`, `move`, `remove` and `lint --fix` and ends in `git diff --exit-code`.
