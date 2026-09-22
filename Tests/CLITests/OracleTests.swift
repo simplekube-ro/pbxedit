@@ -1,29 +1,40 @@
 import Foundation
 import XCTest
 
-/// Task 7.1 — the oracle lane: `xcodebuild -list -json -project` reads every
-/// post-add project. Skipped cleanly where `xcodebuild` is absent.
+/// The oracle lane (add-command task 7.1, remove-command task 6.3):
+/// `xcodebuild -list -json -project` reads every post-operation project.
+/// Skipped cleanly where `xcodebuild` is absent.
 final class OracleTests: XCTestCase {
     private static let xcodebuild = URL(fileURLWithPath: "/usr/bin/xcodebuild")
 
-    /// Each entry: a fixture, the files to create, and the `add` invocations
-    /// to run on it before the oracle reads it.
+    /// Each entry: a fixture, the files to create, and the invocations
+    /// (subcommand first) to run on it before the oracle reads it.
     private static let scenarios: [(name: String, fixture: String, files: [String], invocations: [[String]])] = [
-        ("new file", "add/app.pbxproj", ["App/Views/Bar.swift"], [["App/Views/Bar.swift"]]),
-        ("groups created", "add/app.pbxproj", ["App/Features/New/Thing.swift"], [["App/Features/New/Thing.swift"]]),
-        ("second target", "add/app.pbxproj", ["App/Services/Rate.swift"], [["App/Services/Rate.swift", "--target", "AppExtension"]]),
-        ("resource and header", "add/app.pbxproj", ["App/Resources/Localizable.xcstrings", "AppKit/Extra.h"],
-         [["App/Resources/Localizable.xcstrings", "AppKit/Extra.h"]]),
-        ("project-only", "add/app.pbxproj", ["App/App.entitlements"], [["App/App.entitlements"]]),
-        ("pathless group", "add/app.pbxproj", ["AppTests/Views/BarTests.swift"], [["AppTests/Views/BarTests.swift"]]),
-        ("platform filters", "add/app.pbxproj", ["App/tvOS/TV3.swift", "App/Filtered/New.swift"],
-         [["App/tvOS/TV3.swift"], ["App/Filtered/New.swift", "--platform", "ios,tvos"]]),
-        ("unknown type with --phase", "add/app.pbxproj", ["App/data.bin"], [["App/data.bin", "--phase", "resources", "--target", "App"]]),
-        ("partial membership completed", "add/partial.pbxproj", ["AppTests/Views/FooTests.swift"],
-         [["AppTests/Views/FooTests.swift", "--target", "App"]]),
+        ("add: new file", "add/app.pbxproj", ["App/Views/Bar.swift"], [["add", "App/Views/Bar.swift"]]),
+        ("add: groups created", "add/app.pbxproj", ["App/Features/New/Thing.swift"], [["add", "App/Features/New/Thing.swift"]]),
+        ("add: second target", "add/app.pbxproj", ["App/Services/Rate.swift"], [["add", "App/Services/Rate.swift", "--target", "AppExtension"]]),
+        ("add: resource and header", "add/app.pbxproj", ["App/Resources/Localizable.xcstrings", "AppKit/Extra.h"],
+         [["add", "App/Resources/Localizable.xcstrings", "AppKit/Extra.h"]]),
+        ("add: project-only", "add/app.pbxproj", ["App/App.entitlements"], [["add", "App/App.entitlements"]]),
+        ("add: pathless group", "add/app.pbxproj", ["AppTests/Views/BarTests.swift"], [["add", "AppTests/Views/BarTests.swift"]]),
+        ("add: platform filters", "add/app.pbxproj", ["App/tvOS/TV3.swift", "App/Filtered/New.swift"],
+         [["add", "App/tvOS/TV3.swift"], ["add", "App/Filtered/New.swift", "--platform", "ios,tvos"]]),
+        ("add: unknown type with --phase", "add/app.pbxproj", ["App/data.bin"], [["add", "App/data.bin", "--phase", "resources", "--target", "App"]]),
+        ("add: partial membership completed", "add/partial.pbxproj", ["AppTests/Views/FooTests.swift"],
+         [["add", "AppTests/Views/FooTests.swift", "--target", "App"]]),
+        ("remove: ordinary file", "remove/app.pbxproj", [], [["remove", "App/Services/Rate.swift"]]),
+        ("remove: --all", "remove/app.pbxproj", [], [["remove", "App/Services/Cache.swift", "--all"]]),
+        ("remove: --target", "remove/app.pbxproj", [], [["remove", "App/Services/Cache.swift", "--target", "AppExtension"]]),
+        ("remove: last target detached", "remove/app.pbxproj", [], [["remove", "App/Services/Rate.swift", "--target", "App"]]),
+        ("remove: project-only file", "remove/app.pbxproj", [], [["remove", "App/App.entitlements"]]),
+        ("remove: chain pruned", "remove/app.pbxproj", [], [["remove", "App/Features/New/Thing.swift"]]),
+        ("remove: a directory's files", "remove/app.pbxproj", [], [["remove", "App/tvOS/TV1.swift", "App/tvOS/TV2.swift", "App/Shared.swift", "--all"]]),
+        ("remove: damaged membership", "add/partial.pbxproj", [], [["remove", "AppTests/Views/FooTests.swift"]]),
+        ("add then remove", "add/app.pbxproj", ["App/Features/New/Thing.swift"],
+         [["add", "App/Features/New/Thing.swift"], ["remove", "App/Features/New/Thing.swift"]]),
     ]
 
-    func testXcodebuildReadsEveryPostAddProject() throws {
+    func testXcodebuildReadsEveryPostOperationProject() throws {
         guard FileManager.default.isExecutableFile(atPath: Self.xcodebuild.path), try Self.developerDirectoryIsSet() else {
             throw XCTSkip("xcodebuild is not available; the oracle lane runs on macOS with Xcode installed")
         }
@@ -31,7 +42,7 @@ final class OracleTests: XCTestCase {
             let project = try TemporaryProject(fixture: scenario.fixture)
             for file in scenario.files { try project.touch(file) }
             for invocation in scenario.invocations {
-                let result = try pbxedit(["add"] + invocation + ["--project", "App.xcodeproj"], in: project.root)
+                let result = try pbxedit(invocation + ["--project", "App.xcodeproj"], in: project.root)
                 XCTAssertEqual(result.status, 0, "\(scenario.name): \(invocation): \(result.stderr)\(result.stdout)")
                 XCTAssertTrue(result.stdout.hasSuffix("project.pbxproj: modified\n"), "\(scenario.name): \(invocation): \(result.stdout)")
             }

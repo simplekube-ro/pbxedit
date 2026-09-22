@@ -298,7 +298,18 @@ final class AddCommandTests: XCTestCase {
         ].map(masked)
         let added = dryRun.stdout.split(separator: "\n").map(String.init).filter { $0.hasPrefix("+") && !$0.hasPrefix("+++") }.map(masked)
         XCTAssertEqual(added.sorted(), expectedAdded.sorted())
-        XCTAssertEqual(dryRun.stdout.components(separatedBy: "\n@@ ").count - 1, 4, "four hunks: build file, reference, group child, phase entry")
+        // Four hunks — build file, reference, group child, phase entry — unless
+        // the minted build file sorts last in its section and the reference
+        // first in the next: those two insertions are then three lines apart
+        // and the diff merges their hunks. The IDs are random per run, so the
+        // expectation follows them (found flaky by `remove-command`).
+        func mintedInDryRun(_ prefix: String) -> String {
+            dryRun.stdout.split(separator: "\n").first { $0.hasPrefix(prefix) }.map { String($0.dropFirst(prefix.count).prefix(24)) } ?? ""
+        }
+        let adjacent = mintedInDryRun("  created build file ") > "BB0000000000000000000151"
+            && mintedInDryRun("  created file reference ") < "AA0000000000000000000110"
+        XCTAssertEqual(dryRun.stdout.components(separatedBy: "\n@@ ").count - 1, adjacent ? 3 : 4,
+                       "four hunks: build file, reference, group child, phase entry — three when the first two are adjacent")
 
         let real = try pbxedit(["add", "App/Views/Bar.swift", "--project", "App.xcodeproj"], in: project.root)
         XCTAssertEqual(real.status, 0, real.stderr)
