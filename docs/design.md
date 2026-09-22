@@ -456,6 +456,7 @@ Mint from source.
 
 ## Open items
 
-- The name collides with an existing GitHub project, `ZehMatt/PBXEdit`
-  ("Lightweight Xcode project editor"). Decide before publishing publicly.
-- Licence.
+- ~~The name collides with an existing GitHub project, `ZehMatt/PBXEdit`.~~
+  Decided 2026-09-22: the name stays `pbxedit`.
+- ~~Licence.~~ Decided 2026-09-22: MIT (`LICENSE`); the corpus is MIT
+  throughout, so `Tests/Fixtures/NOTICE` is compatible.

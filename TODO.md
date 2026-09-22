@@ -101,8 +101,8 @@ For each change, on a branch named after it:
 - [ ] *Milestone:* RandomPlayer can do its one-commit orphan repair
 
 ### 10. release-distribution
-- [ ] (pending-user) Public name decided — `pbxedit` collides with `ZehMatt/PBXEdit`
-- [ ] (pending-user) Licence chosen
+- [x] Public name decided — stays `pbxedit` (2026-09-22); no renames needed
+- [x] Licence chosen — MIT (2026-09-22): `LICENSE` added, README licence section, corpus is MIT throughout so `Tests/Fixtures/NOTICE` is compatible
 - [ ] (pending-user) Homebrew tap repository and `TAP_TOKEN` secret created
 - [ ] Artifacts re-verified
 - [ ] Applied

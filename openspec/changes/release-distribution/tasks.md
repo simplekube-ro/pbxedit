@@ -4,8 +4,8 @@
 
 *Status (2026-09-22): 2.1, 2.2, 3.1 and 6.2 are applied on the `release-distribution` branch. Every other task needs the owner: the three decisions below, pushes (branches, tags, the tap), repository settings (branch protection, the `TAP_TOKEN` secret), or files under `.github/` that a teammate session cannot write. The workflow YAML, the `oracle` job, the formula and the README sections are drafted under `docs/release/`.*
 
-- [ ] 1.1 (pending-user) Decide the public name given the collision with `ZehMatt/PBXEdit`; if it changes, rename the repository, the executable target and every occurrence in `README.md`, `docs/` and `openspec/`; verify a search for the old name finds only historical mentions
-- [ ] 1.2 (pending-user) Choose the licence; add `LICENSE` and the licence line in `README.md`; verify `Tests/Fixtures/NOTICE` is compatible with it
+- [x] 1.1 Decide the public name given the collision with `ZehMatt/PBXEdit` — decided 2026-09-22: the name stays `pbxedit`; no renames; the `<org>/<name>` placeholders are filled with `simplekube-ro/pbxedit`
+- [x] 1.2 Choose the licence; add `LICENSE` and the licence line in `README.md`; verify `Tests/Fixtures/NOTICE` is compatible with it — MIT (2026-09-22); `LICENSE` added, `README.md` created with the Install/Pinning/Supported platforms sections and a Licence section; every corpus file is MIT per `NOTICE`
 - [ ] 1.3 (pending-user) Create the Homebrew tap repository and a fine-grained token with contents-write on it only, stored as the `TAP_TOKEN` secret; verify the secret is visible to the release workflow
 
 ## 2. Version

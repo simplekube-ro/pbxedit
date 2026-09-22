@@ -42,7 +42,7 @@ The formula downloads the release archive and installs the binary; no build from
 
 ```sh
 V=1.2.0; SUM=<sha256>
-curl -fsSL -o pbxedit.tgz "https://github.com/<org>/<name>/releases/download/v$V/pbxedit-$V-macos-universal.tar.gz"
+curl -fsSL -o pbxedit.tgz "https://github.com/simplekube-ro/pbxedit/releases/download/v$V/pbxedit-$V-macos-universal.tar.gz"
 echo "$SUM  pbxedit.tgz" | shasum -a 256 -c - && tar -xzf pbxedit.tgz -C .tools
 ```
 

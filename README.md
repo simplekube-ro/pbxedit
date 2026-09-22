@@ -1,3 +1,21 @@
+# pbxedit
+
+A Swift command-line tool that manages **file membership** in an Xcode
+`project.pbxproj`: `add`, `move`, `remove`, `query`, and `lint [--fix]`.
+It edits the project file losslessly — untouched bytes are never rewritten —
+and checks the result against a rule set before anything is written.
+
+```sh
+pbxedit add App/Views/Settings.swift            # infers target, phase and group from siblings
+pbxedit move App/Old.swift App/Legacy/Old.swift  # after you moved the file on disk
+pbxedit remove App/Legacy/Old.swift
+pbxedit query App/Views/Settings.swift --json
+pbxedit lint --fix --dry-run                     # repairs orphans and dangling entries
+```
+
+Every command takes `--project`, `--json` and, for mutations, `--dry-run`
+(prints the plan and a unified diff). Conventions can be pinned in a
+`.pbxedit.yml`; see `docs/design.md` § Config.
 
 ## Install
 
@@ -48,3 +66,21 @@ this way are unaffected by any later release.
   attribute, so there is no Gatekeeper prompt; if a browser download shows
   one, please report it.
 - No Linux or Windows builds.
+
+## Development
+
+```sh
+swift build
+swift test                                        # read the summary, not the exit code
+swift test -c release --filter PerformanceTests   # the release-build performance checks
+swift test --filter CLITests.OracleTests          # xcodebuild -list reads every post-operation fixture
+```
+
+The design is in `docs/design.md`; the work is organised as OpenSpec changes
+under `openspec/`. Releases follow `docs/RELEASING.md`.
+
+## Licence
+
+MIT — see `LICENSE`. The test corpus under `Tests/Fixtures/corpus/` is
+third-party material, each file MIT-licensed by its upstream project;
+provenance and licence texts are recorded in `Tests/Fixtures/NOTICE`.
