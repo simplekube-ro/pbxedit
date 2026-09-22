@@ -31,7 +31,7 @@
 
 ## 6. Documentation
 
-- [ ] 6.1 Add Install, Pinning (design D5 snippet) and Supported platforms sections to `README.md`; add a CI step that runs the pinning snippet against the latest release with both a right and a wrong checksum; verify the step passes after the first real release — *owner: README is gated on the public name (1.1); the three sections are drafted in the report*
+- [x] 6.1 Add Install, Pinning (design D5 snippet) and Supported platforms sections to `README.md`; add a CI step that runs the pinning snippet against the latest release with both a right and a wrong checksum; verify the step passes after the first real release — *`README.md` sections added with the name decision (1.1); the advisory `pinning` job in `ci.yml` runs the snippet against the latest release (right checksum: fetch, verify, extract, `--version` equals the release; wrong checksum: `shasum` fails and nothing is extracted) and passed on PR #8 against `v1.0.0`*
 - [x] 6.2 Write the failing `CLITests.ReleasingDocumentTests` (the Release checklist scenario's four items as section headings), then `docs/RELEASING.md` with the version bump, the manual Xcode open-and-save check with a field for the Xcode version, the tag command, and the post-release Homebrew verification; verify the test passes and the document satisfies the scenario line by line
 
 ## 7. First releases
