@@ -24,5 +24,20 @@ jobs:
         run: swift test
       - name: Performance (release build)
         run: swift test -c release --filter PerformanceTests
-      - name: Oracle (xcodebuild -list on post-operation fixtures)
-        run: swift test --filter CLITests.OracleTests
+  oracle:
+    name: oracle (xcodebuild -list on post-operation fixtures)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      ORACLE_REQUIRED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select the newest Xcode on the image
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+          echo "Selecting $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+          swift --version
+      - name: Oracle
+        run: swift test --filter 'CLITests.OracleTests|CLITests.OracleGateTests'
