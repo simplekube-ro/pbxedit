@@ -51,19 +51,33 @@ public struct Change: Equatable, Sendable {
 /// names every object the steps create or modify and every object the plan
 /// reuses, which is the scope of the pre-write check.
 public struct Plan: Equatable, Sendable {
+    /// One file's old and new path (`move` design D7); empty for every other
+    /// command. Decisions, changes and notes are keyed by `to`.
+    public struct Move: Equatable, Sendable {
+        public let from: String
+        public let to: String
+
+        public init(from: String, to: String) {
+            self.from = from
+            self.to = to
+        }
+    }
+
     public var steps: [Step]
     public var changes: [Change]
     public var decisions: [Decision]
     public var notes: [String]
     public var touched: Set<ObjectID>
+    public var moves: [Move]
 
     public init(steps: [Step] = [], changes: [Change] = [], decisions: [Decision] = [], notes: [String] = [],
-                touched: Set<ObjectID> = []) {
+                touched: Set<ObjectID> = [], moves: [Move] = []) {
         self.steps = steps
         self.changes = changes
         self.decisions = decisions
         self.notes = notes
         self.touched = touched
+        self.moves = moves
     }
 
     /// Nothing to write.

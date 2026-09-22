@@ -17,6 +17,9 @@ public struct PlanBuilder {
     private var minter: IDMinter
     public private(set) var plan = Plan()
     public private(set) var plannedGroups: [String: PlannedGroup] = [:]
+    /// Every child this plan adds to a group, by group, so that pruning can
+    /// tell a group emptied by the plan from one the plan refills.
+    public internal(set) var addedChildren: [ObjectID: [ObjectID]] = [:]
     /// The children of every group this plan has looked at or added to,
     /// existing and planned, in the order they will have after the plan.
     var knownChildren: [ObjectID: [(id: ObjectID, name: String)]] = [:]
@@ -44,6 +47,8 @@ public struct PlanBuilder {
     public mutating func decide(_ decision: Decision) { plan.decisions.append(decision) }
 
     public mutating func note(_ text: String) { plan.notes.append(text) }
+
+    public mutating func move(_ move: Plan.Move) { plan.moves.append(move) }
 
     public mutating func planGroup(_ group: PlannedGroup, for directory: String) {
         plannedGroups[directory] = group

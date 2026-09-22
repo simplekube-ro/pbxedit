@@ -1,15 +1,37 @@
 import Foundation
 import XCTest
 
-/// The oracle lane (add-command task 7.1, remove-command task 6.3):
-/// `xcodebuild -list -json -project` reads every post-operation project.
-/// Skipped cleanly where `xcodebuild` is absent.
+/// The oracle lane (add-command task 7.1, remove-command task 6.3,
+/// move-command task 6.3): `xcodebuild -list -json -project` reads every
+/// post-operation project. Skipped cleanly where `xcodebuild` is absent.
 final class OracleTests: XCTestCase {
     private static let xcodebuild = URL(fileURLWithPath: "/usr/bin/xcodebuild")
 
-    /// Each entry: a fixture, the files to create, and the invocations
-    /// (subcommand first) to run on it before the oracle reads it.
+    /// Each entry: a fixture, the files to create (for `move`, the
+    /// destinations, as the user's own move leaves them), and the
+    /// invocations (subcommand first) to run on it before the oracle reads it.
     private static let scenarios: [(name: String, fixture: String, files: [String], invocations: [[String]])] = [
+        ("move: within a target", "move/app.pbxproj", ["App/Features/Foo.swift"], [["move", "App/Views/Foo.swift", "App/Features/Foo.swift"]]),
+        ("move: groups created", "move/app.pbxproj", ["App/Features/Modern/Foo.swift"], [["move", "App/Views/Foo.swift", "App/Features/Modern/Foo.swift"]]),
+        ("move: source-root reference into a name-only group", "move/app.pbxproj", ["AppTests/State/FooTests.swift"],
+         [["move", "AppTests/Views/FooTests.swift", "AppTests/State/FooTests.swift"]]),
+        ("move: source-root reference respelled", "move/app.pbxproj", ["AppTests/Services/StateTests.swift"],
+         [["move", "AppTests/State/StateTests.swift", "AppTests/Services/StateTests.swift"]]),
+        ("move: rename in place", "move/app.pbxproj", ["App/New.swift"], [["move", "App/Old.swift", "App/New.swift"]]),
+        ("move: rename changing the extension", "move/app.pbxproj", ["App/Old.m"], [["move", "App/Old.swift", "App/Old.m"]]),
+        ("move: cross-target", "move/app.pbxproj", ["AppSlowTests/Services/RateTests.swift"],
+         [["move", "AppTests/Services/RateTests.swift", "AppSlowTests/Services/RateTests.swift"]]),
+        ("move: cross-target with --keep-membership", "move/app.pbxproj", ["AppSlowTests/Services/RateTests.swift"],
+         [["move", "AppTests/Services/RateTests.swift", "AppSlowTests/Services/RateTests.swift", "--keep-membership"]]),
+        ("move: platform filters dropped", "move/app.pbxproj", ["App/Shared/Panel.swift"], [["move", "App/iOS/Panel.swift", "App/Shared/Panel.swift"]]),
+        ("move: --target and --platform", "move/app.pbxproj", ["App/Mixed/Foo.swift"],
+         [["move", "App/Views/Foo.swift", "App/Mixed/Foo.swift", "--target", "AppExtension", "--platform", "ios"]]),
+        ("move: into a synchronized folder", "move/app.pbxproj", ["App/Generated/User.swift"], [["move", "App/Models/User.swift", "App/Generated/User.swift"]]),
+        ("move: directory rename", "move/app.pbxproj",
+         ["App/Views/Modern/Top.swift", "App/Views/Modern/A/A1.swift", "App/Views/Modern/A/A2.swift", "App/Views/Modern/B/B1.swift", "App/Views/Modern/B/B2.swift"],
+         [["move", "App/Views/Legacy", "App/Views/Modern"]]),
+        ("move then add then remove", "move/app.pbxproj", ["App/Features/Foo.swift", "App/Views/Bar.swift"],
+         [["move", "App/Views/Foo.swift", "App/Features/Foo.swift"], ["add", "App/Views/Bar.swift"], ["remove", "App/Features/Foo.swift"]]),
         ("add: new file", "add/app.pbxproj", ["App/Views/Bar.swift"], [["add", "App/Views/Bar.swift"]]),
         ("add: groups created", "add/app.pbxproj", ["App/Features/New/Thing.swift"], [["add", "App/Features/New/Thing.swift"]]),
         ("add: second target", "add/app.pbxproj", ["App/Services/Rate.swift"], [["add", "App/Services/Rate.swift", "--target", "AppExtension"]]),

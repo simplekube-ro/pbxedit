@@ -53,22 +53,8 @@ public enum RemovePlanner {
         }
 
         // Design D1: referrers first — phase entries, build files, group children, the reference.
-        for entry in membership.buildFiles {
-            for listing in entry.phases {
-                removePhaseEntry(entry.buildFile.id, from: listing, path: path, builder: &builder)
-            }
-            builder.add(.deleteObject(entry.buildFile.id), touching: [entry.buildFile.id])
-            builder.record(Change(path: path, action: .deletedObject, object: entry.buildFile.id,
-                                  detail: "build file in \(RemovePlanner.owners(of: entry))"))
-        }
-        for parent in parents {
-            builder.add(.removeChild(reference.id, from: parent.id), touching: [parent.id])
-            builder.record(Change(path: path, action: .removedChild, object: parent.id, detail: "child of group \(builder.describe(parent.id))"))
-            removedChildren[parent.id, default: []].append(reference.id)
-            emptied.append((parent.id, path))
-        }
-        builder.add(.deleteObject(reference.id), touching: [reference.id])
-        builder.record(Change(path: path, action: .deletedObject, object: reference.id, detail: "file reference \(path)"))
+        removeEverything(path, reference: reference, parents: parents, membership: membership, builder: &builder,
+                         removedChildren: &removedChildren, emptied: &emptied)
     }
 
     /// Design D4: only the named target's listings go; a build file left in
@@ -83,6 +69,20 @@ public enum RemovePlanner {
         guard membership.targets.contains(where: { $0.id == target.id }) else {
             throw PlanError.notMemberOfTarget(path: path, target: targetName, targets: membership.targets.map { $0.name ?? $0.id.rawValue })
         }
+        let remaining = detach(path, membership: membership, from: target, builder: &builder)
+        for parent in project.parents(of: reference.id) { builder.touch(parent.id) }
+        if !remaining {
+            builder.note("\(path): now built by no target; the file reference and its group child remain")
+        }
+    }
+
+    /// The steps of design D4 for one target, shared with `MovePlanner`:
+    /// each listing in a phase `target` owns goes, a build file left in no
+    /// phase is deleted, one still listed elsewhere is kept. Returns whether
+    /// some build file of the reference is still in a phase afterwards.
+    @discardableResult
+    static func detach(_ path: String, membership: Membership, from target: Target, builder: inout PlanBuilder) -> Bool {
+        let targetName = target.name ?? target.id.rawValue
         var remaining = false
         for entry in membership.buildFiles {
             let owned = entry.phases.filter { listing in listing.targets.contains { $0.id == target.id } }
@@ -101,10 +101,31 @@ public enum RemovePlanner {
                 builder.touch(entry.buildFile.id)
             }
         }
-        for parent in project.parents(of: reference.id) { builder.touch(parent.id) }
-        if !remaining {
-            builder.note("\(path): now built by no target; the file reference and its group child remain")
+        return remaining
+    }
+
+    /// Design D1's referrers-first removal of one reference, shared with
+    /// `MovePlanner` (a move into a synchronized folder). The caller has
+    /// already checked the parents' kinds and decided about shared targets.
+    static func removeEverything(_ path: String, reference: FileReference, parents: [Group], membership: Membership,
+                                 describedAs described: String? = nil, builder: inout PlanBuilder,
+                                 removedChildren: inout [ObjectID: [ObjectID]], emptied: inout [(group: ObjectID, path: String)]) {
+        for entry in membership.buildFiles {
+            for listing in entry.phases {
+                removePhaseEntry(entry.buildFile.id, from: listing, path: path, builder: &builder)
+            }
+            builder.add(.deleteObject(entry.buildFile.id), touching: [entry.buildFile.id])
+            builder.record(Change(path: path, action: .deletedObject, object: entry.buildFile.id,
+                                  detail: "build file in \(RemovePlanner.owners(of: entry))"))
         }
+        for parent in parents {
+            builder.add(.removeChild(reference.id, from: parent.id), touching: [parent.id])
+            builder.record(Change(path: path, action: .removedChild, object: parent.id, detail: "child of group \(builder.describe(parent.id))"))
+            removedChildren[parent.id, default: []].append(reference.id)
+            emptied.append((parent.id, path))
+        }
+        builder.add(.deleteObject(reference.id), touching: [reference.id])
+        builder.record(Change(path: path, action: .deletedObject, object: reference.id, detail: "file reference \(described ?? path)"))
     }
 
     private static func removePhaseEntry(_ buildFile: ObjectID, from listing: Membership.PhaseEntry, path: String, builder: inout PlanBuilder) {
@@ -131,7 +152,11 @@ public enum RemovePlanner {
     /// Design D5: walk up from each group that lost a child; a `PBXGroup`
     /// left with nothing, other than the main group and the products group,
     /// is removed from its parents and deleted, and the walk continues.
-    private static func prune(_ emptied: [(group: ObjectID, path: String)], removedChildren: [ObjectID: [ObjectID]], builder: inout PlanBuilder) {
+    /// The children the same plan gives a group (`builder.addedChildren`: a
+    /// move can empty a group and refill it with a new subgroup) count as
+    /// remaining. Shared with `MovePlanner`.
+    static func prune(_ emptied: [(group: ObjectID, path: String)], removedChildren: [ObjectID: [ObjectID]], builder: inout PlanBuilder) {
+        let addedChildren = builder.addedChildren
         let project = builder.project
         let mainGroup = project.mainGroup?.id
         let productRefGroup = project.rootObject?.id("productRefGroup")
@@ -147,6 +172,7 @@ public enum RemovePlanner {
             for child in removed[id] ?? [] {
                 if let position = remaining.firstIndex(of: child) { remaining.remove(at: position) }
             }
+            remaining += addedChildren[id] ?? []
             guard remaining.isEmpty else { continue }
             pruned.insert(id)
             for parent in project.parents(of: id) {
