@@ -5,7 +5,9 @@ Status: approved design (2026-09-21). Implemented so far: layer 1, `PBXSyntax`
 `typed-project-model`); the rule set in layer 3, `PBXOps`, and the CLI
 skeleton with `lint` (change `integrity-rules-lint`); `query`, the
 path-argument convention and the `MembershipReport` shape (change
-`query-command`).
+`query-command`); `add`, with the operation machinery every mutating command
+shares — `Plan`, `OperationRunner`, sibling inference, `--dry-run` — (change
+`add-command`).
 
 ## Purpose
 
@@ -112,21 +114,36 @@ A view, not a second copy of the data.
 ### 3. `PBXOps` — operations
 
 Pure functions: `(model, request, conventions) → Plan`. A Plan is a list of
-primitive edits plus a human-readable and JSON description.
+primitive edits (`Step`: create a file reference, group or build file; add or
+remove a child or a phase entry; delete an object; set an attribute; refresh
+annotations) plus a human-readable and JSON description: one `Change` per
+object created, reused or modified, one `Decision` per attribute decided with
+its provenance, and notes. IDs are minted while planning, so the plan names
+them.
 
-- The invariant checker (below) runs on the post-edit model **before** anything
-  is written. Any violation among touched objects aborts the operation.
+- The plan is executed on a copy of the model in memory, and the invariant
+  checker (below) runs on the result **before** anything is written, scoped to
+  the objects the plan touched *or reused*. Any error among them aborts the
+  operation; warnings are reported and do not.
 - `conventions` is sibling inference merged with the config file and flags.
+  Planners only ever ask `Conventions` (`targets(for:)`,
+  `platformFilters(for:target:)`, `phase(for:)`); each answer is `flags ??
+  config ?? inference`, so the config layer arrives without planner changes.
+- `OperationRunner` (in this layer, called by the CLI) owns everything after
+  planning: execute, check, write, verify — the pipeline § 4 describes.
 
 ### 4. CLI
 
 `add`, `move`, `remove`, `lint [--fix]`, `query`.
 
-- `--dry-run` prints the plan and a unified diff. `--json` on every command.
-- Write is temp-file-then-rename. The written bytes are re-parsed and the
-  invariants re-checked.
+- `--dry-run` prints the plan and a unified diff, and exits with the code the
+  real run would have. `--json` on every command.
+- Write is temp-file-then-rename (`project.pbxproj.pbxedit-<pid>` beside the
+  file, `fsync`, `rename(2)`). The written bytes are read back, re-parsed and
+  the invariants re-checked over the same scope; a failure restores the
+  original bytes. A plan with no steps writes nothing at all.
 - The "modified / not modified" line is derived from one fact: whether the
-  bytes on disk were replaced.
+  bytes on disk were replaced — computed once, from the bytes read back.
 - Exit codes: `0` success or no-op, `1` rule violation or refused operation,
   `2` usage or parse error. For `lint`, whose job is to report, a file that
   does not parse or load is the S1 finding and exits `1`; `2` is for usage
@@ -151,7 +168,7 @@ primitive edits plus a human-readable and JSON description.
 
 | Command | Behaviour |
 |---|---|
-| `add <path>…` | File must exist on disk. Creates the file reference, group chain, build file and phase entry as one plan. Re-adding an existing member is a no-op, never a second ID |
+| `add <path>…` | File must exist on disk (a bundle directory such as `.xcassets` counts as a file). Creates whatever is missing — file reference, group chain, build file, phase entry — as one plan, reusing what exists: re-adding a member is a no-op, never a second ID, and partial membership is completed with the existing objects. `--target <name>` (repeatable) replaces the inferred targets, `--platform <list>|none` the inferred `platformFilters`, `--phase sources|resources|headers|none` the phase the file type implies; an unknown extension needs `--phase`. A path in a synchronized folder is reported as already a member. Output lists each decision with its provenance and each object with its ID; `--json` carries `decisions`, `changes`, `notes`, `findings`, `diff` and the membership report per path |
 | `move <from> <to>` | File must already be at `<to>` on disk. Re-parents the reference, rewrites its path, and swaps build-phase membership when the destination implies different targets |
 | `remove <path>…` | Removes build files, phase entries, the group child and the reference. If several targets use the reference, requires `--target` to detach one or `--all` |
 | `lint` | Runs the rule set; errors before warnings, each ordered by rule then object ID. `--fix` repairs what is unambiguous; `--write-baseline <file>` records the current findings (keyed by rule and object ID) and exits 0; `--baseline <file>` reports and fails only on findings not in the baseline, and lists entries that no longer occur as resolved; `--disk` enables disk rules; `--strict` makes warnings fail |
@@ -221,16 +238,18 @@ D1 and D2 can hold a disk reader, by construction.
 
 ### Sibling inference for `add`
 
-Siblings are file references whose resolved path is in the same directory and
-of the same kind (source or resource). If there are none, walk up to the
-nearest ancestor directory that has some.
+Siblings are file references whose resolved path is in the same directory, of
+the same kind (source, resource, header or project-only, by extension) and
+built by some target — a file no target builds abstains. If there are none,
+walk up to the nearest ancestor directory that has some; none anywhere is an
+error asking for `--target`.
 
 | Attribute | Rule |
 |---|---|
 | Targets | The **intersection** of the siblings' target sets. Targets that only some siblings belong to are reported as a note. An empty intersection is an error listing the variants |
-| `platformFilters` | Must be unanimous among siblings, otherwise an error asking for `--platform` |
-| `sourceTree` and `path` | Derived structurally, not inferred: if the destination group chain resolves to the file's directory, `<group>` plus basename; otherwise `SOURCE_ROOT` plus the full path |
-| Build phase | From the file type |
+| `platformFilters` | Per chosen target, must be unanimous among the siblings' build files in that target, otherwise an error asking for `--platform`. When no sibling is built by the target, none — Xcode's default |
+| `sourceTree` and `path` | Derived structurally, not inferred: the group for a directory is the one resolving to it (preferring one with its own `path`), the source root's being the main group; if none, a name-only group named like the directory under the parent directory's group is reused, else the missing chain is created. A reference under a group that resolves to its directory is `<group>` plus basename; under a name-only group it is `SOURCE_ROOT` plus the full path, with `name`. A created group follows the same rule relative to its parent. A new child goes in name order when the group's children already are, last otherwise |
+| Build phase | From the file type: a static extension table, never a default. An unknown extension is an error asking for `--phase`; with `--phase` it is written as `lastKnownFileType = file` |
 
 Precedence: flags, then config, then inference. Every decision is printed with
 its provenance, for example `target: AppTests (inferred, 94 siblings)`.

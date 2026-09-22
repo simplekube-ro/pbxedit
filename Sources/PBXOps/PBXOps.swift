@@ -1,5 +1,7 @@
 // PBXOps — operations over a project model.
 //
 // This layer turns the model's observations into judgements (the rule set)
-// and, in later changes, into plans. It reads the model and never writes a
-// file; the command-line layer owns the disk.
+// and into plans (pure functions from a model, a request and conventions).
+// Planners never touch the disk; the one thing here that does is
+// `OperationRunner`, which executes a plan, checks it, writes the project
+// file atomically and verifies what it wrote, on behalf of the command line.

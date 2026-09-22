@@ -1,0 +1,138 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BF14 /* Bar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB14 /* Bar.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AB12 /* Foo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Foo.swift; sourceTree = "<group>"; };
+		AB13 /* Foo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Foo.swift; path = App/Foo.swift; sourceTree = SOURCE_ROOT; };
+		AB14 /* Bar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bar.swift; sourceTree = "<group>"; };
+		AF01 /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		G001 = {
+			isa = PBXGroup;
+			children = (
+				G002 /* App */,
+				AB13 /* Foo.swift */,
+				G003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		G002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AB12 /* Foo.swift */,
+				AB14 /* Bar.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		G003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AF01 /* App.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		T001 /* App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CL02 /* Build configuration list for PBXNativeTarget "App" */;
+			buildPhases = (
+				S001 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = App;
+			productName = App;
+			productReference = AF01 /* App.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		P001 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = CL01 /* Build configuration list for PBXProject "App" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = G001;
+			productRefGroup = G003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				T001 /* App */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		S001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BF14 /* Bar.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		BC01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		BC02 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.App;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CL01 /* Build configuration list for PBXProject "App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC01 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CL02 /* Build configuration list for PBXNativeTarget "App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC02 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = P001 /* Project object */;
+}

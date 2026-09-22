@@ -97,7 +97,7 @@ struct S4Rule: Rule {
     let id = RuleID.S4
 
     /// The names Xcode writes, in the order Xcode's target editor lists them.
-    static let knownPlatforms = ["ios", "maccatalyst", "macos", "tvos", "watchos", "xros", "driverkit"]
+    static let knownPlatforms = PlatformFilters.known
 
     func evaluate(_ project: Project) -> [Finding] {
         var findings: [Finding] = []

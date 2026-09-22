@@ -31,6 +31,7 @@ None.
 
 ## Impact
 
-- New: `Sources/PBXOps/Plan/`, `Sources/PBXOps/Inference/`, `Sources/PBXOps/Add/`, `Sources/pbxedit/Add.swift`, tests and fixtures.
-- `docs/design.md`: `--phase` added to the `add` row of the Commands table.
+- New: `Sources/PBXOps/Plan/` (`Plan`, `Step`, `PlanBuilder`, the in-memory executor, `OperationRunner`, the unified diff), `Sources/PBXOps/Inference/` (`FileTypes`, `Conventions`, `Decision`), `Sources/PBXOps/Add/` (the add planner and group resolution), `Sources/pbxedit/Add.swift`; fixtures under `Tests/Fixtures/add/` (each with build configuration lists, because `xcodebuild -list` refuses a project without them, and the oracle lane reads every post-add fixture).
+- `docs/design.md`: `--phase` added to the `add` row of the Commands table; the write pipeline is recorded as living in `PBXOps` (`OperationRunner`), called by the CLI, rather than in the CLI itself, so tests can drive it with hand-built plans; the status line names this change.
+- `PBXModel`: a `Project` copy now gets its own index cache on first mutation (copy-on-write), so executing a plan on a copy cannot leave the caller's original with a patched section map or path index. Found by task 1.1's "a failing step leaves the original unchanged" test.
 - Reuses `PathArgument` and `MembershipReport` from `query-command`; depends on `integrity-rules-lint` for the scoped check.

@@ -74,5 +74,29 @@ final class TemporaryProject {
 
     func bytes() throws -> [UInt8] { Array(try Data(contentsOf: pbxproj)) }
 
+    /// Creates a file (or, with `directory`, a directory) at `relativePath`
+    /// under the source root, with any intermediate directories.
+    @discardableResult
+    func touch(_ relativePath: String, directory: Bool = false) throws -> URL {
+        let url = root.appendingPathComponent(relativePath)
+        if directory {
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        } else {
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try Data("// \(relativePath)\n".utf8).write(to: url)
+        }
+        return url
+    }
+
+    /// Everything beside `project.pbxproj` in the `.xcodeproj`.
+    func leftovers() throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: xcodeproj.path).filter { $0 != "project.pbxproj" }.sorted()
+    }
+
     deinit { try? FileManager.default.removeItem(at: root) }
+}
+
+/// The JSON object on standard output, or a failure naming the output.
+func jsonObject(_ result: RunResult, file: StaticString = #filePath, line: UInt = #line) throws -> [String: Any] {
+    try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(result.stdout.utf8)) as? [String: Any], result.stdout + result.stderr, file: file, line: line)
 }

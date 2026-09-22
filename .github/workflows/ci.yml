@@ -24,3 +24,5 @@ jobs:
         run: swift test
       - name: Performance (release build)
         run: swift test -c release --filter PerformanceTests
+      - name: Oracle (xcodebuild -list on post-operation fixtures)
+        run: swift test --filter CLITests.OracleTests
