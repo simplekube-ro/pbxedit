@@ -12,6 +12,7 @@ struct PbxEdit: ParsableCommand {
             Exit codes: 0 success or no-op, 1 rule violation or refused operation, \
             2 usage or parse error.
             """,
+        version: Version.current,
         subcommands: [Add.self, Move.self, Remove.self, Lint.self, Query.self]
     )
 

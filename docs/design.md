@@ -12,7 +12,10 @@ exemptions and the baseline default (change `conventions-config`); `remove`,
 with `--target`/`--all`, empty-group pruning and the widened check scope
 (change `remove-command`); `move`, with directory moves, `--keep-membership`
 and the disk preconditions (change `move-command`); `lint --fix`, with the
-whole-project verification (change `lint-fix`).
+whole-project verification (change `lint-fix`); `--version`, the
+`ORACLE_REQUIRED` oracle mode and `docs/RELEASING.md` (change
+`release-distribution`, in progress — the release workflow, the tap and the
+first release wait on the owner's name, licence and tap decisions).
 
 ## Purpose
 
@@ -187,6 +190,12 @@ them.
 
 - `--dry-run` prints the plan and a unified diff, and exits with the code the
   real run would have. `--json` on every command.
+- `--version` prints one line and exits `0`: the release version
+  (`1.0.0`) from `Sources/pbxedit/Version.swift`, which the release workflow
+  sets from the tag and refuses when they disagree; a development build
+  prints the next version with `-dev` and, when `PBXEDIT_BUILD_HASH` holds a
+  commit hash, `+` and its first seven characters (`1.0.0-dev+0123abc`). A
+  release build ignores the variable.
 - Write is temp-file-then-rename (`project.pbxproj.pbxedit-<pid>` beside the
   file, `fsync`, `rename(2)`). The written bytes are read back, re-parsed and
   the invariants re-checked over the same scope; a failure restores the
@@ -402,9 +411,13 @@ Development is test-first.
   a snapshot of the diff. Every operation test also asserts the rule set is
   clean and `plutil -lint` passes.
 - **Oracle lane (macOS CI):** `xcodebuild -list` reads every post-operation
-  fixture.
+  fixture (`CLITests.OracleTests`, 33 scenarios over `add`, `remove`, `move`
+  and `lint --fix` plus the repaired workload substitute). The suite skips
+  where `xcodebuild` is unusable, except under `ORACLE_REQUIRED=1`, which
+  the CI `oracle` job sets so it fails instead; that job is a required check
+  for merging and for releasing.
 - **Pre-release, manual:** open a post-operation project in Xcode, save, expect
-  no diff.
+  no diff — `docs/RELEASING.md` § 2, which records the Xcode version used.
 - **Regression fixtures:** one per failure in the Motivation table. The first
   is the prefix-match case: two objects whose IDs are `X` and `X0`.
 
@@ -412,6 +425,25 @@ Development is test-first.
 
 Universal macOS binary on GitHub Releases, a Homebrew tap, and `swift run` /
 Mint from source.
+
+- Releases are built from tags `vMAJOR.MINOR.PATCH` by a workflow that needs
+  the `test` and `oracle` checks, checks the tag against `Version.swift`,
+  builds `swift build -c release --arch arm64 --arch x86_64`, asserts
+  `lipo -archs` lists both architectures and every slice's
+  `LC_BUILD_VERSION` has `minos 13.0` (the `Package.swift` minimum), and
+  publishes `pbxedit-<version>-macos-universal.tar.gz` with a `.sha256`
+  file. Pinned use is `curl` + `shasum -a 256 -c` + `tar`, ten lines of
+  shell, documented in the README.
+- The tap formula installs the prebuilt binary (no toolchain needed) and its
+  test block runs `pbxedit --version`; the release workflow commits the new
+  `url`, `sha256` and `version` to the tap.
+- Minimum macOS 13, declared in `Package.swift`, stated in the README and
+  asserted on the released binary.
+- `docs/RELEASING.md` is the procedure: version bump, the manual Xcode
+  open-and-save check with the Xcode version recorded, the tag, the
+  post-release Homebrew and pinning verification.
+- Not notarized: `curl` and Homebrew set no quarantine attribute; revisit if
+  users report Gatekeeper prompts. No Linux or Windows binaries.
 
 ## Out of scope for v1
 
