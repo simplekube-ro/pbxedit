@@ -415,7 +415,13 @@ Development is test-first.
   and `lint --fix` plus the repaired workload substitute). The suite skips
   where `xcodebuild` is unusable, except under `ORACLE_REQUIRED=1`, which
   the CI `oracle` job sets so it fails instead; that job is a required check
-  for merging and for releasing.
+  for merging and for releasing. What it guards is narrower than the name
+  suggests: `-list` refuses a project only for top-level damage (an unknown
+  `objectVersion`, a dangling `rootObject` or `mainGroup`) and accepts
+  object-level corruption that the rule set already refuses before a write
+  (measured on Xcode 27; the archived `release-distribution` design has the
+  table). Object-level correctness rests on the rule set and on the manual
+  open-and-save check; the lane proves Xcode still opens what pbxedit wrote.
 - **Pre-release, manual:** open a post-operation project in Xcode, save, expect
   no diff — `docs/RELEASING.md` § 2, which records the Xcode version used.
 - **Regression fixtures:** one per failure in the Motivation table. The first
