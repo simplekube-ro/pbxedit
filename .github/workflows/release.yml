@@ -14,6 +14,7 @@ permissions:
 
 env:
   TOOL_NAME: pbxedit                          # decided: the name stays pbxedit
+  TAP_NAME: simplekube-ro/tap                 # brew's short name for simplekube-ro/homebrew-tap
 
 jobs:
   test:
@@ -136,18 +137,24 @@ jobs:
           grep -q "sha256 \"$SUM\"" "$FORMULA"
           git -C tap diff
 
-      - name: Install and test the formula against the published release
-        run: |
-          brew install --formula "./tap/Formula/$TOOL_NAME.rb"
-          [ "$("$(brew --prefix)/bin/$TOOL_NAME" --version)" = "$VERSION" ]
-          brew test "$TOOL_NAME"
-          brew audit --strict --formula "./tap/Formula/$TOOL_NAME.rb" || true   # advisory until the tap has been audited once
-
-      - name: Commit and push the tap
+      - name: Commit the formula locally
         run: |
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "Formula/$TOOL_NAME.rb"
           git commit -m "$TOOL_NAME $VERSION"
-          git push
+
+      # Homebrew only installs formulae that live in a tap, so the checkout is
+      # tapped from its local clone (the commit above is what gets cloned) and
+      # the formula is installed by its tap name — the same way users will.
+      - name: Install and test the formula against the published release
+        run: |
+          brew tap "$TAP_NAME" "$PWD/tap"
+          brew install "$TAP_NAME/$TOOL_NAME"
+          [ "$("$(brew --prefix)/bin/$TOOL_NAME" --version)" = "$VERSION" ]
+          brew test "$TAP_NAME/$TOOL_NAME"
+          brew audit --strict "$TAP_NAME/$TOOL_NAME" || true   # advisory until the tap has been audited once
+
+      - name: Push the tap
+        run: git -C tap push
