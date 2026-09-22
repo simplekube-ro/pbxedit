@@ -11,7 +11,8 @@ shares — `Plan`, `OperationRunner`, sibling inference, `--dry-run` — (change
 exemptions and the baseline default (change `conventions-config`); `remove`,
 with `--target`/`--all`, empty-group pruning and the widened check scope
 (change `remove-command`); `move`, with directory moves, `--keep-membership`
-and the disk preconditions (change `move-command`).
+and the disk preconditions (change `move-command`); `lint --fix`, with the
+whole-project verification (change `lint-fix`).
 
 ## Purpose
 
@@ -145,11 +146,18 @@ them.
   one place configuration reaches a planner directly, because the group
   question is deliberately not a convention.
 - `OperationRunner` (in this layer, called by the CLI) owns everything after
-  planning: execute, check, write, verify — the pipeline § 4 describes. In a
-  debug build it also asserts, once the scoped check has passed, that no ID
-  the plan deleted still occurs in the result as a whole identifier token
-  (`Plan.deletedObjectsMentioned(in:)`): a failure there would be a key
-  missing from S2's list, not a user error.
+  planning: execute, check, write, verify — the pipeline § 4 describes. Its
+  `verification` parameter is `.scoped` for every command but one: the
+  errors among the touched objects abort. `lint --fix` passes
+  `.wholeProject(before:selected:)`: the complete finding set of the result
+  is compared by identity (rule, object, related — `Finding.identity`) with
+  the set before, and a selected finding that survives or any finding that
+  was absent before, warning included, aborts. The scoped check would be
+  wrong for a repair, not just weaker: a touched phase may carry unrelated
+  damage no fixer can touch. In a debug build the runner also asserts, once
+  the check has passed, that no ID the plan deleted still occurs in the
+  result as a whole identifier token (`Plan.deletedObjectsMentioned(in:)`):
+  a failure there would be a key missing from S2's list, not a user error.
 - Planners so far: `Sources/PBXOps/Add/` (`AddPlanner`),
   `Sources/PBXOps/Remove/` (`RemovePlanner`, which takes `target`/`all`
   instead of conventions — nothing is inferred for a removal) and
@@ -162,7 +170,16 @@ them.
   before anything is planned, and `files(in:)` counts a directory move's
   unregistered files. Pruning counts the children a plan adds to a group
   (`PlanBuilder.addedChildren`) as remaining, so a group a move empties and
-  refills with a new subgroup survives.
+  refills with a new subgroup survives. `Sources/PBXOps/Repair/`
+  (`RepairPlanner`) is the planner behind `lint --fix`: one `Fixer` per
+  repairable rule turns a finding into steps or into the reason there are
+  none, M2 first, then M1, then M3, each rule's findings in report order, so
+  two runs plan the same steps; its `RepairPlan` carries the findings
+  repaired and the ones left with a reason, and keys the plan's changes and
+  decisions by finding (`M3 AB12`) where the commands key them by path.
+  The M3 fixer is add's group resolution and nothing else; the M1 fixer is
+  add's target inference with the flags empty; the M2 fixer is remove's
+  detach steps.
 
 ### 4. CLI
 
@@ -205,7 +222,7 @@ them.
 | `add <path>…` | File must exist on disk (a bundle directory such as `.xcassets` counts as a file). Creates whatever is missing — file reference, group chain, build file, phase entry — as one plan, reusing what exists: re-adding a member is a no-op, never a second ID, and partial membership is completed with the existing objects. `--target <name>` (repeatable) replaces the inferred targets, `--platform <list>|none` the inferred `platformFilters`, `--phase sources|resources|headers|none` the phase the file type implies; an unknown extension needs `--phase`. A path in a synchronized folder is reported as already a member. Output lists each decision with its provenance and each object with its ID; `--json` carries `decisions`, `changes`, `notes`, `findings`, `diff` and the membership report per path |
 | `move <from> <to>` | Records a move that has already happened on disk: `<to>` must exist and `<from>` must not (source still present is "move the file on disk first", both present is "looks like a copy; `add` the new file"); those two `exists` questions are the only disk reads. The reference keeps its ID and becomes a child of the group for the destination directory (created as needed; a rename within one directory keeps its listing in place); `path`, `sourceTree`, `name` and — when the extension changes — `lastKnownFileType` are rewritten only where they change, by `add`'s spelling rule, and every comment naming the file follows. Membership follows the destination: targets and `platformFilters` are decided as `add` decides them (`--target`, `--platform`, config, then the destination's siblings, for the file's kind by extension or else by its current phase), the file is detached from targets no longer chosen (as `remove --target`), attached to new ones (as `add`), and retained build files get their filters rewritten; when nothing differs nothing is written for membership, so a same-target move between pathful groups is a two-line diff. `--keep-membership` leaves targets and filters as they were and only notes what the destination's siblings belong to; an inference question at the destination is refused naming both `--target` and `--keep-membership`. A `<from>` no reference resolves to but some resolve beneath is a directory move: every member goes to the corresponding path under `<to>` as one plan, groups for the old tree fall to pruning, files on disk in the destination directories that no member maps to are counted in a note. A `<to>` inside a synchronized folder removes the file's explicit entries (the folder builds it now) and says so. Groups left empty are pruned as `remove` prunes. Exit `1` on the disk preconditions, on a `<from>` not in the project (a `<from>` under a synchronized folder points to `add <to>`), on a `<to>` some reference already resolves to (named), on a child of a variant or version group, and on a synchronized folder beneath a moved directory; `2` on `<from>` equal to `<to>`, on `--keep-membership` with `--target`/`--platform`, or an unknown target. `--dry-run`, `--json` and the output shape are `add`'s, each file's block headed `<from> -> <to>` and keyed by the destination path, plus a `moves` array (`[{from, to}]`) in the JSON |
 | `remove <path>…` | The file need not exist on disk; it is never read. Removes every build file of the reference, each from every phase listing it, the reference from every group listing it, and the reference — referrers first, enumerated from the indexes so damaged membership (no phase, no group, two build files in one target) is removed just the same. A `PBXGroup` the removal leaves empty is removed too, up the chain, never the main group or the products group, never a group that was empty before; each is listed. If the reference's build files are owned by several targets, requires `--target <name>` to detach it from that target only — its phase entries go, a build file left in no phase is deleted, the reference and its group child stay, and the output notes when no target builds it any more — or `--all`. Exit `1` on a path no reference resolves to (a typo must not pass silently), on `--target` naming a target the file is not in (listing the ones it is in), on a child of a variant or version group, and on a path covered only by a synchronized folder; `2` on a target name the project does not have or `--target` with `--all`. The pre-write and post-write checks are scoped to the touched objects *and every former referrer* of a deleted one (its groups, phases and their targets), and deleted IDs are searched for as whole tokens in the result. `--dry-run`, `--json` and the output shape are `add`'s |
-| `lint` | Runs the rule set; errors before warnings, each ordered by rule then object ID. `--fix` repairs what is unambiguous; `--write-baseline <file>` records the current findings (keyed by rule and object ID) and exits 0; `--baseline <file>` reports and fails only on findings not in the baseline, and lists entries that no longer occur as resolved (`lint.baseline` in the config is the default; `--no-baseline` ignores it); `lint.exempt` globs suppress and count findings; `--disk` enables disk rules; `--strict` makes warnings fail |
+| `lint` | Runs the rule set; errors before warnings, each ordered by rule then object ID. `--write-baseline <file>` records the current findings (keyed by rule and object ID) and exits 0; `--baseline <file>` reports and fails only on findings not in the baseline, and lists entries that no longer occur as resolved (`lint.baseline` in the config is the default; `--no-baseline` ignores it); `lint.exempt` globs suppress and count findings; `--disk` enables disk rules; `--strict` makes warnings fail. `--fix` repairs what is unambiguous (§ Severity and repair) as one plan and one write through the operation pipeline in whole-project verification, then reports as `lint` would on the result: each repaired finding with its decisions and changes, each remaining finding with `not fixable: <reason>` under the ones of a repairable rule, the summary with `N repaired, M not fixable`, the resolved-baseline lines and a hint to rewrite the baseline with `--write-baseline`, and the `modified` line derived from the write; the exit code is `lint`'s over what remains (baseline honoured for reporting and the exit code, never for choosing what to repair). `--fix --dry-run` adds the unified diff and writes nothing; `--dry-run` alone and `--fix --write-baseline` are usage errors. `--json` carries `modified`, `dryRun`, `repaired`, `remaining` (each with `reason`), `resolved`, `summary` (`lint`'s plus `repaired`, `notFixable`), `diff`, `error` |
 | `query <path>…` | Read-only: for each path, whether a file reference resolves to it, its ID, group path and groups, and each membership — target, phase, build file ID, `platformFilters` — or the synchronized group covering it. Facts, not findings: a missing group or phase is reported as such with a hint to run `lint`. Exits `1` when a path is neither a member nor covered, `2` when the project file does not load. `query --target <name>` lists every build-phase entry of a target by phase then path; an unknown name exits `2` listing the targets |
 
 ### Synchronized folders
@@ -263,10 +280,26 @@ D1 and D2 can hold a disk reader, by construction.
   and touches (a re-add, a `remove --target`) counts as touched, so a file
   whose own membership is damaged must be repaired or removed whole first. A
   mutation can never create a new orphan.
-- `lint --fix`: M1 adds the phase entry when the target is unambiguous; M2
-  drops the dangling entry; M3 inserts the reference into the group matching
-  its resolved path, creating groups as needed. It never mints an ID for an
-  object that already exists. `--fix --dry-run` prints the plan.
+- `lint --fix`: M1 adds the phase entry when the target is unambiguous — the
+  one target `add` would infer for the file with no flags (config, then the
+  siblings of its kind), in that target's phase for the file's type — and
+  deletes a build file in no phase whose file does not resolve; M2 drops the
+  dangling entry, every listing of it, and removes and deletes a build file
+  whose file does not resolve; M3 inserts the reference into the group
+  matching its resolved path, creating groups as needed, and never re-spells
+  it, so a `<group>`-relative orphan is grouped only where its `path` still
+  resolves to the same file (a bare basename into the main group; one with a
+  directory in it is reported, with `remove` then `add` as the way to
+  re-spell it). Everything else of those rules — no or several candidate
+  targets, a target without the phase, a target that already builds the
+  file, a build file in two phases, a reference with two parents or one that
+  is not project-relative — is reported with the reason. Repairs are planned
+  M2, then M1, then M3, in report order within a rule, as one plan and one
+  write. It never mints an ID for an object that already exists: the only
+  objects created are groups. The check is the whole rule set before and
+  after, by finding identity: every repaired finding must be gone and no
+  finding may appear, or nothing is written. `--fix --dry-run` prints the
+  plan and the diff.
 - Whether a file gets a group child is **never inferred from siblings**. It is
   always added unless the config exempts the path.
 

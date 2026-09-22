@@ -28,12 +28,6 @@ extension Project {
         return id.rawValue
     }
 
-    /// The objects of `objects`, each ID once (a duplicate ID is S3's finding).
-    var uniqueObjects: [Object] {
-        var seen: Set<ObjectID> = []
-        return objects.filter { seen.insert($0.id).inserted }
-    }
-
     /// The distinct phases listing `buildFile`, in object order.
     func distinctPhases(of buildFile: ObjectID) -> [BuildPhase] {
         var result: [BuildPhase] = []
@@ -48,7 +42,9 @@ struct M1Rule: Rule {
 
     func evaluate(_ project: Project) -> [Finding] {
         var findings: [Finding] = []
-        for buildFile in project.buildFiles where project.uniqueObjects.contains(where: { $0.id == buildFile.id }) {
+        // Each ID once: a duplicate ID is S3's finding, and its first entry is the one lookups return.
+        var seen: Set<ObjectID> = []
+        for buildFile in project.buildFiles where seen.insert(buildFile.id).inserted {
             let phases = project.distinctPhases(of: buildFile.id)
             guard phases.count != 1 else { continue }
             let file = buildFile.fileRef ?? buildFile.productRef
@@ -76,7 +72,8 @@ struct M2Rule: Rule {
     func evaluate(_ project: Project) -> [Finding] {
         var findings: [Finding] = []
         var reportedBuildFiles: Set<ObjectID> = []
-        for phase in project.buildPhases where project.uniqueObjects.contains(where: { $0.id == phase.id }) {
+        var seenPhases: Set<ObjectID> = []
+        for phase in project.buildPhases where seenPhases.insert(phase.id).inserted {
             var seen: Set<ObjectID> = []
             for entry in phase.files where seen.insert(entry).inserted {
                 guard let buildFile = project.buildFile(entry) else {
@@ -165,7 +162,8 @@ struct M5Rule: Rule {
 
     func evaluate(_ project: Project) -> [Finding] {
         var findings: [Finding] = []
-        for phase in project.buildPhases where project.uniqueObjects.contains(where: { $0.id == phase.id }) {
+        var seenPhases: Set<ObjectID> = []
+        for phase in project.buildPhases where seenPhases.insert(phase.id).inserted {
             var firstForFile: [ObjectID: ObjectID] = [:]
             var seen: Set<ObjectID> = []
             for entry in phase.files where seen.insert(entry).inserted {
@@ -215,7 +213,8 @@ struct M6Rule: Rule {
         var entries: [Entry] = []
         var filesByDirectory: [String: Set<ObjectID>] = [:]
         var filesByDirectoryAndTarget: [String: [ObjectID: Set<ObjectID>]] = [:]
-        for target in project.targets where project.uniqueObjects.contains(where: { $0.id == target.id }) {
+        var seenTargets: Set<ObjectID> = []
+        for target in project.targets where seenTargets.insert(target.id).inserted {
             for phaseID in target.buildPhases {
                 guard let phase = project.buildPhase(phaseID), phase.isa == "PBXSourcesBuildPhase" else { continue }
                 for entry in phase.files {

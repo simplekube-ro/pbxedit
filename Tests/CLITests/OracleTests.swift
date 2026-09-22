@@ -2,8 +2,9 @@ import Foundation
 import XCTest
 
 /// The oracle lane (add-command task 7.1, remove-command task 6.3,
-/// move-command task 6.3): `xcodebuild -list -json -project` reads every
-/// post-operation project. Skipped cleanly where `xcodebuild` is absent.
+/// move-command task 6.3, lint-fix task 8.3): `xcodebuild -list -json
+/// -project` reads every post-operation project. Skipped cleanly where
+/// `xcodebuild` is absent.
 final class OracleTests: XCTestCase {
     private static let xcodebuild = URL(fileURLWithPath: "/usr/bin/xcodebuild")
 
@@ -11,6 +12,9 @@ final class OracleTests: XCTestCase {
     /// destinations, as the user's own move leaves them), and the
     /// invocations (subcommand first) to run on it before the oracle reads it.
     private static let scenarios: [(name: String, fixture: String, files: [String], invocations: [[String]])] = [
+        // The rules fixtures have no build configuration lists, which xcodebuild refuses
+        // whatever their membership looks like, so the repair scenarios use repair/ and the substitute.
+        ("lint --fix: mixed damage", "repair/app.pbxproj", [], [["lint", "--fix"]]),
         ("move: within a target", "move/app.pbxproj", ["App/Features/Foo.swift"], [["move", "App/Views/Foo.swift", "App/Features/Foo.swift"]]),
         ("move: groups created", "move/app.pbxproj", ["App/Features/Modern/Foo.swift"], [["move", "App/Views/Foo.swift", "App/Features/Modern/Foo.swift"]]),
         ("move: source-root reference into a name-only group", "move/app.pbxproj", ["AppTests/State/FooTests.swift"],
@@ -57,23 +61,50 @@ final class OracleTests: XCTestCase {
     ]
 
     func testXcodebuildReadsEveryPostOperationProject() throws {
-        guard FileManager.default.isExecutableFile(atPath: Self.xcodebuild.path), try Self.developerDirectoryIsSet() else {
-            throw XCTSkip("xcodebuild is not available; the oracle lane runs on macOS with Xcode installed")
-        }
+        try Self.skipWithoutXcodebuild()
         for scenario in Self.scenarios {
             let project = try TemporaryProject(fixture: scenario.fixture)
             for file in scenario.files { try project.touch(file) }
-            for invocation in scenario.invocations {
-                let result = try pbxedit(invocation + ["--project", "App.xcodeproj"], in: project.root)
-                XCTAssertEqual(result.status, 0, "\(scenario.name): \(invocation): \(result.stderr)\(result.stdout)")
-                XCTAssertTrue(result.stdout.hasSuffix("project.pbxproj: modified\n"), "\(scenario.name): \(invocation): \(result.stdout)")
-            }
-            let listing = try Self.list(project.xcodeproj)
-            XCTAssertEqual(listing.status, 0, "\(scenario.name): xcodebuild -list failed:\n\(listing.output)")
-            let object = try XCTUnwrap(try? JSONSerialization.jsonObject(with: Data(listing.output.utf8)) as? [String: Any], "\(scenario.name): \(listing.output)")
-            let targets = (object["project"] as? [String: Any])?["targets"] as? [String]
-            XCTAssertEqual(targets?.isEmpty, false, "\(scenario.name): \(listing.output)")
+            try Self.runAndList(scenario.name, project: project, invocations: scenario.invocations)
         }
+    }
+
+    /// Task 8.3: the repaired reference-workload substitute. The originating
+    /// project is private; this is the same synthesis `RepairPerformanceTests`
+    /// measures, repaired through the binary.
+    func testXcodebuildReadsTheRepairedWorkloadSubstitute() throws {
+        try Self.skipWithoutXcodebuild()
+        let project = try TemporaryProject(try OrphanedCorpus.alamofire(), name: "Alamofire")
+        let before = try pbxedit(["lint", "--json", "--project", "Alamofire.xcodeproj"], in: project.root)
+        XCTAssertEqual(before.status, 1)
+        XCTAssertEqual((try jsonObject(before)["summary"] as? [String: Int])?["errors"], OrphanedCorpus.orphans)
+        try Self.runAndList("lint --fix: workload substitute", project: project, invocations: [["lint", "--fix"]])
+        let after = try pbxedit(["lint", "--json", "--project", "Alamofire.xcodeproj"], in: project.root)
+        XCTAssertEqual(after.status, 0, after.stdout)
+        XCTAssertEqual((try jsonObject(after)["summary"] as? [String: Int])?["errors"], 0)
+    }
+
+    private static func skipWithoutXcodebuild() throws {
+        guard FileManager.default.isExecutableFile(atPath: xcodebuild.path), try developerDirectoryIsSet() else {
+            throw XCTSkip("xcodebuild is not available; the oracle lane runs on macOS with Xcode installed")
+        }
+    }
+
+    /// Runs the invocations — each must write, and exit 0 unless it is a
+    /// `lint --fix` that leaves errors, which exits 1 as `lint` does — then
+    /// has `xcodebuild -list` read the result.
+    private static func runAndList(_ name: String, project: TemporaryProject, invocations: [[String]]) throws {
+        for invocation in invocations {
+            let result = try pbxedit(invocation + ["--project", project.xcodeproj.lastPathComponent], in: project.root)
+            let expected: [Int32] = invocation.first == "lint" ? [0, 1] : [0]
+            XCTAssertTrue(expected.contains(result.status), "\(name): \(invocation): \(result.stderr)\(result.stdout)")
+            XCTAssertTrue(result.stdout.hasSuffix("project.pbxproj: modified\n"), "\(name): \(invocation): \(result.stdout)")
+        }
+        let listing = try list(project.xcodeproj)
+        XCTAssertEqual(listing.status, 0, "\(name): xcodebuild -list failed:\n\(listing.output)")
+        let object = try XCTUnwrap(try? JSONSerialization.jsonObject(with: Data(listing.output.utf8)) as? [String: Any], "\(name): \(listing.output)")
+        let targets = (object["project"] as? [String: Any])?["targets"] as? [String]
+        XCTAssertEqual(targets?.isEmpty, false, "\(name): \(listing.output)")
     }
 
     private static func developerDirectoryIsSet() throws -> Bool {
