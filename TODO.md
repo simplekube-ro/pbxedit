@@ -106,7 +106,7 @@ For each change, on a branch named after it:
 - [x] Homebrew tap repository and `TAP_TOKEN` secret created — tap `simplekube-ro/homebrew-tap` with `Formula/pbxedit.rb`; `TAP_TOKEN` is an organization secret shared with the repository (2026-09-22); its visibility to the workflow is proven by the rehearsal's tap push
 - [ ] Artifacts re-verified
 - [ ] Applied
-- [ ] `oracle` job is a required check, and shown to fail on a deliberately bad write
+- [x] `oracle` job is a required check, and shown to fail on a deliberately bad write — required (with `swift test (macOS)`) in the `main` ruleset; green on PR #2; red on the throwaway `oracle-bites` branch (PR #3, run 35723868593, Xcode 26.6 on the runner) where the move fixture carried `objectVersion = 999`. Finding: `xcodebuild -list` refuses only top-level damage (unknown `objectVersion`, dangling `rootObject`/`mainGroup`) and accepts object-level corruption the rule set already refuses — table in the change's design.md; a real-build oracle is a candidate follow-up
 - [ ] `v0.1.0` cut and verified (assets, checksum, `brew install`, pinning snippet)
 - [ ] `v1.0.0` cut after change 9; Xcode version for the manual open-and-save check recorded
 - [ ] Archived, merged

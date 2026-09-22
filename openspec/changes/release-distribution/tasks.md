@@ -16,8 +16,8 @@
 ## 3. Oracle lane
 
 - [x] 3.1 The `OracleTests` suite already exists (design Context). Write the failing unit test of the gate decision (`OracleTests.gate(xcodebuildAvailable:required:)` → run, skip or fail), then make the suite fail, rather than skip, when `xcodebuild` is missing and `ORACLE_REQUIRED` is set to a non-empty value; verify the suite passes locally and record the manual no-Xcode check in design.md Evidence
-- [ ] 3.2 Add the `oracle` job to `ci.yml` with Xcode selected explicitly and its version printed; verify the job is green and then mark it required in branch protection — *job added to `ci.yml` (replacing the named Oracle step in `test`); green run and branch protection pending the first push*
-- [ ] 3.3 Prove the lane bites: on a throwaway branch make `add` emit `platformFilters = ["ios"]`, confirm the `oracle` job fails, and record the run URL in this change's design.md; delete the branch — *owner: needs a pushed branch and a CI run*
+- [ ] 3.2 Add the `oracle` job to `ci.yml` with Xcode selected explicitly and its version printed; verify the job is green and then mark it required in branch protection — *job added to `ci.yml` (replacing the named Oracle step in `test`); green on PR #2's first run; required, with `swift test (macOS)`, in the `main` ruleset (strict status checks, linear history, PR required)*
+- [x] 3.3 Prove the lane bites: on a throwaway branch make a write Xcode refuses, confirm the `oracle` job fails, and record the run URL in this change's design.md; delete the branch — *the prescribed write (`platformFilters` as a string) is refused by S4 before it reaches disk and is accepted by `xcodebuild -list` anyway (design Evidence, "What the oracle can and cannot see"); the throwaway branch `oracle-bites` (PR #3) used `objectVersion = 999` instead — unit tests green, `oracle` red on run 35723868593 (Xcode 26.6 on the runner); branch and PR deleted*
 
 ## 4. Release workflow
 
