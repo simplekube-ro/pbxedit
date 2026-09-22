@@ -159,6 +159,16 @@ Tag on `main` `029a8eb`, run `https://github.com/simplekube-ro/pbxedit/actions/r
 
 On a Mac with current Homebrew, `brew install simplekube-ro/tap/pbxedit` first failed: "Calling `depends_on :macos` with `depends_on macos:` is disabled! Use … inside an `on_macos` block instead." The runner's older Homebrew had accepted the flat form, which is why the workflow's own install step passed. Fixed once in the tap (`bb39d62`): `depends_on macos: :ventura` now sits inside `on_macos do … end`; the workflow rewrites only `url` and `sha256`, so the fix persists. After re-tapping: install pours `/opt/homebrew/Cellar/pbxedit/0.1.0`, `--version` → `0.1.0`, `brew test` passes, `brew audit --strict` passes. D4 amended accordingly.
 
+### Manual open-and-save check, first run (task 7.2; RELEASING § 2)
+
+Run on `main` `64b9fe7` (the `v1.0.0` candidate) with Xcode 27.0 (27A266a), following § 2 as then written (`Tests/Fixtures/move/app.pbxproj` after `add`, `move`, `remove`; `Tests/Fixtures/repair/app.pbxproj` after `lint --fix`). Result: **diff** (18 insertions, 14 deletions across both files; kept as `Tests/Fixtures/xcode27/xcode27-save.diff` beside the two Xcode-saved files). Attribution, hunk by hunk:
+
+1. **pbxedit defect — issue #6, release blocker.** Every `platformFilters = (ios, );` became `platformFilter = ios;`, `(tvos, )` stayed. A second probe project with every spelling pinned the rule: exactly one filter that is `ios` or `maccatalyst` → the singular key; anything else → the plural array, unchanged (`Tests/Fixtures/xcode27/platform-filters-{before,after-xcode27-save}.pbxproj`). pbxedit wrote only the plural and read only the plural in inference and S4. Fixed by change `platform-filter-canonical-form` before `v1.0.0`.
+2. **Xcode garbage-collecting damage `lint --fix` reports as not fixable** (repair project only): a new build file for the M5 double add, the two unphased build files and the `<group>`-relative orphan deleted, the dangling `Vanished.framework` child and the second parent of `Dup.swift` dropped. Not rewrites of pbxedit's work; a flaw in the § 2 procedure, which now starts from a project whose only damage is one M3 orphan that `--fix` restores byte for byte (`repair-fixable.pbxproj`).
+3. **Fixture and script artifacts:** the hand-written synchronized root group's empty `explicitFileTypes`/`explicitFolders` (Xcode 16 wrote them in the corpus, Xcode 27 drops them), and the project-name comments rewritten because the script copied the fixture to `Repair.xcodeproj`. § 2 now starts from files Xcode 27 itself saved and names both projects `App.xcodeproj`.
+
+Of the 20 object IDs pbxedit touched and the 18 Xcode touched, only `Rate2.swift`'s pair overlaps, and there Xcode changed the fixture-authored filter spelling; pbxedit's own edits (phase entry, comment) were left alone. The check is re-run after the fix; its result is recorded below when it passes.
+
 ### Release checklist (task 6.2)
 
 `docs/RELEASING.md` has the four scenario items as sections 1–4 (`Bump the version`, `Manual Xcode open-and-save check` with the `Xcode version used:` field, `Tag`, `Verify the Homebrew formula`), pinned by `CLITests.ReleasingDocumentTests` (3 tests), which also checks that the manual check exercises `add`, `move`, `remove` and `lint --fix` and ends in `git diff --exit-code`.
