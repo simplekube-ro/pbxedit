@@ -56,6 +56,14 @@ struct ProjectOptions: ParsableArguments {
     static func sourceRoot(of pbxproj: URL) -> URL {
         pbxproj.deletingLastPathComponent().deletingLastPathComponent()
     }
+
+    /// The current directory, standardized exactly as `locate()` standardizes
+    /// `--project` (Foundation drops a leading `/private` from an existing
+    /// path, for one), so a relative path argument and a relative `--project`
+    /// always agree on the source root.
+    static var currentDirectory: String {
+        URL(fileURLWithPath: FileManager.default.currentDirectoryPath).standardizedFileURL.path
+    }
 }
 
 struct OutputOptions: ParsableArguments {

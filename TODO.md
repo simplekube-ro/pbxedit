@@ -57,10 +57,10 @@ For each change, on a branch named after it:
 - [ ] *Milestone:* `pbxedit lint` usable in RandomPlayer CI with a baseline
 
 ### 4. query-command
-- [ ] Artifacts re-verified — check the `MembershipReport` JSON shape against change 5's needs before applying
-- [ ] Applied
-- [ ] `swift test` green; read-only test (bytes and mtime) green
-- [ ] Archived, merged
+- [x] Artifacts re-verified, `openspec validate --strict` green — `MembershipReport` checked against change 5: `add --json` embeds "the membership report for each path" and lists "each object created or reused with its ID", and `remove`/`lint --fix` read `member` and the memberships' target names, so `target` and `phase` are `{id, name}` pairs and the reference, group and build-file IDs are all present; absent values are `null` (design D2). Other drift fixed: the spec's scenarios named paths and targets (`App/iOS/Foo.swift`, `AppTopShelf`, `App/Services/Rate.swift`) that no fixture holds, now the shipped `model/app.pbxproj` and `rules/` fixtures; the `--target` JSON shape and the `--target`-with-paths usage error were unspecified; task 5.1 named a `README.md` that does not exist (examples recorded in the change's design.md Evidence instead)
+- [x] Applied — all tasks ticked (10/10)
+- [x] `swift test` green; read-only test (bytes and mtime) green — 111 syntax + 69 ops + 63 model + 33 CLI tests, 0 failures; `QueryCommandTests.testEveryInvocationLeavesBytesAndModificationTimeUnchanged` runs eight invocation forms (paths, `--json`, synchronized path, `--target`, unknown target, path outside the root, no arguments) against a file whose mtime was set an hour in the past. Found and fixed on the way: `--project` was standardized by Foundation (which drops `/private` from an existing path) while the current directory was not, so a relative path and a relative `--project` could disagree on the source root; `ProjectOptions.currentDirectory` now standardizes both the same way
+- [ ] Archived, merged — archived as `openspec/changes/archive/2026-09-22-query-command`, delta synced into `openspec/specs/query/`; not yet merged
 
 ### 5. add-command
 - [ ] Artifacts re-verified

@@ -3,7 +3,9 @@
 Status: approved design (2026-09-21). Implemented so far: layer 1, `PBXSyntax`
 (change `lossless-syntax-tree`); layer 2, `PBXModel` (change
 `typed-project-model`); the rule set in layer 3, `PBXOps`, and the CLI
-skeleton with `lint` (change `integrity-rules-lint`).
+skeleton with `lint` (change `integrity-rules-lint`); `query`, the
+path-argument convention and the `MembershipReport` shape (change
+`query-command`).
 
 ## Purpose
 
@@ -133,6 +135,17 @@ primitive edits plus a human-readable and JSON description.
 - `--project <path>` names the `.xcodeproj` or `project.pbxproj`; without it,
   the single `.xcodeproj` in the current directory is used, and none or
   several is a usage error.
+- Path arguments are relative to the current directory, normalized lexically
+  (no symlink resolved, nothing read from disk) and matched against the
+  source root, the directory holding the `.xcodeproj`. A path outside the
+  source root is a usage error. One implementation, `PathArgument` in
+  `PBXOps`, serves every command.
+- `MembershipReport` (`PBXOps`) is the one description of a path's
+  membership: `path`, `member`, `fileReference`, `groupPath`, `groups`,
+  `memberships` (each `target` and `phase` as `{id, name}`, `buildFile`,
+  `platformFilters`) and `synchronized` (`group`, `path`, `targets`). Absent
+  values are `null`, never omitted. `query` prints it; the mutating commands
+  embed it as the membership after the operation.
 
 ### Commands
 
@@ -142,7 +155,7 @@ primitive edits plus a human-readable and JSON description.
 | `move <from> <to>` | File must already be at `<to>` on disk. Re-parents the reference, rewrites its path, and swaps build-phase membership when the destination implies different targets |
 | `remove <path>…` | Removes build files, phase entries, the group child and the reference. If several targets use the reference, requires `--target` to detach one or `--all` |
 | `lint` | Runs the rule set; errors before warnings, each ordered by rule then object ID. `--fix` repairs what is unambiguous; `--write-baseline <file>` records the current findings (keyed by rule and object ID) and exits 0; `--baseline <file>` reports and fails only on findings not in the baseline, and lists entries that no longer occur as resolved; `--disk` enables disk rules; `--strict` makes warnings fail |
-| `query <path>` | Read-only: targets, phases, `platformFilters`, group path, IDs. Also `query --target <name>` to list members |
+| `query <path>…` | Read-only: for each path, whether a file reference resolves to it, its ID, group path and groups, and each membership — target, phase, build file ID, `platformFilters` — or the synchronized group covering it. Facts, not findings: a missing group or phase is reported as such with a hint to run `lint`. Exits `1` when a path is neither a member nor covered, `2` when the project file does not load. `query --target <name>` lists every build-phase entry of a target by phase then path; an unknown name exits `2` listing the targets |
 
 ### Synchronized folders
 
