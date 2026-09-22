@@ -36,5 +36,5 @@
 
 ## 7. First releases
 
-- [ ] 7.1 Follow `docs/RELEASING.md` to cut `v0.1.0`; verify the release assets, `brew install`, and that the pinning snippet fetches and verifies it — *owner: needs 1.x–5.1 and a tag push*
+- [x] 7.1 Follow `docs/RELEASING.md` to cut `v0.1.0`; verify the release assets, `brew install`, and that the pinning snippet fetches and verifies it — *tag on `main` `029a8eb`; run 35736053201 green (test, oracle, build/assert/publish, tap install+test, tap push `fdc2a9a`); assets and `.sha256` verified through the README pinning snippet, right and wrong checksum; `brew install simplekube-ro/tap/pbxedit`, `brew test` and `brew audit --strict` pass on a Mac with current Homebrew after a one-time formula fix in the tap (`bb39d62`: `depends_on macos: :ventura` moved inside `on_macos`, which current Homebrew requires next to `depends_on :macos`; the runner's older Homebrew had accepted the flat form). `Version.swift` bumped to `1.0.0-dev` (RELEASING § 1) in the same follow-up*
 - [ ] 7.2 After `lint-fix` has shipped, cut `v1.0.0` by the same procedure; verify as in 7.1 and record the Xcode version used for the manual check — *owner: `lint-fix` has shipped; needs 7.1, the manual open-and-save check (RELEASING.md § 2) and a tag push*
