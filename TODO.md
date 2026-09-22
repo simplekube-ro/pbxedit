@@ -63,12 +63,12 @@ For each change, on a branch named after it:
 - [ ] Archived, merged — archived as `openspec/changes/archive/2026-09-22-query-command`, delta synced into `openspec/specs/query/`; not yet merged
 
 ### 5. add-command
-- [ ] Artifacts re-verified
-- [ ] Applied
-- [ ] `swift test` green, including the four Motivation regression fixtures and the `modified` property test
-- [ ] Oracle tests green on macOS
-- [ ] `docs/design.md` updated: `--phase`
-- [ ] Archived, merged
+- [x] Artifacts re-verified, `openspec validate --strict` green — drift fixed: the spec's scenarios named paths and targets no fixture holds (`AppTopShelf`, `AppSlowTests`, `App/Services/Rate.swift`…), now the new `Tests/Fixtures/add/` fixtures (`app`, `partial`, `m4-collision`, each with build configuration lists because `xcodebuild -list` refuses a project without them); design D5 left the name-only-group case implicit (the spec's "Pathless groups" scenario needs it), now stated: a pathless group named like the directory under the parent directory's group is reused and the reference spelled `SOURCE_ROOT`; D4 gained "a file no target builds abstains" and "no sibling in the target → no filters"; the M4-collision scenario is reachable only when the reused reference gains something, so `touched` includes reused objects and a zero-step re-add is still checked; task 7.2 named a `README.md` that does not exist (examples recorded in the change's design.md Evidence, as change 4 did); the runner lives in `PBXOps` (`OperationRunner`), not the CLI
+- [x] Applied — all tasks ticked (20/20)
+- [x] `swift test` green, including the four Motivation regression fixtures and the `modified` property test — 111 syntax + 64 model + 118 ops + 46 CLI tests, 0 failures; release `PerformanceTests` green. Regressions in `AddPlannerTests`: same basename (`App/Views/Bar.swift` beside `AppTests/Foo/Bar.swift` gets its own reference), reuse path gains the group child and the unphased build file gains its phase entry (`add/partial.pbxproj`, with two unrelated M3s that do not block), M4 collision aborts (`add/m4-collision.pbxproj`); `AddCommandTests.testModifiedMatchesRealityOverEveryScenario` runs 21 invocations (9 that write, no-ops, dry run, refusals, violations, usage errors) and asserts `modified` == "bytes differ" on each. Found and fixed on the way, test-first in `PBXModel`: a `Project` copy shared its index cache with the original, so mutating the copy made the original answer `contains`/`parents(of:)` for objects only the copy had (`CopyIsolationTests`; copy-on-write in `Project`)
+- [x] Oracle tests green on macOS — `CLITests.OracleTests` runs `xcodebuild -list -json -project` (Xcode 27.0) on nine post-add projects (new file, groups created, second target, resource + header, project-only, name-only group, platform filters, `--phase` on an unknown type, partial membership completed) and asserts each lists its targets; skipped with `XCTSkip` where `xcodebuild` is absent
+- [x] `docs/design.md` updated: `--phase` — plus `--target`, `--platform`, `--dry-run` semantics in the `add` row, `Plan`/`Step`/`Change`/`Decision` and `OperationRunner` in § Architecture 3, the write pipeline details in § 4, and § Conventions as shipped (abstaining siblings, per-target filters, group resolution incl. name-only groups, the file-type table)
+- [ ] Archived, merged — archived as `openspec/changes/archive/2026-09-22-add-command`, delta synced into `openspec/specs/add/` (15 requirements); not yet merged
 
 ### 6. conventions-config
 - [ ] Artifacts re-verified

@@ -142,10 +142,20 @@ public struct Project {
 
     // MARK: Mutation and cache (design D2)
 
+    /// A `Project` is a value; its cache is a reference two copies share
+    /// until one of them mutates. Before any mutation, a shared cache is
+    /// replaced by a fresh one, so patching it can never change what the
+    /// other copy answers (found by `add-command`, whose executor works on
+    /// a copy and discards it on failure).
+    private mutating func ensureUniqueCache() {
+        if !isKnownUniquelyReferenced(&cache) { cache = Cache() }
+    }
+
     /// An edit that leaves every entry of `objects` where it is — children,
     /// phase entries, attributes, comments. The object table and the section
     /// map stay valid; the derived indexes named by `dropping` are dropped.
     mutating func mutateValues(dropping: IndexSet, _ body: (inout SyntaxTree) throws -> Void) rethrows {
+        ensureUniqueCache()
         try body(&tree)
         cache.drop(dropping)
     }
@@ -154,6 +164,7 @@ public struct Project {
     /// section map and — for a file reference or synchronized root group —
     /// the path index are patched rather than rebuilt (design D2's cost).
     mutating func insertObject(_ id: ObjectID, isa: String, _ body: (inout SyntaxTree) throws -> Void) rethrows {
+        ensureUniqueCache()
         try body(&tree)
         if let position = objectEntries.firstIndex(where: { $0.key.matches(id.rawValue) }) {
             cache.table?.index[id] = position
@@ -178,6 +189,7 @@ public struct Project {
     /// no parent, the parent and path indexes are patched; otherwise the
     /// order of its parents would have to be recomputed, so they are dropped.
     mutating func insertChild(_ child: ObjectID, into group: ObjectID, _ body: (inout SyntaxTree) throws -> Void) rethrows {
+        ensureUniqueCache()
         try body(&tree)
         let isa = object(child)?.isa ?? ""
         guard !Kind.groups.contains(isa), var parents = cache.parents, parents.parents[child] == nil else {
@@ -196,6 +208,7 @@ public struct Project {
 
     /// An edit that removes the entry at `position` of `objects`.
     mutating func removeObject(_ id: ObjectID, at position: Int, _ body: (inout SyntaxTree) throws -> Void) rethrows {
+        ensureUniqueCache()
         try body(&tree)
         if table.duplicates.contains(id) {
             // Another entry with this ID remains; rebuild rather than reason about it.
