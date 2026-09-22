@@ -94,7 +94,7 @@ So the rule set reports zero errors on every Xcode-written corpus file except th
 
 **Originating project.** Private, not in the corpus; run locally with `pbxedit lint --project <path>` (or through `PBXEDIT_EXTRA_CORPUS`, which the corpus tests read). Counts to be filled in by the owner:
 
-> *(placeholder — originating project, RandomPlayer)* S1 __, S2 __, S3 __, S4 __, S5 __, M1 __, M2 __, M3 __ (expected ≈ 655), M4 __, M5 __, M6 __; with `--disk`: D1 __, D2 __. Date and commit: __.
+> *(placeholder — originating project)* S1 __, S2 __, S3 __, S4 __, S5 __, M1 __, M2 __, M3 __ (expected ≈ 655), M4 __, M5 __, M6 __; with `--disk`: D1 __, D2 __. Date and commit: __.
 
 **S2 key list.** Extended by the corpus test from the twelve keys the spec first named to the twenty-nine it now names: `containerPortal`, `buildConfigurationList`, `buildConfigurations`, `baseConfigurationReference` (witnessed by `rules/s2-dangling-xcconfig.pbxproj`, since no corpus project uses an xcconfig), `baseConfigurationReferenceAnchor`, `buildRules`, `currentVersion`, `package`, `packageProductDependencies`, `packageReferences`, `fileSystemSynchronizedGroups`, `exceptions`, `remoteRef`, `ProductGroup`, `ProjectRef`, `buildPhase` (in `PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet`) and `TestTargetID` (in `TargetAttributes`). About 6,900 in-file references are checked. `remoteGlobalIDString` is the one ignored key, with its reason in the test.
 
