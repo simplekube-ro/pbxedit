@@ -26,12 +26,19 @@ struct RunResult {
     let stderr: String
 }
 
-/// Runs the built binary with `arguments` in `directory`.
-func pbxedit(_ arguments: [String], in directory: URL? = nil) throws -> RunResult {
+/// Runs the built binary with `arguments` in `directory`. `environment`
+/// entries are added to (or, with a `nil` value, removed from) the inherited
+/// environment.
+func pbxedit(_ arguments: [String], in directory: URL? = nil, environment: [String: String?] = [:]) throws -> RunResult {
     let process = Process()
     process.executableURL = Binary.url
     process.arguments = arguments
     if let directory { process.currentDirectoryURL = directory }
+    if !environment.isEmpty {
+        var merged = ProcessInfo.processInfo.environment
+        for (name, value) in environment { merged[name] = value }
+        process.environment = merged
+    }
     let out = Pipe()
     let err = Pipe()
     process.standardOutput = out

@@ -4,9 +4,28 @@ import XCTest
 /// The oracle lane (add-command task 7.1, remove-command task 6.3,
 /// move-command task 6.3, lint-fix task 8.3): `xcodebuild -list -json
 /// -project` reads every post-operation project. Skipped cleanly where
-/// `xcodebuild` is absent.
+/// `xcodebuild` is absent — unless `ORACLE_REQUIRED` is set, in which case
+/// the absence is a failure (release-distribution task 3.1, design D3), so
+/// the CI job that is meant to run this lane cannot go green without it.
 final class OracleTests: XCTestCase {
     private static let xcodebuild = URL(fileURLWithPath: "/usr/bin/xcodebuild")
+
+    /// The environment variable that turns a missing `xcodebuild` from a skip
+    /// into a failure: any non-empty value counts.
+    static let requiredVariable = "ORACLE_REQUIRED"
+
+    enum Gate: Equatable {
+        case run
+        case skip
+        case fail
+    }
+
+    /// The lane's decision, a pure function of the two facts it depends on.
+    static func gate(xcodebuildAvailable: Bool, required: String?) -> Gate {
+        if xcodebuildAvailable { return .run }
+        if let required, !required.isEmpty { return .fail }
+        return .skip
+    }
 
     /// Each entry: a fixture, the files to create (for `move`, the
     /// destinations, as the user's own move leaves them), and the
@@ -84,9 +103,21 @@ final class OracleTests: XCTestCase {
         XCTAssertEqual((try jsonObject(after)["summary"] as? [String: Int])?["errors"], 0)
     }
 
+    private struct XcodebuildMissing: Error, CustomStringConvertible {
+        var description: String {
+            "xcodebuild is not available and \(requiredVariable) is set; the oracle lane must run on macOS with Xcode installed"
+        }
+    }
+
     private static func skipWithoutXcodebuild() throws {
-        guard FileManager.default.isExecutableFile(atPath: xcodebuild.path), try developerDirectoryIsSet() else {
+        let available = try FileManager.default.isExecutableFile(atPath: xcodebuild.path) && developerDirectoryIsSet()
+        switch gate(xcodebuildAvailable: available, required: ProcessInfo.processInfo.environment[requiredVariable]) {
+        case .run:
+            return
+        case .skip:
             throw XCTSkip("xcodebuild is not available; the oracle lane runs on macOS with Xcode installed")
+        case .fail:
+            throw XcodebuildMissing()
         }
     }
 

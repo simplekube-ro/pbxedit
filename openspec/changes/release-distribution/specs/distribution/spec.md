@@ -7,15 +7,19 @@ Make a given version of pbxedit obtainable, verifiable and pinnable on any suppo
 ## ADDED Requirements
 
 ### Requirement: The binary reports its version
-`pbxedit --version` SHALL print the semantic version of the release it was built from and exit `0`. A binary built from an untagged commit SHALL print the next version with a `-dev` suffix and the short commit hash.
+`pbxedit --version` SHALL print the semantic version of the release it was built from, as one line on standard output, and exit `0`. A binary built from an untagged commit (a development build) SHALL print the next version with a `-dev` suffix and, when the environment variable `PBXEDIT_BUILD_HASH` holds a commit hash (lowercase hex, at least seven characters), `+` and its first seven characters. A release build SHALL ignore the variable. The output SHALL always match `^\d+\.\d+\.\d+(-dev(\+[0-9a-f]{7})?)?$`.
 
 #### Scenario: Release build
 - **WHEN** the binary from release `v1.2.0` runs `pbxedit --version`
 - **THEN** it prints `1.2.0`
 
-#### Scenario: Development build
-- **WHEN** a binary built from a commit after `v1.2.0` runs `pbxedit --version`
-- **THEN** the output starts with a version greater than `1.2.0`, contains `-dev`, and ends with the commit's short hash
+#### Scenario: Development build with the hash
+- **WHEN** a binary built from a commit after `v1.2.0` runs `pbxedit --version` with `PBXEDIT_BUILD_HASH=0123abcdef`
+- **THEN** the output is a version greater than `1.2.0` followed by `-dev+0123abc`, and the exit status is `0`
+
+#### Scenario: Development build without the hash
+- **WHEN** the same binary runs `pbxedit --version` with `PBXEDIT_BUILD_HASH` unset, empty, or holding something that is not a hash (`HEAD`)
+- **THEN** the output is the version followed by `-dev` only
 
 ### Requirement: Releases are built from tags
 Pushing a tag of the form `vMAJOR.MINOR.PATCH` SHALL produce a GitHub Release of that name containing an archive of a universal binary for arm64 and x86_64, and a file with the archive's SHA-256 checksum. The release SHALL NOT be published unless the full test suite and the oracle lane pass on the tagged commit.
@@ -47,11 +51,15 @@ The tap SHALL provide a formula that installs the released binary and whose test
 - **THEN** `pbxedit --version` prints `1.2.0`
 
 ### Requirement: Oracle lane
-Continuous integration SHALL include a job, required for merging and for releasing, that applies every mutating command's test scenarios to fixture projects and runs `xcodebuild -list` on each result, failing if any result cannot be read.
+Continuous integration SHALL include a job, required for merging and for releasing, that applies every mutating command's test scenarios to fixture projects and runs `xcodebuild -list` on each result, failing if any result cannot be read. The test suite behind it (`CLITests.OracleTests`) SHALL skip where `xcodebuild` is unusable, except that with the environment variable `ORACLE_REQUIRED` set to a non-empty value it SHALL fail instead, so the job cannot go green on a runner without Xcode.
 
 #### Scenario: A change that writes something Xcode rejects
 - **WHEN** a change makes `add` emit `platformFilters` in a form Xcode cannot parse
 - **THEN** the oracle job fails on the post-add fixture and the pull request cannot merge
+
+#### Scenario: Runner without Xcode
+- **WHEN** the suite runs where `/usr/bin/xcodebuild` is missing or `xcode-select -p` fails
+- **THEN** with `ORACLE_REQUIRED` unset or empty every oracle test is skipped, and with `ORACLE_REQUIRED=1` every oracle test fails with a message naming the variable
 
 ### Requirement: Supported platforms are stated and enforced
 The package SHALL declare its minimum macOS version, the README SHALL state it, and the released binary SHALL run on that version.
@@ -65,4 +73,4 @@ The repository SHALL contain a release procedure that includes, before tagging, 
 
 #### Scenario: Procedure present
 - **WHEN** `docs/RELEASING.md` is read
-- **THEN** it lists the version bump, the manual Xcode check with a place to record the Xcode version, the tag command, and the post-release verification of the Homebrew formula
+- **THEN** it lists the version bump, the manual Xcode check with a place to record the Xcode version, the tag command, and the post-release verification of the Homebrew formula (pinned by `CLITests.ReleasingDocumentTests`)
