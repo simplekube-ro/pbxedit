@@ -62,8 +62,8 @@ Already declared in `Package.swift` since `lossless-syntax-tree`. It covers ever
 
 ## Migration Plan
 
-1. Owner decides name and licence; creates the tap repository and the token secret.
-2. Merge this change; verify `oracle` is a required check.
+1. Owner decides name and licence; creates the tap repository and the token secret. — *Done 2026-09-22: `pbxedit`, MIT, `simplekube-ro/homebrew-tap`, `TAP_TOKEN` as an organization secret.*
+2. Merge this change; verify `oracle` is a required check. — *Merged by PR #2 (rebase); `oracle` and `swift test (macOS)` required in the `main` ruleset; the workflow rehearsed end to end (Evidence).*
 3. Follow `docs/RELEASING.md` to cut `v0.1.0` as a rehearsal of the procedure, then `v1.0.0` (every v1 command has shipped; `Version.swift` starts at `0.1.0-dev` and the bump to `1.0.0-dev` is the first step of the second release).
 
 Rollback: delete the release and tag, revert the tap commit. Consumers pinned by checksum are unaffected by a withdrawn later release.
@@ -144,6 +144,14 @@ Probed by hand on `Tests/Fixtures/move/app.pbxproj` with Xcode 27.0 (27A266a), o
 | dangling `rootObject` or `mainGroup` | **refuses**, exit 74 | S2 refuses |
 
 `-showBuildSettings` and `-resolvePackageDependencies` behaved exactly like `-list`; `xcodebuild build -dry-run` is "no longer supported". So the only write pbxedit can make that its own checks accept and Xcode refuses is editing a project whose `objectVersion` Xcode does not know, and that is what the lane was shown to catch: the throwaway branch `oracle-bites` (PR #3, `https://github.com/simplekube-ro/pbxedit/pull/3`) sets `objectVersion = 999` on the move fixture; locally the eight unit tests over that fixture stay green while `CLITests.OracleTests` fails on every scenario with the message above. On the hosted runner (`macos-latest`, newest image Xcode selected: **Xcode 26.6, build 17F113** — the runner lags the local Xcode 27.0, as the Risks foresaw) the `oracle` job went red as required: `https://github.com/simplekube-ro/pbxedit/actions/runs/35723868593/job/106732758212` — `Executed 2 tests, with 2 failures`, first failure `move: within a target: xcodebuild -list failed: … xcodebuild: error: Unable to read project 'App.xcodeproj'` (exit 74); `OracleGateTests` 4/4 passed. The `test` job failed too, on the same suite. Branch and PR deleted afterwards.
+
+### Release rehearsal (tasks 4.1–4.3, 5.1; D1, D2, D4, D6)
+
+Three tag pushes on 2026-09-22, hosted `macos-latest` runners (Xcode 26.6 selected for `oracle`; the release job builds with the image's default Swift toolchain, whose universal product lands in `.build/apple/Products/Release/` — `--show-bin-path` found it, so the path is never hard-coded):
+
+- **`v0.0.1-rc1` on `main`** (`Version.swift` = `0.1.0-dev`), run `https://github.com/simplekube-ro/pbxedit/actions/runs/35726212331`: `test` and `oracle` green; "Check the tag against Version.swift" printed `tag=v0.0.1-rc1 version=0.0.1-rc1 Version.swift=0.1.0-dev` and failed with `Version.swift says '0.1.0-dev' but the tag is 'v0.0.1-rc1'`; every later step skipped, no release created (task 4.3). Note for D1: a pre-release suffix can never pass this check, since the grammar `X.Y.Z[-dev[+hash]]` has no pre-release component and `test` must be green on the tagged commit; rehearsals therefore use a plain version and are deleted afterwards.
+- **`v0.0.1`, first attempt** on an unpushed rehearsal commit (`Version.swift` = `0.0.1-dev`), run `https://github.com/simplekube-ro/pbxedit/actions/runs/35726242503`: tag check, version stamp, universal build, assertions (`lipo -archs: arm64 x86_64`, two `minos 13.0`, `--version` = `0.0.1`), packaging and the GitHub Release all succeeded; the formula was rewritten; then `brew install --formula ./tap/Formula/pbxedit.rb` failed with "Homebrew requires formulae to be in a tap" and the tap push was skipped. The assets were downloaded and verified locally: `shasum -a 256 -c` OK, `lipo -archs` → `x86_64 arm64`, both slices `minos 13.0`, binary prints `0.0.1`. Release and tag deleted.
+- **`v0.0.1`, second attempt** on a rehearsal commit carrying the workflow fix (commit the formula in the tap checkout, `brew tap simplekube-ro/tap "$PWD/tap"`, install and test by tap name, then push), run `https://github.com/simplekube-ro/pbxedit/actions/runs/35727447271`: every step green — `brew install simplekube-ro/tap/pbxedit` poured `/opt/homebrew/Cellar/pbxedit/0.0.1`, the installed binary printed `0.0.1`, `brew test` passed, `brew audit --strict` ran (advisory), and the tap received commit `0827010` (`url` → the `v0.0.1` archive, `sha256` = `dcf44534…7f8189954`, equal to the release's `.sha256`). Afterwards the release and tag were deleted and the tap commit reverted (`b4a1973`), so nothing points at a withdrawn release.
 
 ### Release checklist (task 6.2)
 
