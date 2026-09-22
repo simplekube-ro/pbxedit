@@ -1,0 +1,114 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BF01 /* A.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB01 /* A.swift */; };
+		BF02 /* B.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB02 /* B.swift */; };
+		BF03 /* A.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB01 /* A.swift */; };
+		BF04 /* B.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB02 /* B.swift */; };
+		BF05 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB05 /* Main.swift */; };
+		BF06 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB06 /* Main.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AB01 /* A.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A.swift; sourceTree = "<group>"; };
+		AB02 /* B.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B.swift; sourceTree = "<group>"; };
+		AB05 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
+		AB06 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		G001 = {
+			isa = PBXGroup;
+			children = (
+				G002 /* App */,
+				G003 /* Extension */,
+				G004 /* Shared */,
+			);
+			sourceTree = "<group>";
+		};
+		G002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AB05 /* Main.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		G003 /* Extension */ = {
+			isa = PBXGroup;
+			children = (
+				AB06 /* Main.swift */,
+			);
+			path = Extension;
+			sourceTree = "<group>";
+		};
+		G004 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				AB01 /* A.swift */,
+				AB02 /* B.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		T001 /* App */ = {
+			isa = PBXNativeTarget;
+			buildPhases = (
+				S001 /* Sources */,
+			);
+			name = App;
+			productName = App;
+			productType = "com.apple.product-type.application";
+		};
+		T002 /* AppExtension */ = {
+			isa = PBXNativeTarget;
+			buildPhases = (
+				S002 /* Sources */,
+			);
+			name = AppExtension;
+			productName = AppExtension;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		P001 /* Project object */ = {
+			isa = PBXProject;
+			mainGroup = G001;
+			targets = (
+				T001 /* App */,
+				T002 /* AppExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		S001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				BF05 /* Main.swift in Sources */,
+				BF01 /* A.swift in Sources */,
+				BF02 /* B.swift in Sources */,
+			);
+		};
+		S002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				BF06 /* Main.swift in Sources */,
+				BF03 /* A.swift in Sources */,
+				BF04 /* B.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+	};
+	rootObject = P001 /* Project object */;
+}

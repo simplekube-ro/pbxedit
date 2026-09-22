@@ -84,6 +84,11 @@ public struct StringNode: Sendable, Equatable {
 
     public var isQuoted: Bool { token.kind == .quotedString }
 
+    /// Whether the string is quoted exactly when the write-side rule of
+    /// design D5 would quote it — the spelling Xcode writes. A non-canonical
+    /// string still parses and round-trips; this is rule S5's question.
+    public var isCanonicallyQuoted: Bool { isQuoted == StringCoding.needsQuoting(value) }
+
     /// The decoded value.
     public var value: String {
         guard isQuoted else { return token.text }

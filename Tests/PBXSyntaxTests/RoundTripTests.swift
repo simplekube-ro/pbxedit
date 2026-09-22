@@ -30,12 +30,36 @@ final class RoundTripTests: XCTestCase {
         assertRoundTrips(input, "mixed-formatting.pbxproj")
     }
 
+    /// Rule-set inputs that must not parse (rule S1 is about them). A fixture
+    /// may fail to parse only by being named here, and it must then fail with
+    /// a located error, never a crash (spec: Located errors, never a crash).
+    static let fixturesThatDoNotParse: [String: (line: Int, column: Int)] = [
+        "rules/s1-unterminated-comment.pbxproj": (3, 14),
+        "rules/s4-json-filters.pbxproj": (10, 108),
+    ]
+
     func testEveryFixtureRoundTrips() throws {
         let files = Fixtures.allProjectFiles()
         XCTAssertGreaterThanOrEqual(files.count, 2)
+        let prefix = Fixtures.directory.standardizedFileURL.path + "/"
+        var failedAsExpected: Set<String> = []
         for url in files {
-            assertRoundTrips(Array(try Data(contentsOf: url)), url.lastPathComponent)
+            let name = String(url.standardizedFileURL.path.dropFirst(prefix.count))
+            let input = Array(try Data(contentsOf: url))
+            guard let expected = RoundTripTests.fixturesThatDoNotParse[name] else {
+                assertRoundTrips(input, url.lastPathComponent)
+                continue
+            }
+            switch SyntaxTree.parse(input) {
+            case .success:
+                XCTFail("\(name) parses, but is listed as a fixture that must not")
+            case .failure(let error):
+                XCTAssertEqual(error.line, expected.line, name)
+                XCTAssertEqual(error.column, expected.column, name)
+                failedAsExpected.insert(name)
+            }
         }
+        XCTAssertEqual(failedAsExpected, Set(RoundTripTests.fixturesThatDoNotParse.keys))
     }
 
     func testSmallInputsRoundTrip() {
