@@ -21,7 +21,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Toolchain
         run: swift --version
       - name: Build
@@ -38,7 +38,7 @@ jobs:
     env:
       ORACLE_REQUIRED: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Select the newest Xcode on the image
         run: |
           XCODE="$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
@@ -57,7 +57,7 @@ jobs:
     env:
       TAG: ${{ github.ref_name }}             # read from $TAG in the shell, never interpolated
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check the tag against Version.swift (design D1)
         run: |
@@ -118,7 +118,7 @@ jobs:
             --title "$TOOL_NAME $VERSION" --generate-notes --verify-tag
 
       - name: Check out the tap
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: simplekube-ro/homebrew-tap   # the tap repository (task 1.3)
           token: ${{ secrets.TAP_TOKEN }}
