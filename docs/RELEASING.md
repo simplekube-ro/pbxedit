@@ -4,10 +4,10 @@ The procedure for cutting a release. Every step before the tag is manual;
 everything after it is `.github/workflows/release.yml`. Do the steps in
 order; do not tag until step 2 is recorded.
 
-Names in this document that depend on the owner's decisions (`docs/design.md`
-§ Open items): the public name `pbxedit`, the repository slug `<org>/<name>`
-and the tap `simplekube-ro/homebrew-tap`. Replace them once decided; the
-release workflow and the formula carry the same placeholders.
+Names used throughout: the public name `pbxedit`, the repository
+`simplekube-ro/pbxedit` and the tap `simplekube-ro/homebrew-tap` (installed
+as `simplekube-ro/tap/pbxedit`). The release workflow and the formula use
+the same names.
 
 ## 0. Preconditions
 
@@ -127,7 +127,7 @@ release's `.sha256` file:
 
 ```sh
 V=1.0.0; SUM=<sha256 from the release>
-curl -fsSL -o pbxedit.tgz "https://github.com/<org>/<name>/releases/download/v$V/pbxedit-$V-macos-universal.tar.gz"
+curl -fsSL -o pbxedit.tgz "https://github.com/simplekube-ro/pbxedit/releases/download/v$V/pbxedit-$V-macos-universal.tar.gz"
 echo "$SUM  pbxedit.tgz" | shasum -a 256 -c - && mkdir -p .tools && tar -xzf pbxedit.tgz -C .tools
 .tools/pbxedit --version                   # prints 1.0.0
 ```
