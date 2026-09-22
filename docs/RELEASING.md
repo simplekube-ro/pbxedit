@@ -97,6 +97,13 @@ Commit checked:     ______________________
 Result:             no diff / diff filed as #____
 ```
 
+Recorded checks:
+
+| Release | Xcode version used | Commit checked | Result |
+|---|---|---|---|
+| `v1.0.0` (first attempt) | Xcode 27.0, Build version 27A266a | `64b9fe7` | diff — filed as #6 (platform-filter spelling), fixed by `platform-filter-canonical-form`; the rest was the procedure, rewritten above |
+| `v1.0.0` | Xcode 27.0, Build version 27A266a | `e418e90` | no diff |
+
 ## 3. Tag
 
 The tag is the release; the workflow builds, checks and publishes from it.
