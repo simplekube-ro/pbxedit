@@ -161,14 +161,14 @@ extension SyntaxTree {
 extension SyntaxTree {
     /// Stands in for a node while its payload is edited, so that the payload
     /// is uniquely referenced and an edit copies one entry array at most.
-    fileprivate static let placeholder = Node.data(DataNode(token: Token(kind: .data, text: "<>")))
+    static let placeholder = Node.data(DataNode(token: Token(kind: .data, text: "<>")))
 
     private func checkDepth(_ depth: Int) throws {
         if depth > SyntaxTree.maximumNestingDepth { throw EditError.nestingTooDeep }
     }
 
     /// Runs `body` on the node at `path`, in place.
-    private mutating func mutate(at path: SyntaxPath, _ body: (inout Node) throws -> Void) throws {
+    mutating func mutate(at path: SyntaxPath, _ body: (inout Node) throws -> Void) throws {
         try SyntaxTree.mutate(&root, path[...], fullPath: path, body)
     }
 

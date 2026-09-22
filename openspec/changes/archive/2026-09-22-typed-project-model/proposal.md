@@ -33,5 +33,6 @@ None.
 ## Impact
 
 - New: `Sources/PBXModel/`, `Tests/PBXModelTests/`, fixtures under `Tests/Fixtures/model/`.
+- `PBXSyntax` gains trivia-only accessors (leading trivia, closing-delimiter trivia, key and value annotations) so section markers and comments can be rewritten without touching value bytes. No behaviour of the `pbx-syntax` capability changes.
 - `Package.swift` gains one library target and one test target. No new dependencies.
 - Depends on `lossless-syntax-tree` being merged.

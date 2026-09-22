@@ -1,7 +1,8 @@
 # pbxedit — design
 
 Status: approved design (2026-09-21). Implemented so far: layer 1, `PBXSyntax`
-(change `lossless-syntax-tree`).
+(change `lossless-syntax-tree`), and layer 2, `PBXModel` (change
+`typed-project-model`).
 
 ## Purpose
 
@@ -77,13 +78,33 @@ A view, not a second copy of the data.
   IDs are valid.
 - Typed accessors only for the kinds the tool mutates: `PBXFileReference`,
   `PBXBuildFile`, `PBXGroup`, `PBXVariantGroup`, the build phases,
-  `PBXNativeTarget`, `PBXFileSystemSynchronizedRootGroup`.
+  `PBXNativeTarget`, `PBXFileSystemSynchronizedRootGroup`. The group view also
+  covers `XCVersionGroup` and the target view `PBXAggregateTarget` and
+  `PBXLegacyTarget`, because they hold `children` and `buildPhases` and the
+  indexes would otherwise be wrong; each view exposes its `isa`.
 - Any other `isa` passes through untouched.
 - Derived indexes: file reference → build files → phases → targets; file
-  reference → parent group; group → resolved disk path. **All file lookup is by
-  resolved path, never by basename.**
-- New IDs are 24 hex characters, checked for collision against the table.
-- Owns the `/* Name in Sources */` comment text for the entries it writes.
+  reference → parent groups (none, one or several — rules M1, M3 and M5 read
+  the multiplicity); group → resolved disk path. **All file lookup is by
+  resolved path, never by basename.** Paths are normalized (`.`, `..`, empty
+  components, trailing slash) and compared case-sensitively.
+- Broken projects load: dangling references, orphans and duplicate entries
+  are observable, not errors. Only a missing `objects` or an unresolvable
+  `rootObject` refuses to load.
+- Primitive mutations — create and delete an object, add and remove a group
+  child or a phase entry, set an attribute — place content where Xcode does:
+  in the `/* Begin <isa> section */` block for the kind, in ID order when the
+  block is sorted, creating and removing blocks as kinds appear and vanish.
+  The model never refuses a mutation because the result would violate a rule;
+  that is the rule set's job.
+- New IDs are 24 hex characters, checked for collision against the table and
+  against the session's earlier mints; the random source is replaceable.
+- Owns the `/* Name in Sources */` comment text for the entries it writes,
+  and refreshes existing comments after a rename. Checked against every
+  definition-line comment in the corpus.
+- Bulk repairs stay linear: 700 create-and-add-child repairs with a query
+  after each take 0.2 s on the largest corpus file in a release build, so
+  `lint --fix` needs no batch scope.
 
 ### 3. `PBXOps` — operations
 

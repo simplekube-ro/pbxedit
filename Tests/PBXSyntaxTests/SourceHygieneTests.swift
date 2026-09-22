@@ -2,12 +2,20 @@ import Foundation
 import XCTest
 
 /// CLAUDE.md non-negotiable: no `fatalError`, `try!` or force unwraps in
-/// `Sources/PBXSyntax`.
+/// `Sources/PBXSyntax`. `PBXModel` is held to the same standard.
 final class SourceHygieneTests: XCTestCase {
     func testNoTrapsInPBXSyntaxSources() throws {
+        try assertNoTraps(in: "Sources/PBXSyntax")
+    }
+
+    func testNoTrapsInPBXModelSources() throws {
+        try assertNoTraps(in: "Sources/PBXModel")
+    }
+
+    private func assertNoTraps(in directory: String) throws {
         let sources = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("Sources/PBXSyntax")
+            .appendingPathComponent(directory)
         let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "swift" }
         XCTAssertFalse(files.isEmpty)
