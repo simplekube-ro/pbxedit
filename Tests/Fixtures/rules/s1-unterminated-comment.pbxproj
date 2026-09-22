@@ -1,0 +1,6 @@
+// !$*UTF8*$!
+{
+	objects = { /* never closed
+	};
+	rootObject = P001;
+}

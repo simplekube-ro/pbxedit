@@ -1,0 +1,70 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BF01 /* FooTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12 /* FooTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AB12 /* FooTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FooTests.swift; path = AppTests/Views/FooTests.swift; sourceTree = SOURCE_ROOT; };
+		AF01 /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		G001 = {
+			isa = PBXGroup;
+			children = (
+				G002 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		G002 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AF01 /* App.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		T001 /* App */ = {
+			isa = PBXNativeTarget;
+			buildPhases = (
+				S001 /* Sources */,
+			);
+			name = App;
+			productName = App;
+			productReference = AF01 /* App.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		P001 /* Project object */ = {
+			isa = PBXProject;
+			mainGroup = G001;
+			productRefGroup = G002 /* Products */;
+			targets = (
+				T001 /* App */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		S001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				BF01 /* FooTests.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+	};
+	rootObject = P001 /* Project object */;
+}

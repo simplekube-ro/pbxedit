@@ -29,7 +29,8 @@ None.
 
 ## Impact
 
-- New: `Sources/PBXOps/Rules/`, `Sources/pbxedit/`, `Tests/PBXOpsTests/`, `Tests/CLITests/`.
+- New: `Sources/PBXOps/Rules/`, `Sources/pbxedit/`, `Tests/PBXOpsTests/`, `Tests/CLITests/`, `Tests/Fixtures/rules/`.
+- `Sources/PBXSyntax`: one public read-only property, `StringNode.isCanonicallyQuoted`, so S5 can ask the layer that owns the quoting rule (design D3).
 - New dependency: `swift-argument-parser` (one of the two permitted by project policy).
 - `docs/design.md`: S5 wording, and `--write-baseline` added to the `lint` row of the Commands table.
 - Depends on `typed-project-model`.

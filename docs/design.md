@@ -1,8 +1,9 @@
 # pbxedit — design
 
 Status: approved design (2026-09-21). Implemented so far: layer 1, `PBXSyntax`
-(change `lossless-syntax-tree`), and layer 2, `PBXModel` (change
-`typed-project-model`).
+(change `lossless-syntax-tree`); layer 2, `PBXModel` (change
+`typed-project-model`); the rule set in layer 3, `PBXOps`, and the CLI
+skeleton with `lint` (change `integrity-rules-lint`).
 
 ## Purpose
 
@@ -125,7 +126,13 @@ primitive edits plus a human-readable and JSON description.
 - The "modified / not modified" line is derived from one fact: whether the
   bytes on disk were replaced.
 - Exit codes: `0` success or no-op, `1` rule violation or refused operation,
-  `2` usage or parse error.
+  `2` usage or parse error. For `lint`, whose job is to report, a file that
+  does not parse or load is the S1 finding and exits `1`; `2` is for usage
+  errors, a project that cannot be located and a baseline that cannot be read.
+  Warnings alone exit `0` unless `--strict`.
+- `--project <path>` names the `.xcodeproj` or `project.pbxproj`; without it,
+  the single `.xcodeproj` in the current directory is used, and none or
+  several is a usage error.
 
 ### Commands
 
@@ -134,7 +141,7 @@ primitive edits plus a human-readable and JSON description.
 | `add <path>…` | File must exist on disk. Creates the file reference, group chain, build file and phase entry as one plan. Re-adding an existing member is a no-op, never a second ID |
 | `move <from> <to>` | File must already be at `<to>` on disk. Re-parents the reference, rewrites its path, and swaps build-phase membership when the destination implies different targets |
 | `remove <path>…` | Removes build files, phase entries, the group child and the reference. If several targets use the reference, requires `--target` to detach one or `--all` |
-| `lint` | Runs the rule set. `--fix` repairs what is unambiguous; `--baseline <file>` fails only on new findings; `--disk` enables disk rules |
+| `lint` | Runs the rule set; errors before warnings, each ordered by rule then object ID. `--fix` repairs what is unambiguous; `--write-baseline <file>` records the current findings (keyed by rule and object ID) and exits 0; `--baseline <file>` reports and fails only on findings not in the baseline, and lists entries that no longer occur as resolved; `--disk` enables disk rules; `--strict` makes warnings fail |
 | `query <path>` | Read-only: targets, phases, `platformFilters`, group path, IDs. Also `query --target <name>` to list members |
 
 ### Synchronized folders
@@ -147,33 +154,43 @@ exception sets is out of scope for v1.
 
 One rule set serves both the post-edit checker and `lint`.
 
-### Structural — always errors
+Every finding carries the rule ID, its severity, the offending object's ID
+(absent only for a finding about something no object names, such as a D2
+file on disk), the object's resolved path when it has one, the IDs of the
+related objects, and a message. A rule set run can be scoped to a set of
+object IDs: a finding is kept when its object or a related object is in the
+set, which is how a mutation's pre-write check ignores pre-existing damage.
 
-| ID | Rule |
-|---|---|
-| S1 | The file parses and round-trips byte-for-byte |
-| S2 | Every referenced ID exists (`fileRef`, `children`, `files`, `buildPhases`, `mainGroup`, `productRef`, target dependencies) |
-| S3 | No duplicate object IDs; no ID twice in one `children` or `files` array |
-| S4 | `platformFilters` is a plist array of known platform names |
-| S5 | A string is quoted if and only if it requires quoting |
+### Structural
+
+| ID | Rule | Level |
+|---|---|---|
+| S1 | The file parses, round-trips byte-for-byte, and loads as a project (has `objects` and a resolvable `rootObject`). When it does not, this is the only finding | error |
+| S2 | Every referenced ID exists. The keys checked are the ones that hold object IDs in the corpus: `fileRef`, `productRef`, `children`, `files`, `buildPhases`, `targets`, `mainGroup`, `productRefGroup`, `productReference`, `dependencies`, `target`, `targetProxy`, `containerPortal`, `buildConfigurationList`, `buildConfigurations`, `baseConfigurationReference`, `baseConfigurationReferenceAnchor`, `buildRules`, `currentVersion`, `package`, `packageProductDependencies`, `packageReferences`, `fileSystemSynchronizedGroups`, `exceptions`, `remoteRef`, `ProductGroup`, `ProjectRef`, `buildPhase`, `TestTargetID`. `remoteGlobalIDString` is deliberately not checked: it names an object in the container portal's project. A corpus test fails when a new key holding IDs appears | error |
+| S3 | No duplicate object IDs; no ID twice in one `children` or `files` array | error |
+| S4 | `platformFilters` is a plist array of known platform names (`ios`, `maccatalyst`, `macos`, `tvos`, `watchos`, `xros`, `driverkit`) | error |
+| S5 | A string is quoted exactly when Xcode would quote it (the write-side rule of `PBXSyntax`, § 1). A bare string with an illegal character cannot parse at all — that is S1 — so what remains is a legal but non-canonical spelling, typically a bare hyphen written by another tool; harmless to Xcode, hence a warning | warning |
 
 ### Membership
 
 | ID | Rule | Level |
 |---|---|---|
-| M1 | Every `PBXBuildFile` is in exactly one build phase | error |
-| M2 | Every build-phase entry points to a `PBXBuildFile` whose `fileRef` or `productRef` resolves | error |
-| M3 | Every `PBXFileReference` has exactly one parent group (product and package references exempt) | error |
-| M4 | No two file references resolve to the same disk path | error |
-| M5 | No two build files in one phase share a file reference | error |
-| M6 | A source file is in the Sources phase of a target while its path lies under another target's root | warning |
+| M1 | Every `PBXBuildFile` is in exactly one build phase (the same phase listing it twice is S3) | error |
+| M2 | Every build-phase entry names a `PBXBuildFile` whose `fileRef` or `productRef` resolves | error |
+| M3 | Every `PBXFileReference` has exactly one parent group (a target's `productReference` is exempt) | error |
+| M4 | No two project-relative file references resolve to the same disk path (references under `SDKROOT`, `BUILT_PRODUCTS_DIR` and the like are not compared) | error |
+| M5 | No two build files in one phase share a `fileRef` or a `productRef` | error |
+| M6 | A source file is in the Sources phase of a target while its path lies under another target's root. A top-level directory is a target's root when the target builds at least 90% of the Sources-phase files under it; a directory can be the root of several targets, and a file in a directory that is a root of its own target is never flagged | warning |
 
 ### Disk — warnings, with `lint --disk`
 
 | ID | Rule |
 |---|---|
-| D1 | A file reference's resolved path exists |
-| D2 | A source file under a group's directory is unreferenced and not covered by a synchronized group |
+| D1 | A project-relative file reference's resolved path exists (products exempt) |
+| D2 | A file with a source or resource extension, directly inside a directory some group resolves to, is referenced or covered by a synchronized group. The finding names the file's path; it has no object |
+
+Without `--disk` the file system is not read beyond the project file: only
+D1 and D2 can hold a disk reader, by construction.
 
 ### Severity and repair
 

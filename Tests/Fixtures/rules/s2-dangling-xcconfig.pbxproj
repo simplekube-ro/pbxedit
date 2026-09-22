@@ -1,0 +1,63 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXFileReference section */
+		AB13 /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		G001 = {
+			isa = PBXGroup;
+			children = (
+				AB13 /* App.xcconfig */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		P001 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = L001 /* Build configuration list for PBXProject "App" */;
+			mainGroup = G001;
+			targets = (
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		X001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = AB13 /* App.xcconfig */;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		X002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = AB99 /* Gone.xcconfig */;
+			buildSettings = {
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		L001 /* Build configuration list for PBXProject "App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				X001 /* Debug */,
+				X002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = P001 /* Project object */;
+}

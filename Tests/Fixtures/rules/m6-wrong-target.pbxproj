@@ -1,0 +1,130 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BF01 /* A.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB01 /* A.swift */; };
+		BF02 /* B.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB02 /* B.swift */; };
+		BF03 /* C.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB03 /* C.swift */; };
+		BF04 /* D.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB04 /* D.swift */; };
+		BF05 /* E.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB05 /* E.swift */; };
+		BF06 /* F.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB06 /* F.swift */; };
+		BF07 /* G.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB07 /* G.swift */; };
+		BF08 /* H.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB08 /* H.swift */; };
+		BF09 /* I.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB09 /* I.swift */; };
+		BF10 /* Foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10 /* Foo.swift */; };
+		BF11 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB11 /* Main.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AB01 /* A.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A.swift; sourceTree = "<group>"; };
+		AB02 /* B.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B.swift; sourceTree = "<group>"; };
+		AB03 /* C.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = C.swift; sourceTree = "<group>"; };
+		AB04 /* D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = D.swift; sourceTree = "<group>"; };
+		AB05 /* E.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = E.swift; sourceTree = "<group>"; };
+		AB06 /* F.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = F.swift; sourceTree = "<group>"; };
+		AB07 /* G.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G.swift; sourceTree = "<group>"; };
+		AB08 /* H.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = H.swift; sourceTree = "<group>"; };
+		AB09 /* I.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = I.swift; sourceTree = "<group>"; };
+		AB10 /* Foo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Foo.swift; sourceTree = "<group>"; };
+		AB11 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		G001 = {
+			isa = PBXGroup;
+			children = (
+				G002 /* App */,
+				G003 /* AppSlowTests */,
+			);
+			sourceTree = "<group>";
+		};
+		G002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AB11 /* Main.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		G003 /* AppSlowTests */ = {
+			isa = PBXGroup;
+			children = (
+				AB01 /* A.swift */,
+				AB02 /* B.swift */,
+				AB03 /* C.swift */,
+				AB04 /* D.swift */,
+				AB05 /* E.swift */,
+				AB06 /* F.swift */,
+				AB07 /* G.swift */,
+				AB08 /* H.swift */,
+				AB09 /* I.swift */,
+				AB10 /* Foo.swift */,
+			);
+			path = AppSlowTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		T001 /* App */ = {
+			isa = PBXNativeTarget;
+			buildPhases = (
+				S001 /* Sources */,
+			);
+			name = App;
+			productName = App;
+			productType = "com.apple.product-type.application";
+		};
+		T002 /* AppSlowTests */ = {
+			isa = PBXNativeTarget;
+			buildPhases = (
+				S002 /* Sources */,
+			);
+			name = AppSlowTests;
+			productName = AppSlowTests;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		P001 /* Project object */ = {
+			isa = PBXProject;
+			mainGroup = G001;
+			targets = (
+				T001 /* App */,
+				T002 /* AppSlowTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		S001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				BF11 /* Main.swift in Sources */,
+				BF10 /* Foo.swift in Sources */,
+			);
+		};
+		S002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				BF01 /* A.swift in Sources */,
+				BF02 /* B.swift in Sources */,
+				BF03 /* C.swift in Sources */,
+				BF04 /* D.swift in Sources */,
+				BF05 /* E.swift in Sources */,
+				BF06 /* F.swift in Sources */,
+				BF07 /* G.swift in Sources */,
+				BF08 /* H.swift in Sources */,
+				BF09 /* I.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+	};
+	rootObject = P001 /* Project object */;
+}

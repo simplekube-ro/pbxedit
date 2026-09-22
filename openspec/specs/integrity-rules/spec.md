@@ -1,24 +1,27 @@
-# Spec Delta
+# integrity-rules Specification
 
 ## Purpose
-
 Define what it means for an Xcode project file to be internally consistent, as a fixed set of identified rules, and provide a read-only command that reports every violation in a form both people and programs can act on.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Findings are identified and addressable
-Every finding SHALL carry the rule ID, a severity of `error` or `warning`, the ID of the offending object, the object's resolved path when it has one, and a message that states what is wrong and names the related objects by ID.
+Every finding SHALL carry the rule ID, a severity of `error` or `warning`, the ID of the offending object (absent only for a finding about something no object names, such as a D2 file on disk), the object's resolved path when it has one, the IDs of the related objects, and a message that states what is wrong and names the related objects by ID.
 
 #### Scenario: Finding for an ungrouped file
 - **WHEN** the file reference `AB12` for `AppTests/Views/FooTests.swift` is a child of no group
 - **THEN** the finding has rule `M3`, severity `error`, object `AB12`, path `AppTests/Views/FooTests.swift`, and a message saying the reference has no parent group
 
 ### Requirement: Structural rules
-The rule set SHALL report as errors: a file that does not parse or does not round-trip (S1); a reference to an ID that does not exist, in `fileRef`, `productRef`, `children`, `files`, `buildPhases`, `targets`, `mainGroup`, `productRefGroup`, `productReference`, `dependencies`, `target` or `targetProxy` (S2); an object ID defined twice, or an ID listed twice in one `children` or `files` array (S3); and a `platformFilters` value that is not a property-list array of known platform names (S4). It SHALL report as a warning a string whose quoting differs from the canonical form (S5).
+The rule set SHALL report as errors: a file that does not parse, does not round-trip, or does not load as a project because it has no `objects` dictionary or no resolvable `rootObject` (S1); a reference to an ID that does not exist, in `fileRef`, `productRef`, `children`, `files`, `buildPhases`, `targets`, `mainGroup`, `productRefGroup`, `productReference`, `dependencies`, `target`, `targetProxy`, `containerPortal`, `buildConfigurationList`, `buildConfigurations`, `baseConfigurationReference`, `baseConfigurationReferenceAnchor`, `buildRules`, `currentVersion`, `package`, `packageProductDependencies`, `packageReferences`, `fileSystemSynchronizedGroups`, `exceptions`, `remoteRef`, `ProductGroup`, `ProjectRef`, `buildPhase` or `TestTargetID` (S2); an object ID defined twice, or an ID listed twice in one `children` or `files` array (S3); and a `platformFilters` value that is not a property-list array of known platform names (S4). It SHALL report as a warning a string whose quoting differs from the canonical form (S5).
 
 #### Scenario: S1 on unparseable input
 - **WHEN** the project file has an unterminated comment
 - **THEN** exactly one finding is reported, rule `S1`, with the parser's line and column in its message, and no other rule is evaluated
+
+#### Scenario: S1 on a file that is not a project
+- **WHEN** the project file parses but its `rootObject` names an ID that is not in `objects`
+- **THEN** exactly one finding is reported, rule `S1`, saying the root object cannot be found, and no other rule is evaluated
 
 #### Scenario: S2 on a dangling child
 - **WHEN** a group's `children` lists `DEAD0001` and no such object exists
@@ -37,7 +40,7 @@ The rule set SHALL report as errors: a file that does not parse or does not roun
 - **THEN** an `S5` warning is reported on that reference
 
 ### Requirement: Membership rules
-The rule set SHALL report as errors: a build file listed in no build phase, or in more than one (M1); a build-phase entry that does not name a build file, or names one whose `fileRef` or `productRef` does not resolve (M2); a file reference that is a child of no group, or of more than one, excepting references that are a target's `productReference` (M3); two file references resolving to the same path (M4); two build files in one phase that share a file reference (M5). It SHALL report as a warning a build file in a target's Sources phase whose file resolves under a directory that is the root of a different target and not of its own (M6).
+The rule set SHALL report as errors: a build file listed in no build phase, or in more than one distinct phase (M1; the same phase listing it twice is S3); a build-phase entry that does not name a build file, or names one whose `fileRef` or `productRef` does not resolve (M2); a file reference that is a child of no group, or of more than one, excepting references that are a target's `productReference` (M3); two project-relative file references resolving to the same path (M4); two build files in one phase that share a `fileRef` or a `productRef` (M5). It SHALL report as a warning a build file in a target's Sources phase whose file resolves under a top-level directory that is the root of a different target and not of its own, a root being a directory at least 90% of whose Sources-phase files the target builds (M6).
 
 #### Scenario: M1 on a build file that never builds
 - **WHEN** a build file for `FooTests.swift` exists and no phase lists it
@@ -59,8 +62,12 @@ The rule set SHALL report as errors: a build file listed in no build phase, or i
 - **WHEN** every other file under `AppSlowTests/` is built by target `AppSlowTests`, and `AppSlowTests/Foo.swift` is in the Sources phase of target `App` only
 - **THEN** an `M6` warning is reported on that build file, naming both targets
 
+#### Scenario: Shared sources are not M6
+- **WHEN** every file under `Shared/` is in the Sources phase of both `App` and `AppExtension`
+- **THEN** no `M6` finding is reported
+
 ### Requirement: Disk rules are opt-in
-When disk rules are enabled, the rule set SHALL report as warnings: a project-relative file reference whose resolved path does not exist (D1); and a file on disk with a source or resource extension, inside a directory some group resolves to, that no file reference resolves to and no synchronized root group covers (D2). When disk rules are not enabled, the file system SHALL NOT be read beyond the project file.
+When disk rules are enabled, the rule set SHALL report as warnings: a project-relative file reference, other than a target's `productReference`, whose resolved path does not exist (D1); and a file on disk with a source or resource extension, directly inside a directory some group resolves to, that no file reference resolves to and no synchronized root group covers (D2). A D2 finding has no object; it carries the file's path. When disk rules are not enabled, the file system SHALL NOT be read beyond the project file.
 
 #### Scenario: D1 on a deleted file
 - **WHEN** disk rules are enabled and `App/Gone.swift` is referenced but absent
@@ -86,10 +93,10 @@ The rule set SHALL be evaluable against a given set of object IDs, reporting onl
 
 #### Scenario: JSON output
 - **WHEN** `pbxedit lint --json` runs on the same project
-- **THEN** it prints one JSON object with `schemaVersion`, `project`, `findings` (each with `rule`, `severity`, `object`, `path`, `message`) and `summary`, and nothing else on standard output
+- **THEN** it prints one JSON object with `schemaVersion`, `project`, `findings` (each with `rule`, `severity`, `object`, `path`, `related`, `message`; an absent object or path is `null`) and `summary` (`errors`, `warnings`, `baselined`, `resolved`), and nothing else on standard output
 
 ### Requirement: Exit codes
-`pbxedit lint` SHALL exit `0` when no error-severity finding is reported, `1` when at least one is, and `2` on a usage error or when the project cannot be located. Warnings alone SHALL NOT cause a non-zero exit unless `--strict` is given.
+`pbxedit lint` SHALL exit `0` when no error-severity finding is reported, `1` when at least one is (an `S1` included), and `2` on a usage error or when the project cannot be located. Warnings alone SHALL NOT cause a non-zero exit unless `--strict` is given.
 
 #### Scenario: Warnings only
 - **WHEN** the only findings are `S5` and `M6` warnings

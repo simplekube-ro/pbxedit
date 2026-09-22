@@ -1,0 +1,43 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXFileReference section */
+		AB12 /* Foo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Foo.swift; sourceTree = "<group>"; };
+		AB13 /* Foo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Foo.swift; path = App/Foo.swift; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		G001 = {
+			isa = PBXGroup;
+			children = (
+				G002 /* App */,
+				AB13 /* Foo.swift */,
+			);
+			sourceTree = "<group>";
+		};
+		G002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AB12 /* Foo.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		P001 /* Project object */ = {
+			isa = PBXProject;
+			mainGroup = G001;
+			targets = (
+			);
+		};
+/* End PBXProject section */
+	};
+	rootObject = P001 /* Project object */;
+}
