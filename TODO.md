@@ -54,7 +54,7 @@ For each change, on a branch named after it:
 - [x] `docs/design.md` updated: S5 as a warning, `--write-baseline` — plus the S2 key list, M1/M4/M5/M6 wording as shipped, the D rules, findings/scoping, `--project` discovery and `lint`'s exit-code note
 - [x] Finding counts for the originating project recorded in the change's design.md — counts for every corpus file recorded in the archived design's Evidence section; the originating project is private and unavailable here, so its line is a marked placeholder for the owner to fill in (`pbxedit lint --project <path>`)
 - [ ] Archived, merged — archived as `openspec/changes/archive/2026-09-22-integrity-rules-lint`, delta synced into `openspec/specs/integrity-rules/`; not yet merged
-- [ ] *Milestone:* `pbxedit lint` usable in RandomPlayer CI with a baseline
+- [ ] *Milestone:* `pbxedit lint` usable in the originating project's CI with a baseline
 
 ### 4. query-command
 - [x] Artifacts re-verified, `openspec validate --strict` green — `MembershipReport` checked against change 5: `add --json` embeds "the membership report for each path" and lists "each object created or reused with its ID", and `remove`/`lint --fix` read `member` and the memberships' target names, so `target` and `phase` are `{id, name}` pairs and the reference, group and build-file IDs are all present; absent values are `null` (design D2). Other drift fixed: the spec's scenarios named paths and targets (`App/iOS/Foo.swift`, `AppTopShelf`, `App/Services/Rate.swift`) that no fixture holds, now the shipped `model/app.pbxproj` and `rules/` fixtures; the `--target` JSON shape and the `--target`-with-paths usage error were unspecified; task 5.1 named a `README.md` that does not exist (examples recorded in the change's design.md Evidence instead)
@@ -98,12 +98,12 @@ For each change, on a branch named after it:
 - [x] `swift test` green; reference workload substitute: one write, only `children` lines and new groups in the diff, zero M3 afterwards, under two seconds — 111 syntax + 64 model + 206 ops + 88 CLI tests, 0 failures, none skipped; release `PerformanceTests` green. The originating project is private and unavailable here; the substitute (`PBXOpsTests.RepairPerformanceTests`, design.md Evidence) is `Alamofire.pbxproj` plus 655 `SOURCE_ROOT` orphans, each built, over thirty directories, fifteen of them with no group (502,220 bytes, 2,190 objects): one write through `OperationRunner`, no removed line, every added line a `children` entry or a line of the fifteen new `PBXGroup` definitions, zero M3 and no new finding afterwards, file-reference count unchanged, `plutil -lint` green, **0.194 s in a release build** (evaluate 0.017 s, plan 0.013 s, apply 0.056 s, verified write 0.105 s). Found and fixed on the way: the first measurement was 2.21 s because M1, M2, M5 and M6 scanned `project.uniqueObjects` inside their per-object loops (quadratic); they now use a `seen` set like M3/M4 — no behaviour change, `lint` forty times faster at this size. The mixed fixture `Tests/Fixtures/repair/app.pbxproj` (19 errors: 10 repaired, 5 not fixable with reasons, 3 S2 that vanish with the objects removed, 1 S2 that remains) drives the planner, runner and CLI tests; the Motivation regression ("a PBXBuildFile with no build-phase entry") is `RepairPlannerTests.testABuildFileInNoPhaseJoinsTheUnanimousTargetWithItsOwnID`. **[originating project]** line in the archived design's Evidence left as a placeholder for the owner
 - [ ] `xcodebuild -list` reads the repaired originating project — not available here; instead `CLITests.OracleTests` reads the repaired substitute (655 errors before, 0 after) and the repaired mixed fixture under Xcode 27.0 (33 oracle scenarios in all), green
 - [ ] Archived, merged — archived as `openspec/changes/archive/2026-09-22-lint-fix`, delta synced into `openspec/specs/integrity-repair/` (9 requirements); not yet merged
-- [ ] *Milestone:* RandomPlayer can do its one-commit orphan repair
+- [ ] *Milestone:* the originating project can do its one-commit orphan repair
 
 ### 10. release-distribution
 - [x] Public name decided — stays `pbxedit` (2026-09-22); no renames needed
 - [x] Licence chosen — MIT (2026-09-22): `LICENSE` added, README licence section, corpus is MIT throughout so `Tests/Fixtures/NOTICE` is compatible
-- [ ] (pending-user) Homebrew tap repository and `TAP_TOKEN` secret created — tap `simplekube-ro/homebrew-tap` exists with `Formula/pbxedit.rb` (2026-09-22); the token is created but `gh secret list --repo simplekube-ro/pbxedit` does not show `TAP_TOKEN` yet
+- [x] Homebrew tap repository and `TAP_TOKEN` secret created — tap `simplekube-ro/homebrew-tap` with `Formula/pbxedit.rb`; `TAP_TOKEN` is an organization secret shared with the repository (2026-09-22); its visibility to the workflow is proven by the rehearsal's tap push
 - [ ] Artifacts re-verified
 - [ ] Applied
 - [ ] `oracle` job is a required check, and shown to fail on a deliberately bad write
@@ -111,14 +111,14 @@ For each change, on a branch named after it:
 - [ ] `v1.0.0` cut after change 9; Xcode version for the manual open-and-save check recorded
 - [ ] Archived, merged
 
-*Status 2026-09-22: on the `release-distribution` branch, artifacts re-verified (`openspec validate --strict` green; drift fixed in D1/D3, the spec's version and oracle scenarios and the proposal's timing) and tasks 2.1, 2.2, 3.1 and 6.2 applied — `pbxedit --version` (`Sources/pbxedit/Version.swift`, `0.1.0-dev`, `PBXEDIT_BUILD_HASH`), the `ORACLE_REQUIRED` mode of `CLITests.OracleTests`, `docs/RELEASING.md`; 111 syntax + 64 model + 206 ops + 99 CLI tests, 0 failures; universal build proven locally (`lipo -archs` → `x86_64 arm64`, both slices `minos 13.0`). Since then: name and licence decided, `LICENSE` and `README.md` added, `.github/workflows/release.yml` and the `oracle` job in `ci.yml` in place, the tap created with its formula. Pending: the `TAP_TOKEN` secret, the first push (CI green, then `oracle` required in branch protection), task 3.3, the rehearsal, the first releases, archive. Not archived.*
+*Status 2026-09-22: on the `release-distribution` branch, artifacts re-verified (`openspec validate --strict` green; drift fixed in D1/D3, the spec's version and oracle scenarios and the proposal's timing) and tasks 2.1, 2.2, 3.1 and 6.2 applied — `pbxedit --version` (`Sources/pbxedit/Version.swift`, `0.1.0-dev`, `PBXEDIT_BUILD_HASH`), the `ORACLE_REQUIRED` mode of `CLITests.OracleTests`, `docs/RELEASING.md`; 111 syntax + 64 model + 206 ops + 99 CLI tests, 0 failures; universal build proven locally (`lipo -archs` → `x86_64 arm64`, both slices `minos 13.0`). Since then: name and licence decided, `LICENSE` and `README.md` added, `.github/workflows/release.yml` and the `oracle` job in `ci.yml` in place, the tap created with its formula. `TAP_TOKEN` created as an organization secret shared with the repository. Pending: the first push (CI green, then `oracle` required in branch protection), task 3.3, the rehearsal, the first releases, archive. Not archived.*
 
-## After v1 — adoption in RandomPlayer
+## After v1 — adoption in the originating project
 
-A separate OpenSpec change in the RandomPlayer repository, closing its issue #632:
+A separate OpenSpec change in that project's repository, closing its file-membership issue:
 
 - [ ] Pin a pbxedit release by URL and checksum into `.tools/`
 - [ ] `scripts/add-file.rb` becomes a shim over `pbxedit add` (keeps `--template`); `--lint` maps to `pbxedit lint`
 - [ ] One `pbxedit lint --fix` commit for the ~655 orphans — gated on all-platform builds, unchanged test counts, and an Xcode open-and-save producing no diff
 - [ ] `pbxedit lint` in CI or the commit-guard hook
-- [ ] After one overlap release: delete the Ruby script and its tests; rewrite `scripts/CLAUDE.md` limitations, including the line calling a missing group child "the convention" for `RandomPlayerTests/Views/*`
+- [ ] After one overlap release: delete the Ruby script and its tests; rewrite `scripts/CLAUDE.md` limitations, including the line calling a missing group child "the convention" for the test target's `Views/*` files

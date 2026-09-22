@@ -6,7 +6,7 @@
 
 - [x] 1.1 Decide the public name given the collision with `ZehMatt/PBXEdit` — decided 2026-09-22: the name stays `pbxedit`; no renames; the `<org>/<name>` placeholders are filled with `simplekube-ro/pbxedit`
 - [x] 1.2 Choose the licence; add `LICENSE` and the licence line in `README.md`; verify `Tests/Fixtures/NOTICE` is compatible with it — MIT (2026-09-22); `LICENSE` added, `README.md` created with the Install/Pinning/Supported platforms sections and a Licence section; every corpus file is MIT per `NOTICE`
-- [ ] 1.3 (pending-user) Create the Homebrew tap repository and a fine-grained token with contents-write on it only, stored as the `TAP_TOKEN` secret; verify the secret is visible to the release workflow — *tap `simplekube-ro/homebrew-tap` exists with `Formula/pbxedit.rb`; token created; the secret is not yet listed by `gh secret list --repo simplekube-ro/pbxedit`*
+- [x] 1.3 Create the Homebrew tap repository and a fine-grained token with contents-write on it only, stored as the `TAP_TOKEN` secret; verify the secret is visible to the release workflow — *tap `simplekube-ro/homebrew-tap` with `Formula/pbxedit.rb`; `TAP_TOKEN` is an organization secret shared with the repository; visibility to the workflow is proven by the rehearsal's "Commit and push the tap" step (4.2)*
 
 ## 2. Version
 
