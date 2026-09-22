@@ -2,22 +2,27 @@ import Foundation
 import PBXModel
 import PBXOps
 
-/// What a mutating command (`add`, `remove`) prints, in either form. One
-/// JSON object with every key present (absent values `null`); human output
-/// grouped by path — decisions, changes, notes, the membership after the
-/// operation — ending with the one line derived from whether the bytes were
-/// replaced. Introduced by `add-command` as `AddReport`; `remove-command`
-/// moved it here unchanged so both commands print the same shape.
+/// What a mutating command (`add`, `move`, `remove`) prints, in either form.
+/// One JSON object with every key present (absent values `null`); human
+/// output grouped by path — decisions, changes, notes, the membership after
+/// the operation — ending with the one line derived from whether the bytes
+/// were replaced. Introduced by `add-command` as `AddReport`; `remove-command`
+/// moved it here unchanged so both commands print the same shape;
+/// `move-command` added the `moves` key and the `from -> to` header.
 struct OperationReport {
     let pbxproj: URL
     let dryRun: Bool
     let json: Bool
+    /// `move` only: the intended moves, which the plan's own list replaces
+    /// once there is one. Non-`nil` adds the `moves` key to the JSON and
+    /// heads each path's block with `from -> to` (move design D7).
+    var moves: [Plan.Move]?
 
     /// A refusal before anything ran: the file is missing or the planner asked a question.
     func refused(_ message: String, project: Project, paths: [String]) {
         if json {
             print(OperationReport.json(modified: false, dryRun: dryRun, plan: Plan(), findings: [], warnings: [], error: message, diff: nil,
-                                       results: paths.map { MembershipReport(project: project, path: $0) }), terminator: "")
+                                       results: paths.map { MembershipReport(project: project, path: $0) }, moves: moves), terminator: "")
         } else {
             FileHandle.standardError.write(Data(("error: " + message + "\n").utf8))
             print(modifiedLine(false))
@@ -27,14 +32,17 @@ struct OperationReport {
     func render(_ result: OperationResult, fallback: Project, paths: [String]) {
         let project = result.project ?? fallback
         let results = paths.map { MembershipReport(project: project, path: $0) }
+        let moves = self.moves.map { result.plan.moves.isEmpty ? $0 : result.plan.moves }
         if json {
             print(OperationReport.json(modified: result.modified, dryRun: dryRun, plan: result.plan, findings: result.findings, warnings: result.warnings,
-                                       error: result.error, diff: result.diff, results: results), terminator: "")
+                                       error: result.error, diff: result.diff, results: results, moves: moves), terminator: "")
             return
         }
+        var labels: [String: String] = [:]
+        for move in moves ?? [] { labels[move.to] = "\(move.from) -> \(move.to)" }
         var lines: [String] = []
         for path in paths {
-            lines.append(path)
+            lines.append(labels[path] ?? path)
             for decision in result.plan.decisions where decision.path == path {
                 lines.append("  \(decision.attribute): \(decision.value) (\(decision.source.description))")
             }
@@ -47,6 +55,10 @@ struct OperationReport {
             if let report = results.first(where: { $0.path == path }), result.outcome == .ok {
                 lines.append("  membership: " + OperationReport.membership(report))
             }
+        }
+        // A note about no path in particular (a directory move's extra files).
+        for note in result.plan.notes where !paths.contains(where: { note.hasPrefix($0 + ":") }) {
+            lines.append("note: \(note)")
         }
         for warning in result.warnings { lines.append("warning: \(warning.description.dropFirst("warning ".count))") }
         for finding in result.findings { lines.append(finding.description) }
@@ -155,6 +167,11 @@ struct OperationReport {
         let detail: String
     }
 
+    struct MoveJSON: Encodable {
+        let from: String
+        let to: String
+    }
+
     struct JSON: Encodable {
         let schemaVersion = 1
         let modified: Bool
@@ -166,10 +183,12 @@ struct OperationReport {
         let error: String?
         let diff: String?
         let results: [MembershipReport]
+        /// `move` only; the key is absent for every other command.
+        let moves: [MoveJSON]?
 
-        enum CodingKeys: String, CodingKey { case schemaVersion, modified, dryRun, decisions, changes, notes, findings, error, diff, results }
+        enum CodingKeys: String, CodingKey { case schemaVersion, modified, dryRun, decisions, changes, notes, findings, error, diff, results, moves }
 
-        // Absent values are `null`, never omitted.
+        // Absent values are `null`, never omitted — except `moves`, a key only `move` has.
         func encode(to encoder: any Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(schemaVersion, forKey: .schemaVersion)
@@ -182,11 +201,12 @@ struct OperationReport {
             try container.encode(error, forKey: .error)
             try container.encode(diff, forKey: .diff)
             try container.encode(results, forKey: .results)
+            if let moves { try container.encode(moves, forKey: .moves) }
         }
     }
 
     static func json(modified: Bool, dryRun: Bool, plan: Plan, findings: [Finding], warnings: [Finding], error: String?, diff: String?,
-                     results: [MembershipReport]) -> String {
+                     results: [MembershipReport], moves: [Plan.Move]? = nil) -> String {
         let object = JSON(
             modified: modified,
             dryRun: dryRun,
@@ -200,7 +220,8 @@ struct OperationReport {
             },
             error: error,
             diff: diff,
-            results: results)
+            results: results,
+            moves: moves?.map { MoveJSON(from: $0.from, to: $0.to) })
         guard let data = try? JSONEncoder.pbxedit.encode(object) else { return "{}\n" }
         return String(decoding: data, as: UTF8.self) + "\n"
     }

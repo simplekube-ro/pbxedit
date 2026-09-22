@@ -48,9 +48,38 @@ public enum PlanError: Error, Equatable, Sendable, CustomStringConvertible {
     case sharedFile(path: String, targets: [String])
     /// `remove --target`: the file is not a member of that target (remove design D4).
     case notMemberOfTarget(path: String, target: String, targets: [String])
+    /// `move`: an inference error at the destination, to which `--keep-membership`
+    /// is always an answer (move design D3).
+    indirect case orKeepMembership(PlanError)
+    /// `move`: the source is still on disk and the destination is not (move design D4).
+    case notMovedOnDisk(from: String, to: String)
+    /// `move`: both paths are on disk (move design D4).
+    case looksLikeACopy(from: String, to: String)
+    /// `move`: neither path is on disk (move design D4).
+    case destinationMissing(from: String, to: String)
+    /// `move`: a file reference already resolves to the destination.
+    case destinationTaken(to: String, reference: ObjectID)
+    /// `move`: the source has no reference and lies in a synchronized folder (move design D6).
+    case synchronizedSource(from: String, to: String, group: ObjectID, folder: String)
+    /// `move`: a synchronized folder lies beneath the directory being moved (move design D5).
+    case synchronizedBeneath(from: String, group: ObjectID, folder: String)
 
     public var description: String {
         switch self {
+        case .orKeepMembership(let underlying):
+            return "\(underlying), or --keep-membership to leave membership as it is"
+        case .notMovedOnDisk(let from, let to):
+            return "\(from) is still on disk and \(to) is not; move the file on disk first (pbxedit moves nothing on disk), then run this command"
+        case .looksLikeACopy(let from, let to):
+            return "both \(from) and \(to) exist on disk, which looks like a copy, not a move; pbxedit add \(to) adds the new file"
+        case .destinationMissing(let from, let to):
+            return "\(to) does not exist on disk (nor does \(from)); move the file on disk first"
+        case .destinationTaken(let to, let reference):
+            return "\(to): a file reference already resolves there (\(reference)); remove it first, or choose another destination"
+        case .synchronizedSource(let from, let to, let group, let folder):
+            return "\(from): its membership comes from the synchronized folder \(folder) (\(group)), so there is no file reference to move; pbxedit add \(to) registers the file at its new location"
+        case .synchronizedBeneath(let from, let group, let folder):
+            return "\(from): the synchronized folder \(folder) (\(group)) lies beneath it, and pbxedit does not edit synchronized groups; move its files individually"
         case .notInProject(let path):
             return "\(path): not in the project; no file reference resolves to it"
         case .synchronizedMembership(let path, let group, let folder):

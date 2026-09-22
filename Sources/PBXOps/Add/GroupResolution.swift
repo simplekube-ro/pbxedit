@@ -88,6 +88,7 @@ extension PlanBuilder {
     public mutating func addChild(_ child: ObjectID, named name: String, to group: ObjectID) {
         let position = childPosition(in: group, name: name)
         add(.addChild(child, to: group, position: position), touching: [child, group])
+        addedChildren[group, default: []].append(child)
         var children = children(of: group)
         if case .before(let sibling) = position, let index = children.firstIndex(where: { $0.id.rawValue == sibling }) {
             children.insert((child, name), at: index)
