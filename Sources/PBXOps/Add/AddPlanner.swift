@@ -9,17 +9,21 @@ import PBXModel
 public enum AddPlanner {
     /// `paths` are source-root-relative and normalized (see `PathArgument`).
     /// Throws `PlanError` when a decision cannot be made; then nothing is
-    /// planned for any path.
-    public static func plan(_ paths: [String], in project: Project, conventions: Conventions, minter: IDMinter = IDMinter()) throws -> Plan {
+    /// planned for any path. `exemptions` is `lint.exempt` of `.pbxedit.yml`:
+    /// a path exempt from M3 gets no group child (conventions-config design
+    /// D6); without a configuration it is `nil` and nothing changes.
+    public static func plan(_ paths: [String], in project: Project, conventions: Conventions, exemptions: Exemptions? = nil,
+                            minter: IDMinter = IDMinter()) throws -> Plan {
         var builder = PlanBuilder(project: project, minter: minter)
         var claimedBuildFiles: Set<ObjectID> = []
         for path in paths {
-            try plan(path, conventions: conventions, builder: &builder, claimed: &claimedBuildFiles)
+            try plan(path, conventions: conventions, exemptions: exemptions, builder: &builder, claimed: &claimedBuildFiles)
         }
         return builder.build()
     }
 
-    private static func plan(_ path: String, conventions: Conventions, builder: inout PlanBuilder, claimed: inout Set<ObjectID>) throws {
+    private static func plan(_ path: String, conventions: Conventions, exemptions: Exemptions?, builder: inout PlanBuilder,
+                             claimed: inout Set<ObjectID>) throws {
         let project = builder.project
         if let synchronized = project.synchronizedRootGroup(covering: path) {
             let folder = project.resolvedPath(of: synchronized.id)?.description ?? synchronized.path ?? ""
@@ -35,19 +39,35 @@ public enum AddPlanner {
         let kind = conventions.flags.phase?.kind ?? fileType?.kind ?? .projectOnly
         builder.decide(Decision(path: path, attribute: "phase", value: phase.value.displayName, source: phase.source))
 
-        // The reference and its group.
+        // The reference and its group. An M3-exempt path gets no group
+        // child (design D6): the reference is spelled against SOURCE_ROOT.
+        let ungrouped = exemptions?.match(.M3, path: path)
         let reference: ObjectID
         if let existing = project.fileReferences(at: path).first {
             reference = existing.id
             builder.record(Change(path: path, action: .reusedFileReference, object: existing.id, detail: "file reference \(path)"))
             let parents = project.parents(of: existing.id)
-            if parents.isEmpty {
+            if parents.isEmpty, let glob = ungrouped {
+                builder.decide(Decision(path: path, attribute: "location", value: "in no group", source: .exemption(rule: .M3, glob: glob.pattern)))
+            } else if parents.isEmpty {
                 let location = try builder.group(forDirectory: SiblingInference.directory(of: path), path: path)
                 builder.addChild(existing.id, named: existing.name ?? existing.path ?? path, to: location.group)
                 builder.record(Change(path: path, action: .addedChild, object: location.group, detail: "child of group \(builder.describe(location.group))"))
             } else {
                 for parent in parents { builder.touch(parent.id) }
             }
+        } else if let glob = ungrouped {
+            let id = builder.mint()
+            builder.add(.createFileReference(
+                id: id, path: path, name: PlanBuilder.basename(of: path), sourceTree: Kind.sourceRootSourceTree,
+                lastKnownFileType: fileType?.lastKnownFileType ?? FileTypes.unknownLastKnownFileType))
+            builder.record(Change(path: path, action: .createdFileReference, object: id,
+                                  detail: "file reference for \(path) (path = \(path); sourceTree = \(Kind.sourceRootSourceTree))"))
+            builder.decide(Decision(
+                path: path, attribute: "location",
+                value: "path = \(path); sourceTree = \(Kind.sourceRootSourceTree); in no group",
+                source: .exemption(rule: .M3, glob: glob.pattern)))
+            reference = id
         } else {
             let location = try builder.group(forDirectory: SiblingInference.directory(of: path), path: path)
             let spelling = builder.reference(for: path, in: location)

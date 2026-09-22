@@ -34,8 +34,10 @@ struct Query: ParsableCommand {
             if target == nil, paths.isEmpty {
                 throw UsageError("pass at least one path, or --target <name>")
             }
-            let pbxproj = try projectOptions.locate()
+            let context = try projectOptions.context()
+            let pbxproj = context.pbxproj
             let project = try Query.load(pbxproj)
+            try context.validate(project)
             if let target {
                 guard let listing = TargetMembers(project: project, target: target) else {
                     let names = TargetMembers.targetNames(in: project)

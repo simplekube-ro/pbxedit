@@ -71,11 +71,11 @@ For each change, on a branch named after it:
 - [ ] Archived, merged — archived as `openspec/changes/archive/2026-09-22-add-command`, delta synced into `openspec/specs/add/` (15 requirements); not yet merged
 
 ### 6. conventions-config
-- [ ] Artifacts re-verified
-- [ ] Applied
-- [ ] `swift test` green; all change-5 tests still green with no planner changes
-- [ ] `docs/design.md` § Config reconciled with shipped keys
-- [ ] Archived, merged
+- [x] Artifacts re-verified, `openspec validate --strict` green — drift fixed: the spec's scenarios named paths and targets no fixture holds (`AppSlowTests`, `App/Shared/**`, `App/Generated/User.swift`, which is the synchronized folder in `add/app.pbxproj`), now `Tools/**` → `AppKit`, `App/Mixed/**`, `App/Filtered/**` on `add/app.pbxproj` and `AppTests/Views/**` on `rules/m3-orphan.pbxproj`; design D4 decoded with `Decodable` plus `allKeys`, now a walk over the composed `Yams.Node` (marks give the lines); the JSON shape growth (`source.rule`/`source.glob`, `summary.exempt`) and `--config` on every command were unstated; the configuration-root rule (D7) had no requirement; task 7.1 named a `README.md` that does not exist (example recorded as `Tests/Fixtures/config/example.pbxedit.yml` and in the change's design.md Evidence, as changes 4 and 5 did); the proposal's "planners are unchanged" now names the one exception, design D6
+- [x] Applied — all tasks ticked (18/18); design D6 (an M3-exempt path gets no group child, sanctioned by `docs/design.md` § Severity and repair since the first commit) is the one planner change, made additive after the coordinator relaxed this box's "no planner changes" to "no non-additive planner changes"
+- [x] `swift test` green; all change-5 tests still green with only an additive planner parameter (D6) — 111 syntax + 64 model + 152 ops + 60 CLI tests, 0 failures, none skipped; release `PerformanceTests` green; oracle tests ran under Xcode 27.0. The planner diff is `AddPlanner.plan(..., exemptions: Exemptions? = nil)` plus the two M3-exempt branches (26 insertions, 6 deletions in `Sources/PBXOps/Add/AddPlanner.swift`; `GroupResolution.swift` untouched); `AddPlannerTests` (16) and `AddCommandTests` (12) pass unmodified except where they compare the JSON `source` object exactly (two always-present `null` keys, `rule` and `glob`, added), likewise the change-3 `summary` (`exempt`); Yams 5.4.0 is the second and last dependency
+- [x] `docs/design.md` § Config reconciled with shipped keys — the full commented example (every key: `project`, `rules[].match/targets/platformFilters`, `lint.baseline`, `lint.exempt` with all four exemptible rules), `--config`, `--no-baseline`, first-match-per-attribute, the configuration root, the provenance and summary shapes, strict validation; pinned by `ConfigTests.testTheDesignDocumentExampleAgreesWithTheDecoder`; § Architecture 3 records the additive planner parameter and `Sources/PBXOps/Config/`
+- [ ] Archived, merged — archived as `openspec/changes/archive/2026-09-22-conventions-config`, delta synced into `openspec/specs/conventions-config/` (9 requirements); not yet merged
 
 ### 7. remove-command
 - [ ] Artifacts re-verified

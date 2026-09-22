@@ -35,7 +35,7 @@ public struct RuleSet: Sendable {
 
     /// Parses, checks the round trip, loads, and evaluates. A failure of any
     /// of the three is the single S1 finding (design D1).
-    public func evaluate(bytes: [UInt8], scope: Set<ObjectID>? = nil, disk: (any DiskReader)? = nil) -> [Finding] {
+    public func evaluate(bytes: [UInt8], scope: Set<ObjectID>? = nil, disk: (any DiskReader)? = nil, exemptions: Exemptions? = nil) -> [Finding] {
         let tree: SyntaxTree
         switch SyntaxTree.parse(bytes) {
         case .success(let parsed):
@@ -52,13 +52,14 @@ public struct RuleSet: Sendable {
         } catch {
             return [Finding(rule: .S1, object: nil, message: "the project file does not load as a project: \(error)")]
         }
-        return evaluate(project, scope: scope, disk: disk)
+        return evaluate(project, scope: scope, disk: disk, exemptions: exemptions)
     }
 
-    /// Runs every rule, then the disk rules when `disk` is given, and keeps
-    /// the findings whose object or related objects intersect `scope` when
-    /// one is given (design D2). Ordered for output.
-    public func evaluate(_ project: Project, scope: Set<ObjectID>? = nil, disk: (any DiskReader)? = nil) -> [Finding] {
+    /// Runs every rule, then the disk rules when `disk` is given, keeps the
+    /// findings whose object or related objects intersect `scope` when one
+    /// is given (design D2), and drops the ones `exemptions` covers
+    /// (conventions-config design D5). Ordered for output.
+    public func evaluate(_ project: Project, scope: Set<ObjectID>? = nil, disk: (any DiskReader)? = nil, exemptions: Exemptions? = nil) -> [Finding] {
         var findings: [Finding] = []
         for rule in rules { findings += rule.evaluate(project) }
         if let disk {
@@ -70,6 +71,7 @@ public struct RuleSet: Sendable {
                 return finding.related.contains { scope.contains($0) }
             }
         }
+        if let exemptions { findings = exemptions.apply(to: findings).kept }
         return RuleSet.ordered(findings)
     }
 

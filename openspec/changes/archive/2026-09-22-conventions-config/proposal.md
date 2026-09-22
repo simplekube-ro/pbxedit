@@ -30,7 +30,8 @@ None. `add` and `integrity-rules` state their own behaviour; this capability sta
 
 ## Impact
 
-- New: `Sources/PBXOps/Config/`, tests, fixtures. `Conventions` gains a config source; planners are unchanged.
+- New: `Sources/PBXOps/Config/`, tests, fixtures. `Conventions` gains a config source; the planners are unchanged for targets and platform filters. The one planner change is design D6: an M3-exempt path gets no group child.
 - New dependency: `Yams` — the second and last of the two permitted by project policy. YAML over JSON because a rules file needs comments.
-- `ProjectOptions` and `lint` read defaults from the config.
+- `ProjectOptions` (every command gains `--config`) and `lint` (`--no-baseline`, the `exempt` count) read defaults from the config; `OperationRunner` honours exemptions in its checks.
+- Output shapes grow additively: `add --json` `decisions[].source` gains `rule` and `glob`; `lint --json` `summary` gains `exempt`.
 - Depends on `add-command`.

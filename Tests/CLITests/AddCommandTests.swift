@@ -66,14 +66,14 @@ final class AddCommandTests: XCTestCase {
         XCTAssertEqual((object["notes"] as? [Any])?.count, 0)
         let decisions = try XCTUnwrap(object["decisions"] as? [[String: Any]])
         XCTAssertEqual(decisions.map { $0["attribute"] as? String }, ["phase", "location", "targets", "platformFilters"])
-        let flag: NSDictionary = ["kind": "flag", "siblings": NSNull(), "directory": NSNull()]
+        let flag: NSDictionary = ["kind": "flag", "siblings": NSNull(), "directory": NSNull(), "rule": NSNull(), "glob": NSNull()]
         XCTAssertEqual(decisions[0]["value"] as? String, "Sources")
         XCTAssertEqual(decisions[0]["source"] as? NSDictionary, flag)
         XCTAssertEqual(decisions[2]["value"] as? String, "AppTests")
         XCTAssertEqual(decisions[2]["source"] as? NSDictionary, flag)
         XCTAssertEqual(decisions[3]["value"] as? String, "AppTests: ios, macos")
         XCTAssertEqual(Set(decisions[1].keys), ["path", "attribute", "value", "source"])
-        XCTAssertEqual(decisions[1]["source"] as? NSDictionary, ["kind": "structure", "siblings": NSNull(), "directory": NSNull()] as NSDictionary)
+        XCTAssertEqual(decisions[1]["source"] as? NSDictionary, ["kind": "structure", "siblings": NSNull(), "directory": NSNull(), "rule": NSNull(), "glob": NSNull()] as NSDictionary)
         let changes = try XCTUnwrap(object["changes"] as? [[String: Any]])
         XCTAssertEqual(changes.map { $0["action"] as? String }, ["createdFileReference", "addedChild", "createdBuildFile", "addedPhaseEntry"])
         XCTAssertEqual(Set(changes[0].keys), ["path", "action", "object", "detail"])
@@ -88,7 +88,7 @@ final class AddCommandTests: XCTestCase {
         let inferred = try pbxedit(["add", "--json", "App/tvOS/TV3.swift", "--project", "App.xcodeproj"], in: project.root)
         XCTAssertEqual(inferred.status, 0, inferred.stderr)
         let inferredDecisions = try XCTUnwrap(try jsonObject(inferred)["decisions"] as? [[String: Any]])
-        XCTAssertEqual(inferredDecisions[2]["source"] as? [String: Any] as NSDictionary?, ["kind": "inferred", "siblings": 2, "directory": "App/tvOS"] as NSDictionary)
+        XCTAssertEqual(inferredDecisions[2]["source"] as? [String: Any] as NSDictionary?, ["kind": "inferred", "siblings": 2, "directory": "App/tvOS", "rule": NSNull(), "glob": NSNull()] as NSDictionary)
         XCTAssertEqual(inferredDecisions[3]["value"] as? String, "App: tvos")
     }
 
@@ -362,7 +362,9 @@ final class AddCommandTests: XCTestCase {
                   "path" : "App/Views/Bar.swift",
                   "source" : {
                     "directory" : null,
+                    "glob" : null,
                     "kind" : "fileType",
+                    "rule" : null,
                     "siblings" : null
                   },
                   "value" : "Sources"
@@ -372,7 +374,9 @@ final class AddCommandTests: XCTestCase {
                   "path" : "App/Views/Bar.swift",
                   "source" : {
                     "directory" : null,
+                    "glob" : null,
                     "kind" : "structure",
+                    "rule" : null,
                     "siblings" : null
                   },
                   "value" : "path = Bar.swift; sourceTree = <group>; in group Views (AA0000000000000000000003)"
@@ -382,7 +386,9 @@ final class AddCommandTests: XCTestCase {
                   "path" : "App/Views/Bar.swift",
                   "source" : {
                     "directory" : "App/Views",
+                    "glob" : null,
                     "kind" : "inferred",
+                    "rule" : null,
                     "siblings" : 1
                   },
                   "value" : "App"
@@ -392,7 +398,9 @@ final class AddCommandTests: XCTestCase {
                   "path" : "App/Views/Bar.swift",
                   "source" : {
                     "directory" : "App/Views",
+                    "glob" : null,
                     "kind" : "inferred",
+                    "rule" : null,
                     "siblings" : 1
                   },
                   "value" : "App: none"

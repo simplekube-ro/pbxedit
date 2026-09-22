@@ -38,7 +38,7 @@ final class BaselineTests: XCTestCase {
         XCTAssertEqual(json.status, 0, json.stderr)
         let object = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(json.stdout.utf8)) as? [String: Any])
         XCTAssertEqual((object["findings"] as? [Any])?.count, 0)
-        XCTAssertEqual(object["summary"] as? [String: Int], ["errors": 0, "warnings": 0, "baselined": 3, "resolved": 0])
+        XCTAssertEqual(object["summary"] as? [String: Int], ["errors": 0, "warnings": 0, "baselined": 3, "resolved": 0, "exempt": 0])
     }
 
     // Spec: Baseline — New damage after adoption.
@@ -75,7 +75,7 @@ final class BaselineTests: XCTestCase {
         let json = try pbxedit(["lint", "--json", "--baseline", baseline.path, "--project", project.xcodeproj.path])
         let object = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(json.stdout.utf8)) as? [String: Any])
         XCTAssertEqual(object["resolved"] as? [[String: String]], [["rule": "M3", "object": "AB12"]])
-        XCTAssertEqual(object["summary"] as? [String: Int], ["errors": 0, "warnings": 0, "baselined": 2, "resolved": 1])
+        XCTAssertEqual(object["summary"] as? [String: Int], ["errors": 0, "warnings": 0, "baselined": 2, "resolved": 1, "exempt": 0])
     }
 
     // Spec: Baseline — Missing baseline file.

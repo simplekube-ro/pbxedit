@@ -7,7 +7,8 @@ skeleton with `lint` (change `integrity-rules-lint`); `query`, the
 path-argument convention and the `MembershipReport` shape (change
 `query-command`); `add`, with the operation machinery every mutating command
 shares — `Plan`, `OperationRunner`, sibling inference, `--dry-run` — (change
-`add-command`).
+`add-command`); `.pbxedit.yml`, the config layer of `Conventions`, lint
+exemptions and the baseline default (change `conventions-config`).
 
 ## Purpose
 
@@ -113,7 +114,7 @@ A view, not a second copy of the data.
 
 ### 3. `PBXOps` — operations
 
-Pure functions: `(model, request, conventions) → Plan`. A Plan is a list of
+Pure functions: `(model, request, conventions[, exemptions]) → Plan`. A Plan is a list of
 primitive edits (`Step`: create a file reference, group or build file; add or
 remove a child or a phase entry; delete an object; set an attribute; refresh
 annotations) plus a human-readable and JSON description: one `Change` per
@@ -128,7 +129,18 @@ them.
 - `conventions` is sibling inference merged with the config file and flags.
   Planners only ever ask `Conventions` (`targets(for:)`,
   `platformFilters(for:target:)`, `phase(for:)`); each answer is `flags ??
-  config ?? inference`, so the config layer arrives without planner changes.
+  config ?? inference` — the config layer (`ConfigConventions`, the `rules`
+  of `.pbxedit.yml` re-based to the source root) arrived without planner
+  changes. The configuration itself is `Sources/PBXOps/Config/`: `Config`
+  (strict decoding over the composed YAML node, with line numbers),
+  `ConfigFile` (discovery, the file's directory as the root of its paths),
+  `BoundConfig` (bound to a source root; validates target names against the
+  loaded project) and `Exemptions` (the `lint.exempt` filter on findings,
+  which `RuleSet.evaluate` and `OperationRunner` take). The add planner also
+  takes the exemptions (an optional parameter, `nil` without a config): an
+  `M3`-exempt path gets a `SOURCE_ROOT` reference and no group child, the
+  one place configuration reaches a planner directly, because the group
+  question is deliberately not a convention.
 - `OperationRunner` (in this layer, called by the CLI) owns everything after
   planning: execute, check, write, verify — the pipeline § 4 describes.
 
@@ -150,8 +162,10 @@ them.
   errors, a project that cannot be located and a baseline that cannot be read.
   Warnings alone exit `0` unless `--strict`.
 - `--project <path>` names the `.xcodeproj` or `project.pbxproj`; without it,
-  the single `.xcodeproj` in the current directory is used, and none or
-  several is a usage error.
+  the project `.pbxedit.yml` names is used, else the single `.xcodeproj` in
+  the current directory, and none or several is a usage error. `--config
+  <path>` names the configuration file instead of the nearest `.pbxedit.yml`
+  (§ Config).
 - Path arguments are relative to the current directory, normalized lexically
   (no symlink resolved, nothing read from disk) and matched against the
   source root, the directory holding the `.xcodeproj`. A path outside the
@@ -171,7 +185,7 @@ them.
 | `add <path>…` | File must exist on disk (a bundle directory such as `.xcassets` counts as a file). Creates whatever is missing — file reference, group chain, build file, phase entry — as one plan, reusing what exists: re-adding a member is a no-op, never a second ID, and partial membership is completed with the existing objects. `--target <name>` (repeatable) replaces the inferred targets, `--platform <list>|none` the inferred `platformFilters`, `--phase sources|resources|headers|none` the phase the file type implies; an unknown extension needs `--phase`. A path in a synchronized folder is reported as already a member. Output lists each decision with its provenance and each object with its ID; `--json` carries `decisions`, `changes`, `notes`, `findings`, `diff` and the membership report per path |
 | `move <from> <to>` | File must already be at `<to>` on disk. Re-parents the reference, rewrites its path, and swaps build-phase membership when the destination implies different targets |
 | `remove <path>…` | Removes build files, phase entries, the group child and the reference. If several targets use the reference, requires `--target` to detach one or `--all` |
-| `lint` | Runs the rule set; errors before warnings, each ordered by rule then object ID. `--fix` repairs what is unambiguous; `--write-baseline <file>` records the current findings (keyed by rule and object ID) and exits 0; `--baseline <file>` reports and fails only on findings not in the baseline, and lists entries that no longer occur as resolved; `--disk` enables disk rules; `--strict` makes warnings fail |
+| `lint` | Runs the rule set; errors before warnings, each ordered by rule then object ID. `--fix` repairs what is unambiguous; `--write-baseline <file>` records the current findings (keyed by rule and object ID) and exits 0; `--baseline <file>` reports and fails only on findings not in the baseline, and lists entries that no longer occur as resolved (`lint.baseline` in the config is the default; `--no-baseline` ignores it); `lint.exempt` globs suppress and count findings; `--disk` enables disk rules; `--strict` makes warnings fail |
 | `query <path>…` | Read-only: for each path, whether a file reference resolves to it, its ID, group path and groups, and each membership — target, phase, build file ID, `platformFilters` — or the synchronized group covering it. Facts, not findings: a missing group or phase is reported as such with a hint to run `lint`. Exits `1` when a path is neither a member nor covered, `2` when the project file does not load. `query --target <name>` lists every build-phase entry of a target by phase then path; an unknown name exits `2` listing the targets |
 
 ### Synchronized folders
@@ -252,24 +266,69 @@ error asking for `--target`.
 | Build phase | From the file type: a static extension table, never a default. An unknown extension is an error asking for `--phase`; with `--phase` it is written as `lastKnownFileType = file` |
 
 Precedence: flags, then config, then inference. Every decision is printed with
-its provenance, for example `target: AppTests (inferred, 94 siblings)`.
+its provenance, for example `targets: AppTests (inferred, 94 siblings in
+AppTests/Views)`, `targets: AppSlowTests (config, rule 1 "AppSlowTests/**")`
+or `targets: App (flag)`; in `--json` the decision's `source` carries `kind`
+(`flag`, `config`, `exemption`, `inferred`, `fileType`, `structure`) with
+`siblings` and `directory` for an inferred one, `rule` and `glob` for a
+configured one and `glob` for an exemption (`location: … in no group
+(config, exempt M3 "**/Generated/**")`), `null` otherwise. A configured attribute is never inferred, so the
+disagreement errors cannot arise for it.
 
 ### Config
 
-Optional `.pbxedit.yml` at the repository root.
+Optional `.pbxedit.yml`, found by walking up from the current directory, or
+named with `--config <path>` on any command. Every path and glob in it is
+relative to the directory holding the file, which must be the project's
+source root or an ancestor of it (globs are then matched against the path
+from that directory: `Sub/App/**` for a project in `Sub/`).
 
 ```yaml
-project: App.xcodeproj
-rules:
-  - match: "AppSlowTests/**"        # default for empty directories, or an override
+# .pbxedit.yml — checked in at the project's source root, or an ancestor of
+# it. Every path and glob below is relative to the directory holding this
+# file. pbxedit finds it by walking up from the current directory; --config
+# names another file.
+project: App.xcodeproj               # the default for --project
+
+rules:                               # globs over source-root-relative paths:
+                                     # * within a segment, ** across segments, ? one character;
+                                     # for each attribute the first matching rule that sets it wins
+  - match: "AppSlowTests/**"         # what inference cannot see: the first file of a new directory
     targets: [AppSlowTests]
   - match: "App/tvOS/**"
-    platformFilters: [tvos]
+    platformFilters: [tvos]          # [] means explicitly none; sibling filters are not consulted
+  - match: "App/Shared/**"           # settles a directory whose members disagree
+    targets: [App, AppExtension]
+
 lint:
-  baseline: .pbxedit-baseline.json
-  exempt:
-    M3: ["**/Generated/**"]
+  baseline: .pbxedit-baseline.json   # the default for --baseline; --no-baseline ignores it
+  exempt:                            # only the rules whose findings carry a path
+    M3: ["**/Generated/**"]          # references with no parent group (add creates none there either)
+    M6: ["Shared/**"]                # sources built by a target while lying under another target's root
+    D1: ["**/*.generated.swift"]     # references whose file is not on disk
+    D2: ["Scripts/**"]               # files on disk no reference covers
 ```
+
+- `project` is used when `--project` is absent; `--project` wins.
+- `rules` are matched per attribute: for `targets` and for `platformFilters`
+  separately, the first rule in file order that matches the path *and sets
+  that attribute* supplies it, so a platform rule and a target rule can
+  overlap. Globs: `*` and `?` within one path segment, `**` as a whole
+  segment matching zero or more segments; character classes, braces and
+  empty segments are rejected.
+- `lint.baseline` is the default for `--baseline` unless `--baseline`,
+  `--write-baseline` or `--no-baseline` is given.
+- `lint.exempt` maps a rule ID to globs. Only `M3`, `M6`, `D1` and `D2` — the
+  rules whose findings carry a path — are exemptible; an exempt finding is
+  dropped and counted (`0 errors, 0 warnings, 3 exempt`; `summary.exempt` in
+  JSON), applied before the baseline and never written into one. Every
+  mutating command's pre-write and post-write checks honour the same
+  exemptions. An `M3` exemption also tells `add` to create no group child for
+  a matching path (§ Severity and repair).
+- Validation is strict and runs before any command acts: an unknown key, a
+  value of the wrong type, malformed YAML, an unknown platform or rule ID, a
+  non-exemptible rule, an unsupported glob, or a target the project does not
+  have, exits `2` naming the file, the line and what was expected.
 
 Dependencies: `swift-argument-parser` and `Yams`. Nothing else.
 

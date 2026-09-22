@@ -49,6 +49,9 @@ public struct OperationRunner {
     /// The project as loaded, for planners and for validating flags.
     public let project: Project
     public var ruleSet: RuleSet = .standard
+    /// `lint.exempt` of the configuration, honoured by both checks
+    /// (conventions-config design D5); `nil` without a configuration.
+    public var exemptions: Exemptions?
     /// The rule set of the post-write check, when a test needs it to differ.
     var postWriteRuleSet: RuleSet?
 
@@ -75,7 +78,7 @@ public struct OperationRunner {
             return OperationResult(plan: plan, outcome: .failed, modified: false, findings: [], warnings: [], project: nil, diff: nil,
                                    error: "the plan could not be applied: \(error)")
         }
-        let scoped = ruleSet.evaluate(result, scope: plan.touched)
+        let scoped = ruleSet.evaluate(result, scope: plan.touched, exemptions: exemptions)
         let errors = scoped.filter { $0.severity == .error }
         let warnings = scoped.filter { $0.severity == .warning }
         guard errors.isEmpty else {
@@ -100,7 +103,8 @@ public struct OperationRunner {
         }
         // Verify what is on disk, not what was meant to be.
         var onDisk = (try? Data(contentsOf: url)).map(Array.init) ?? []
-        var verification = (postWriteRuleSet ?? ruleSet).evaluate(bytes: onDisk, scope: plan.touched).filter { $0.severity == .error }
+        var verification = (postWriteRuleSet ?? ruleSet).evaluate(bytes: onDisk, scope: plan.touched, exemptions: exemptions)
+            .filter { $0.severity == .error }
         if onDisk != newBytes {
             verification.insert(Finding(rule: .S1, object: nil, message: "the bytes read back differ from the bytes written"), at: 0)
         }

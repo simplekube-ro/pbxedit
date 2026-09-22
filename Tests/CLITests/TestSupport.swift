@@ -88,6 +88,16 @@ final class TemporaryProject {
         return url
     }
 
+    /// Writes `text` to `relativePath` under the source root, with any
+    /// intermediate directories.
+    @discardableResult
+    func write(_ relativePath: String, _ text: String) throws -> URL {
+        let url = root.appendingPathComponent(relativePath)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data(text.utf8).write(to: url)
+        return url
+    }
+
     /// Everything beside `project.pbxproj` in the `.xcodeproj`.
     func leftovers() throws -> [String] {
         try FileManager.default.contentsOfDirectory(atPath: xcodeproj.path).filter { $0 != "project.pbxproj" }.sorted()
