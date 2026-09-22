@@ -46,7 +46,7 @@ let package = Package(
         ),
         .testTarget(
             name: "CLITests",
-            dependencies: ["pbxedit"]
+            dependencies: ["pbxedit", "PBXModel", "PBXSyntax"]
         ),
     ],
     swiftLanguageModes: [.v6]

@@ -24,7 +24,9 @@ public struct OperationResult {
     public let modified: Bool
     /// The errors that aborted the operation, in rule-set order.
     public let findings: [Finding]
-    /// Warnings among the touched objects; they do not abort.
+    /// Warnings among the touched objects; they do not abort. Empty in the
+    /// whole-project mode, where a new warning aborts and the rest are the
+    /// report's business.
     public let warnings: [Finding]
     /// The post-operation model: what was written (reloaded from disk), or
     /// what would have been (dry run, no-op). `nil` when the operation failed.
@@ -33,6 +35,19 @@ public struct OperationResult {
     public let diff: String?
     /// Why the operation `failed`.
     public let error: String?
+}
+
+/// How the result of a plan is judged, before the write and again on the
+/// bytes read back.
+public enum Verification: Equatable, Sendable {
+    /// Every ordinary operation: an error among `plan.touched` aborts,
+    /// warnings there are reported (add-command design D2).
+    case scoped
+    /// A repair (integrity-repair design D5): the complete finding sets are
+    /// compared by identity; a `selected` finding that survives, or any
+    /// finding absent from `before`, aborts. `before` is the evaluation of
+    /// the project as loaded, with the same rule set and exemptions.
+    case wholeProject(before: [Finding], selected: [Finding])
 }
 
 /// Owns the pipeline after planning: execute in memory, check, write
@@ -70,7 +85,7 @@ public struct OperationRunner {
         }
     }
 
-    public func run(_ plan: Plan, dryRun: Bool) -> OperationResult {
+    public func run(_ plan: Plan, dryRun: Bool, verification: Verification = .scoped) -> OperationResult {
         let result: Project
         do {
             result = try plan.apply(to: project)
@@ -78,17 +93,15 @@ public struct OperationRunner {
             return OperationResult(plan: plan, outcome: .failed, modified: false, findings: [], warnings: [], project: nil, diff: nil,
                                    error: "the plan could not be applied: \(error)")
         }
-        let scoped = ruleSet.evaluate(result, scope: plan.touched, exemptions: exemptions)
-        let errors = scoped.filter { $0.severity == .error }
-        let warnings = scoped.filter { $0.severity == .warning }
+        let (errors, warnings) = judge(ruleSet.evaluate(result, scope: scope(of: plan, verification), exemptions: exemptions), verification)
         guard errors.isEmpty else {
             return OperationResult(plan: plan, outcome: .violations(stage: .beforeWrite), modified: false, findings: errors,
                                    warnings: warnings, project: nil, diff: nil, error: nil)
         }
         let newBytes = result.serialize()
-        // Remove design D6, belt and braces: once the scoped rule set is
-        // clean, no deleted ID can still be named anywhere in the file. A
-        // failure here is a gap in S2's key list, not a user error.
+        // Remove design D6, belt and braces: once the rule set is clean, no
+        // deleted ID can still be named anywhere in the file. A failure here
+        // is a gap in S2's key list, not a user error.
         assert(plan.deletedObjectsMentioned(in: newBytes).isEmpty,
                "deleted objects still mentioned after a clean check: \(plan.deletedObjectsMentioned(in: newBytes))")
         if dryRun {
@@ -108,8 +121,8 @@ public struct OperationRunner {
         }
         // Verify what is on disk, not what was meant to be.
         var onDisk = (try? Data(contentsOf: url)).map(Array.init) ?? []
-        var verification = (postWriteRuleSet ?? ruleSet).evaluate(bytes: onDisk, scope: plan.touched, exemptions: exemptions)
-            .filter { $0.severity == .error }
+        let readBack = (postWriteRuleSet ?? ruleSet).evaluate(bytes: onDisk, scope: scope(of: plan, verification), exemptions: exemptions)
+        var verification = judge(readBack, verification).errors
         if onDisk != newBytes {
             verification.insert(Finding(rule: .S1, object: nil, message: "the bytes read back differ from the bytes written"), at: 0)
         }
@@ -127,6 +140,27 @@ public struct OperationRunner {
         let reloaded = try? Project.load(onDisk)
         return OperationResult(plan: plan, outcome: .ok, modified: onDisk != originalBytes, findings: [], warnings: warnings,
                                project: reloaded, diff: nil, error: nil)
+    }
+
+    /// The evaluation scope for a mode: the touched objects, or everything.
+    private func scope(of plan: Plan, _ verification: Verification) -> Set<ObjectID>? {
+        switch verification {
+        case .scoped: return plan.touched
+        case .wholeProject: return nil
+        }
+    }
+
+    /// What aborts and what is merely reported, per mode.
+    private func judge(_ findings: [Finding], _ verification: Verification) -> (errors: [Finding], warnings: [Finding]) {
+        switch verification {
+        case .scoped:
+            return (findings.filter { $0.severity == .error }, findings.filter { $0.severity == .warning })
+        case .wholeProject(let before, let selected):
+            let known = Set(before.map(\.identity))
+            let chosen = Set(selected.map(\.identity))
+            let violations = findings.filter { chosen.contains($0.identity) || !known.contains($0.identity) }
+            return (RuleSet.ordered(violations), [])
+        }
     }
 
     /// Design D7: temp file beside the target, `fsync`, `rename(2)`. The

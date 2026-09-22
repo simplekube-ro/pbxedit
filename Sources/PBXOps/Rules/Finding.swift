@@ -44,6 +44,21 @@ public enum Severity: String, Sendable, Hashable, Comparable {
     public static func < (lhs: Severity, rhs: Severity) -> Bool { lhs == .error && rhs == .warning }
 }
 
+/// A finding's identity for before/after comparison: existing objects keep
+/// their IDs through a repair, so the same damage has the same identity on
+/// both sides, while messages may name a phase or path that a repair reworded.
+public struct FindingIdentity: Hashable, Sendable {
+    public let rule: RuleID
+    public let object: ObjectID?
+    public let related: [ObjectID]
+
+    public init(rule: RuleID, object: ObjectID?, related: [ObjectID]) {
+        self.rule = rule
+        self.object = object
+        self.related = related
+    }
+}
+
 /// One violation of one rule (spec: Findings are identified and addressable).
 public struct Finding: Hashable, Sendable, CustomStringConvertible {
     public let rule: RuleID
@@ -64,6 +79,10 @@ public struct Finding: Hashable, Sendable, CustomStringConvertible {
         self.related = related
         self.message = message
     }
+
+    /// What makes two findings the same finding across an edit: rule, object
+    /// and related objects, never the message (integrity-repair design D5).
+    public var identity: FindingIdentity { FindingIdentity(rule: rule, object: object, related: related) }
 
     /// `<severity> <rule> <object or path>: <message>` — the human line.
     public var description: String {
