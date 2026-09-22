@@ -1,8 +1,8 @@
 import PBXModel
 
 /// What a planner asks about a file's membership (design D4). Each answer is
-/// `flags ?? infer`; `conventions-config` adds a configuration layer between
-/// the two without any planner noticing.
+/// `flags ?? config ?? infer`: the configuration layer (`conventions-config`
+/// design D1) sits between the two, and no planner can tell.
 public struct Conventions {
     public struct Flags: Equatable, Sendable {
         /// `--target`, by name.
@@ -33,23 +33,22 @@ public struct Conventions {
     }
 
     public var flags: Flags
+    /// The `rules` of `.pbxedit.yml`, re-based to the source root; `nil`
+    /// without a configuration.
+    public var config: ConfigConventions?
 
-    public init(flags: Flags = Flags()) {
+    public init(flags: Flags = Flags(), config: ConfigConventions? = nil) {
         self.flags = flags
+        self.config = config
     }
 
     /// The targets a file at `path` joins, sorted by name.
     public func targets(for path: String, kind: FileKind, in project: Project) throws -> TargetChoice {
         if let names = flags.targets {
-            let available = project.targets.compactMap(\.name).sorted()
-            var targets: [Target] = []
-            for name in names {
-                guard let target = project.targets.first(where: { $0.name?.utf8.elementsEqual(name.utf8) == true }) else {
-                    throw PlanError.unknownTarget(name: name, available: available)
-                }
-                if !targets.contains(where: { $0.id == target.id }) { targets.append(target) }
-            }
-            return TargetChoice(targets: Conventions.byName(targets), source: .flag, extras: [])
+            return TargetChoice(targets: try Conventions.resolve(names, in: project), source: .flag, extras: [])
+        }
+        if let configured = config?.targets(for: path) {
+            return TargetChoice(targets: try Conventions.resolve(configured.value, in: project), source: configured.source, extras: [])
         }
         guard let siblings = SiblingInference.siblings(of: path, kind: kind, in: project) else {
             throw PlanError.noSiblings(path: path)
@@ -83,6 +82,7 @@ public struct Conventions {
     /// The `platformFilters` of the build file that joins `target`.
     public func platformFilters(for path: String, kind: FileKind, target: Target, in project: Project) throws -> Decided<[String]> {
         if let filters = flags.platformFilters { return Decided(filters, source: .flag) }
+        if let configured = config?.platformFilters(for: path) { return configured }
         guard let siblings = SiblingInference.siblings(of: path, kind: kind, in: project) else {
             return Decided([], source: .inferred(siblings: 0, directory: SiblingInference.directory(of: path)))
         }
@@ -115,6 +115,20 @@ public struct Conventions {
 
     static func byName(_ targets: [Target]) -> [Target] {
         targets.sorted { ($0.name ?? "", $0.id) < ($1.name ?? "", $1.id) }
+    }
+
+    /// Names (from a flag or a rule) to targets, each once, sorted by name;
+    /// an unknown name is `PlanError.unknownTarget`.
+    static func resolve(_ names: [String], in project: Project) throws -> [Target] {
+        let available = project.targets.compactMap(\.name).sorted()
+        var targets: [Target] = []
+        for name in names {
+            guard let target = project.targets.first(where: { $0.name?.utf8.elementsEqual(name.utf8) == true }) else {
+                throw PlanError.unknownTarget(name: name, available: available)
+            }
+            if !targets.contains(where: { $0.id == target.id }) { targets.append(target) }
+        }
+        return byName(targets)
     }
 }
 

@@ -1,0 +1,23 @@
+# .pbxedit.yml — checked in at the project's source root, or an ancestor of
+# it. Every path and glob below is relative to the directory holding this
+# file. pbxedit finds it by walking up from the current directory; --config
+# names another file.
+project: App.xcodeproj               # the default for --project
+
+rules:                               # globs over source-root-relative paths:
+                                     # * within a segment, ** across segments, ? one character;
+                                     # for each attribute the first matching rule that sets it wins
+  - match: "AppSlowTests/**"         # what inference cannot see: the first file of a new directory
+    targets: [AppSlowTests]
+  - match: "App/tvOS/**"
+    platformFilters: [tvos]          # [] means explicitly none; sibling filters are not consulted
+  - match: "App/Shared/**"           # settles a directory whose members disagree
+    targets: [App, AppExtension]
+
+lint:
+  baseline: .pbxedit-baseline.json   # the default for --baseline; --no-baseline ignores it
+  exempt:                            # only the rules whose findings carry a path
+    M3: ["**/Generated/**"]          # references with no parent group (add creates none there either)
+    M6: ["Shared/**"]                # sources built by a target while lying under another target's root
+    D1: ["**/*.generated.swift"]     # references whose file is not on disk
+    D2: ["Scripts/**"]               # files on disk no reference covers

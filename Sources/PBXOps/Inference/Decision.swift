@@ -5,6 +5,13 @@ public struct Decision: Equatable, Sendable {
     public enum Source: Equatable, Sendable {
         /// A command-line flag.
         case flag
+        /// Rule `rule` (1-based, in file order) of `.pbxedit.yml`, whose
+        /// `match` is `glob`.
+        case config(rule: Int, glob: String)
+        /// A `lint.exempt` entry of `.pbxedit.yml`: `rule`'s glob `glob`
+        /// matched the path (an `M3` exemption tells `add` to create no
+        /// group child; conventions-config design D6).
+        case exemption(rule: RuleID, glob: String)
         /// Sibling inference over `siblings` files in `directory`; zero
         /// siblings means nothing in the directory took part (a first file
         /// joining a target from there).
@@ -18,6 +25,8 @@ public struct Decision: Equatable, Sendable {
         public var description: String {
             switch self {
             case .flag: return "flag"
+            case .config(let rule, let glob): return "config, rule \(rule) \"\(glob)\""
+            case .exemption(let rule, let glob): return "config, exempt \(rule.rawValue) \"\(glob)\""
             case .inferred(let siblings, let directory):
                 let where_ = directory.isEmpty ? "the source root" : directory
                 switch siblings {
@@ -34,6 +43,8 @@ public struct Decision: Equatable, Sendable {
         public var kind: String {
             switch self {
             case .flag: return "flag"
+            case .config: return "config"
+            case .exemption: return "exemption"
             case .inferred: return "inferred"
             case .fileType: return "fileType"
             case .structure: return "structure"

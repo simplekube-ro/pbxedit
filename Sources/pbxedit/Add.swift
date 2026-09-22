@@ -44,16 +44,19 @@ struct Add: ParsableCommand {
     func run() throws {
         do {
             guard !paths.isEmpty else { throw UsageError("pass at least one path") }
-            let pbxproj = try projectOptions.locate()
-            let runner: OperationRunner
+            let context = try projectOptions.context()
+            let pbxproj = context.pbxproj
+            var runner: OperationRunner
             do {
                 runner = try OperationRunner(projectFile: pbxproj)
             } catch {
                 throw UsageError("\(error)")
             }
             let project = runner.project
+            try context.validate(project)
+            runner.exemptions = context.config?.exemptions
             let cwd = ProjectOptions.currentDirectory
-            let sourceRoot = ProjectOptions.sourceRoot(of: pbxproj)
+            let sourceRoot = context.sourceRoot
             var resolved: [String] = []
             for raw in paths {
                 do {
@@ -83,7 +86,8 @@ struct Add: ParsableCommand {
             }
             let plan: Plan
             do {
-                plan = try AddPlanner.plan(resolved, in: project, conventions: Conventions(flags: flags))
+                plan = try AddPlanner.plan(resolved, in: project, conventions: Conventions(flags: flags, config: context.config?.conventions),
+                                           exemptions: context.config?.exemptions)
             } catch let error as PlanError {
                 renderer.refused(error.description, project: project, paths: resolved)
                 throw CommandOutcome.violations.exitCode
@@ -211,19 +215,37 @@ struct AddReport {
         let kind: String
         let siblings: Int?
         let directory: String?
+        let rule: Int?
+        let glob: String?
 
         init(_ source: Decision.Source) {
             kind = source.kind
-            if case .inferred(let siblings, let directory) = source {
+            switch source {
+            case .inferred(let siblings, let directory):
                 self.siblings = siblings
                 self.directory = directory
-            } else {
-                self.siblings = nil
-                self.directory = nil
+                rule = nil
+                glob = nil
+            case .config(let rule, let glob):
+                siblings = nil
+                directory = nil
+                self.rule = rule
+                self.glob = glob
+            case .exemption(_, let glob):
+                // The rule is the finding's ID, not a position; `kind` says which.
+                siblings = nil
+                directory = nil
+                rule = nil
+                self.glob = glob
+            case .flag, .fileType, .structure:
+                siblings = nil
+                directory = nil
+                rule = nil
+                glob = nil
             }
         }
 
-        enum CodingKeys: String, CodingKey { case kind, siblings, directory }
+        enum CodingKeys: String, CodingKey { case kind, siblings, directory, rule, glob }
 
         // Absent values are `null`, never omitted.
         func encode(to encoder: any Encoder) throws {
@@ -231,6 +253,8 @@ struct AddReport {
             try container.encode(kind, forKey: .kind)
             try container.encode(siblings, forKey: .siblings)
             try container.encode(directory, forKey: .directory)
+            try container.encode(rule, forKey: .rule)
+            try container.encode(glob, forKey: .glob)
         }
     }
 

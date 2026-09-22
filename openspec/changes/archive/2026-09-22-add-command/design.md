@@ -94,7 +94,7 @@ None; first mutating command. `docs/design.md` gains `--phase` in the Commands t
 
 ## Evidence
 
-Real `pbxedit add` output against `Tests/Fixtures/add/app.pbxproj` with `App/Views/Bar.swift` on disk (task 7.2), pinned by `AddCommandTests.testDesignEvidenceExamplesAreRealOutput` — exactly, except that the two minted IDs (`D0591B…`, `A2C1C4…` here) are random on every run, so the test masks them and checks the diff's added lines rather than its hunk positions, which follow the IDs' sort order. There is no `README.md` yet; these are the examples for its `add` section, to be moved when the first change creates the file.
+Real `pbxedit add` output against `Tests/Fixtures/add/app.pbxproj` with `App/Views/Bar.swift` on disk (task 7.2), pinned by `AddCommandTests.testDesignEvidenceExamplesAreRealOutput` — exactly (the `source` objects' `rule` and `glob` keys, `null` here, arrived with `conventions-config`), except that the two minted IDs (`D0591B…`, `A2C1C4…` here) are random on every run, so the test masks them and checks the diff's added lines rather than its hunk positions, which follow the IDs' sort order. There is no `README.md` yet; these are the examples for its `add` section, to be moved when the first change creates the file.
 
 ```
 $ pbxedit add --dry-run App/Views/Bar.swift --project App.xcodeproj
@@ -195,7 +195,9 @@ $ pbxedit add --json App/Views/Bar.swift --project App.xcodeproj
       "path" : "App/Views/Bar.swift",
       "source" : {
         "directory" : null,
+        "glob" : null,
         "kind" : "fileType",
+        "rule" : null,
         "siblings" : null
       },
       "value" : "Sources"
@@ -205,7 +207,9 @@ $ pbxedit add --json App/Views/Bar.swift --project App.xcodeproj
       "path" : "App/Views/Bar.swift",
       "source" : {
         "directory" : null,
+        "glob" : null,
         "kind" : "structure",
+        "rule" : null,
         "siblings" : null
       },
       "value" : "path = Bar.swift; sourceTree = <group>; in group Views (AA0000000000000000000003)"
@@ -215,7 +219,9 @@ $ pbxedit add --json App/Views/Bar.swift --project App.xcodeproj
       "path" : "App/Views/Bar.swift",
       "source" : {
         "directory" : "App/Views",
+        "glob" : null,
         "kind" : "inferred",
+        "rule" : null,
         "siblings" : 1
       },
       "value" : "App"
@@ -225,7 +231,9 @@ $ pbxedit add --json App/Views/Bar.swift --project App.xcodeproj
       "path" : "App/Views/Bar.swift",
       "source" : {
         "directory" : "App/Views",
+        "glob" : null,
         "kind" : "inferred",
+        "rule" : null,
         "siblings" : 1
       },
       "value" : "App: none"

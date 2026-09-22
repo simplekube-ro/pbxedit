@@ -27,27 +27,45 @@ struct Lint: ParsableCommand {
     @Option(name: .long, help: ArgumentHelp("Report only findings not recorded in this baseline file.", valueName: "file"))
     var baseline: String?
 
+    @Flag(name: .long, help: "Ignore the baseline named by lint.baseline in .pbxedit.yml.")
+    var noBaseline = false
+
     @Option(name: .long, help: ArgumentHelp("Record the current findings in this baseline file and exit 0.", valueName: "file"))
     var writeBaseline: String?
 
     func run() throws {
         do {
-            let pbxproj = try projectOptions.locate()
+            if baseline != nil, noBaseline { throw UsageError("pass either --baseline or --no-baseline, not both") }
+            let context = try projectOptions.context()
+            let pbxproj = context.pbxproj
             let bytes: [UInt8]
             do {
                 bytes = Array(try Data(contentsOf: pbxproj))
             } catch {
                 throw UsageError("cannot read \(pbxproj.path): \(error.localizedDescription)")
             }
-            let existing = try baseline.map(Lint.readBaseline)
-            let reader: (any DiskReader)? = disk ? FileSystemDiskReader(sourceRoot: ProjectOptions.sourceRoot(of: pbxproj)) : nil
-            let findings = RuleSet.standard.evaluate(bytes: bytes, disk: reader)
+            // A project that does not load is the S1 finding below; the
+            // target check needs a loaded project and waits for one.
+            if let project = try? Project.load(bytes) { try context.validate(project) }
+            // The baseline: the flag, else the configured default unless
+            // --no-baseline or --write-baseline (spec: Lint baseline default).
+            var baselinePath = baseline
+            if baselinePath == nil, !noBaseline, writeBaseline == nil, let configured = context.config?.file.baselineURL {
+                baselinePath = configured.path
+            }
+            let existing = try baselinePath.map(Lint.readBaseline)
+            let reader: (any DiskReader)? = disk ? FileSystemDiskReader(sourceRoot: context.sourceRoot) : nil
+            let evaluated = RuleSet.standard.evaluate(bytes: bytes, disk: reader)
+            // Exemptions first, then the baseline (spec: Path exemptions).
+            let exemptions = context.config?.exemptions ?? Exemptions([:])
+            let (findings, exempt) = exemptions.apply(to: evaluated)
             let applied = existing?.apply(to: findings)
             var report = LintReport(
                 project: pbxproj.path,
                 findings: applied?.findings ?? findings,
                 baselined: applied?.baselined ?? 0,
-                resolved: applied?.resolved ?? [])
+                resolved: applied?.resolved ?? [],
+                exempt: exempt.count)
             if let writeBaseline {
                 let written = Baseline(findings: findings)
                 do {
@@ -80,10 +98,12 @@ struct Lint: ParsableCommand {
 /// What `lint` prints, in either form.
 struct LintReport {
     let project: String
-    /// After the baseline, when one was given.
+    /// After exemptions and the baseline, when one was given.
     let findings: [Finding]
     let baselined: Int
     let resolved: [Baseline.Entry]
+    /// How many findings `lint.exempt` suppressed.
+    let exempt: Int
     var baselineWritten: (path: String, entries: Int)?
 
     var errors: Int { findings.filter { $0.severity == .error }.count }
@@ -103,6 +123,7 @@ struct LintReport {
         var summary = "\(LintReport.count(errors, "error")), \(LintReport.count(warnings, "warning"))"
         if baselined > 0 || !resolved.isEmpty { summary += ", \(baselined) baselined" }
         if !resolved.isEmpty { summary += ", \(resolved.count) resolved" }
+        if exempt > 0 { summary += ", \(exempt) exempt" }
         lines.append(summary)
         if let baselineWritten {
             lines.append("baseline written: \(baselineWritten.path) (\(LintReport.count(baselineWritten.entries, "entry", "entries")))")
@@ -142,6 +163,7 @@ struct LintReport {
             let warnings: Int
             let baselined: Int
             let resolved: Int
+            let exempt: Int
         }
 
         let schemaVersion = 1
@@ -160,7 +182,7 @@ struct LintReport {
                     related: $0.related.map(\.rawValue), message: $0.message)
             },
             resolved: resolved,
-            summary: JSON.Summary(errors: errors, warnings: warnings, baselined: baselined, resolved: resolved.count))
+            summary: JSON.Summary(errors: errors, warnings: warnings, baselined: baselined, resolved: resolved.count, exempt: exempt))
         guard let data = try? JSONEncoder.pbxedit.encode(object) else { return "{}\n" }
         return String(decoding: data, as: UTF8.self) + "\n"
     }

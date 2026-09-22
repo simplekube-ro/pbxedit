@@ -47,7 +47,7 @@ final class LintCommandTests: XCTestCase {
         XCTAssertEqual(findings[0]["path"] as? String, "AppTests/Views/FooTests.swift")
         XCTAssertEqual(findings[0]["related"] as? [String], [])
         let summary = try XCTUnwrap(object["summary"] as? [String: Int])
-        XCTAssertEqual(summary, ["errors": 2, "warnings": 1, "baselined": 0, "resolved": 0])
+        XCTAssertEqual(summary, ["errors": 2, "warnings": 1, "baselined": 0, "resolved": 0, "exempt": 0])
         XCTAssertEqual(object["resolved"] as? [[String: String]], [])
         XCTAssertEqual(result.stderr, "")
     }
