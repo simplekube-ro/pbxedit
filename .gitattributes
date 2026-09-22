@@ -1,0 +1,2 @@
+# Fixtures are compared byte for byte; git must never normalize them.
+Tests/Fixtures/** -text

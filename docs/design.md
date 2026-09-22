@@ -1,6 +1,7 @@
 # pbxedit — design
 
-Status: approved design, pre-implementation (2026-09-21).
+Status: approved design (2026-09-21). Implemented so far: layer 1, `PBXSyntax`
+(change `lossless-syntax-tree`).
 
 ## Purpose
 
@@ -50,14 +51,23 @@ this list.
 ### 1. `PBXSyntax` — lossless syntax tree
 
 Parses the old-style ASCII plist: dictionaries, arrays, quoted and bare
-strings, `/* */` comments. Whitespace and comments are kept as trivia attached
-to tokens. It knows nothing about Xcode.
+strings, data literals, `/* */` and `//` comments. Whitespace and comments are
+kept as trivia attached to tokens. It knows nothing about Xcode.
 
 - **Core invariant:** `serialize(parse(bytes)) == bytes` for any input that parses.
-- Edits are node insert, remove and replace.
+- Edits are node insert, remove and replace, addressed by structural path
+  (dictionary keys and array indices from the root). Keys match exactly.
 - A new node copies its formatting from a sibling in the same container, so
   files with mixed indentation styles stay locally consistent.
-- Parse errors carry a line and column.
+- Parse errors carry a line and column. Input is UTF-8; XML and binary
+  property lists are rejected by name. Nesting deeper than 64 is an error.
+- **Reads what Apple's reader accepts, writes what Xcode writes.** A bare
+  string may contain letters, digits and `_ $ / : . -` on read. On write a
+  string is left bare only if it is non-empty, uses letters, digits and
+  `_ $ / .` only, and contains neither `//` nor `___`; existing strings keep
+  their quoting. Checked against every Xcode-written file in the corpus,
+  Xcode 27 included; what the corpus cannot show is recorded in design D5 of
+  `openspec/changes/archive/2026-09-22-lossless-syntax-tree/design.md`.
 
 ### 2. `PBXModel` — typed view over the tree
 
@@ -198,8 +208,12 @@ Dependencies: `swift-argument-parser` and `Yams`. Nothing else.
 Development is test-first.
 
 - **Syntax:** byte-exact round-trip over a corpus of real project files across
-  `objectVersion`s (license-checked before inclusion). A mutation fuzzer must
-  produce either a clean round-trip or a located parse error, never a crash.
+  `objectVersion`s 45 to 100 (`Tests/Fixtures/corpus/`; MIT-licensed, each
+  pinned to a commit, with provenance and SHA-256 in `Tests/Fixtures/NOTICE`).
+  Private projects are never committed; `PBXEDIT_EXTRA_CORPUS` names extra
+  files or directories to run the same tests against locally. A seeded
+  mutation fuzzer (2,000 iterations by default) must produce either a clean
+  round-trip or a located parse error, never a crash.
 - **Operations:** fixture project → operation → assertions on the *model*, plus
   a snapshot of the diff. Every operation test also asserts the rule set is
   clean and `plutil -lint` passes.

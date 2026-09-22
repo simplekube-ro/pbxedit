@@ -1,0 +1,290 @@
+Third-party test fixtures
+=========================
+
+Everything under Tests/Fixtures/corpus/ is a `project.pbxproj` copied, byte for
+byte, from an open-source project. Each file is pinned to a commit and is
+distributed under that project's licence, whose text is kept under
+Tests/Fixtures/licenses/. The files are test data only: nothing in them is
+compiled into, or shipped with, pbxedit.
+
+The files were fetched from raw.githubusercontent.com at the commit shown and
+checked against the git blob hash GitHub reports for that path and commit.
+`SHA-256` is the digest of the committed bytes; the corpus test fails if a file
+no longer matches it. Do not edit these files: a corpus file that does not
+round-trip is a parser bug, never a fixture to be adjusted.
+
+Tests/Fixtures/handwritten/ is original to this repository and is not
+third-party material.
+
+Retrieved 2026-09-22.
+
+------------------------------------------------------------------------------
+tuist/XcodeProj
+  Source:    https://github.com/tuist/XcodeProj
+  Commit:    6de48e03302d0caa3580add46f17f324a9e2c765
+  Licence:   MIT (upstream LICENSE.md; text in licenses/tuist-XcodeProj.LICENSE)
+  Copyright: Copyright (c) from 2018 Pedro Piñera Buendía
+
+  corpus/tuist-XcodeProj/ProjectWithoutProductsGroup.pbxproj
+    Upstream path:  Fixtures/iOS/ProjectWithoutProductsGroup.xcodeproj/project.pbxproj
+    URL:            https://github.com/tuist/XcodeProj/blob/6de48e03302d0caa3580add46f17f324a9e2c765/Fixtures/iOS/ProjectWithoutProductsGroup.xcodeproj/project.pbxproj
+    objectVersion:  48; LastUpgradeCheck 0920, LastSwiftUpdateCheck 0920
+    Git blob:       6ef285c27de0e2c477df5aea2555b7ba06d64913
+    SHA-256:        badf79e3d566b19b59115e2775dd11a6cdf87623d09656457020da0a77262162
+    Size:           1527 bytes
+
+  corpus/tuist-XcodeProj/AppWithExtensions.pbxproj
+    Upstream path:  Fixtures/iOS/AppWithExtensions/AppWithExtensions.xcodeproj/project.pbxproj
+    URL:            https://github.com/tuist/XcodeProj/blob/6de48e03302d0caa3580add46f17f324a9e2c765/Fixtures/iOS/AppWithExtensions/AppWithExtensions.xcodeproj/project.pbxproj
+    objectVersion:  50; LastUpgradeCheck 1140, LastSwiftUpdateCheck 1140; CreatedOnToolsVersion 11.4
+    Git blob:       5a12da512b6f18873969f66c36cdeaccf3fdfc1e
+    SHA-256:        dff630d1260665643906244501fba6326f5c24fa3fc1f4fa5968ed7bea4b9981
+    Size:           40724 bytes
+
+  corpus/tuist-XcodeProj/iOS-Project.pbxproj
+    Upstream path:  Fixtures/iOS/Project.xcodeproj/project.pbxproj
+    URL:            https://github.com/tuist/XcodeProj/blob/6de48e03302d0caa3580add46f17f324a9e2c765/Fixtures/iOS/Project.xcodeproj/project.pbxproj
+    objectVersion:  52; LastUpgradeCheck 0830, LastSwiftUpdateCheck 0830; CreatedOnToolsVersion 8.3.1
+    Git blob:       c4b6b20eed41d55757c0a9f83d34f5afc3d7d3c4
+    SHA-256:        00d85dd16529899f2f20366552ca98ce741c7ab7a9e08d9554de47d70e7f5523
+    Size:           22148 bytes
+
+  corpus/tuist-XcodeProj/FileSharedAcrossTargets.pbxproj
+    Upstream path:  Fixtures/FileSharedAcrossTargets/FileSharedAcrossTargets.xcodeproj/project.pbxproj
+    URL:            https://github.com/tuist/XcodeProj/blob/6de48e03302d0caa3580add46f17f324a9e2c765/Fixtures/FileSharedAcrossTargets/FileSharedAcrossTargets.xcodeproj/project.pbxproj
+    objectVersion:  56; LastUpgradeCheck 1430, LastSwiftUpdateCheck 1430; CreatedOnToolsVersion 14.3.1
+    Git blob:       e5059b59e130e5f2b433246464dacb741da5b58c
+    SHA-256:        5fd2f0de13e7445d80bc874bb705c7d59927037c5c38fd22479f56f63aedadce
+    Size:           17070 bytes
+
+  corpus/tuist-XcodeProj/TargetWithCustomBuildRules.pbxproj
+    Upstream path:  Fixtures/TargetWithCustomBuildRules/TargetWithCustomBuildRules.xcodeproj/project.pbxproj
+    URL:            https://github.com/tuist/XcodeProj/blob/6de48e03302d0caa3580add46f17f324a9e2c765/Fixtures/TargetWithCustomBuildRules/TargetWithCustomBuildRules.xcodeproj/project.pbxproj
+    objectVersion:  56; LastUpgradeCheck 1500; CreatedOnToolsVersion 15.0
+    Git blob:       16c682fb8fcb014ae2e75bc135cffa6632a2b625
+    SHA-256:        555c23b5f7d9188f6fb68b65f135ca7c1d601ba28b21e37fbfb03f667f40bee6
+    Size:           11485 bytes
+
+  corpus/tuist-XcodeProj/ProjectWithSwiftPackageTraits.pbxproj
+    Upstream path:  Fixtures/iOS/ProjectWithSwiftPackageTraits.xcodeproj/project.pbxproj
+    URL:            https://github.com/tuist/XcodeProj/blob/6de48e03302d0caa3580add46f17f324a9e2c765/Fixtures/iOS/ProjectWithSwiftPackageTraits.xcodeproj/project.pbxproj
+    objectVersion:  60; LastUpgradeCheck 0830, LastSwiftUpdateCheck 0830; CreatedOnToolsVersion 8.3.1
+    Git blob:       a33af6b13ce19b270283b924fec75b234fc5ff4a
+    SHA-256:        6a323b766517dd2731b61b3bbd81801c5111a68d1299778473ad30a89384d04f
+    Size:           22796 bytes
+
+  corpus/tuist-XcodeProj/SynchronizedRootGroups.pbxproj
+    Upstream path:  Fixtures/SynchronizedRootGroups/SynchronizedRootGroups.xcodeproj/project.pbxproj
+    URL:            https://github.com/tuist/XcodeProj/blob/6de48e03302d0caa3580add46f17f324a9e2c765/Fixtures/SynchronizedRootGroups/SynchronizedRootGroups.xcodeproj/project.pbxproj
+    objectVersion:  73; LastUpgradeCheck 1600; CreatedOnToolsVersion 16.0
+    Git blob:       a8db250fe854eec1979cd81e7c1d3e73a554803a
+    SHA-256:        b6c8ed24adae4b2dcd4c4176f612afcb76f2965eaeb7562ad4dbe8988864d606
+    Size:           13493 bytes
+
+  corpus/tuist-XcodeProj/Xcode16-Test.pbxproj
+    Upstream path:  Fixtures/Xcode16/Test.xcodeproj/project.pbxproj
+    URL:            https://github.com/tuist/XcodeProj/blob/6de48e03302d0caa3580add46f17f324a9e2c765/Fixtures/Xcode16/Test.xcodeproj/project.pbxproj
+    objectVersion:  77; LastUpgradeCheck 1610, LastSwiftUpdateCheck 1610; CreatedOnToolsVersion 16.1
+    Git blob:       38d0a9761238f52fecdd1087167b0f6ce2f29060
+    SHA-256:        8e3475c1bc02e468c61815f8713419baab6277b9a95d30b8f1361a094ec29b26
+    Size:           12828 bytes
+
+  corpus/tuist-XcodeProj/Xcode16BuildConfigurations.pbxproj
+    Upstream path:  Fixtures/Xcode16BuildConfigurations/Xcode16BuildConfigurations.xcodeproj/project.pbxproj
+    URL:            https://github.com/tuist/XcodeProj/blob/6de48e03302d0caa3580add46f17f324a9e2c765/Fixtures/Xcode16BuildConfigurations/Xcode16BuildConfigurations.xcodeproj/project.pbxproj
+    objectVersion:  77; LastUpgradeCheck 2610, LastSwiftUpdateCheck 2610; CreatedOnToolsVersion 26.1
+    Git blob:       fbb1bc5f0c2eca105009e3baad75da83349b94ba
+    SHA-256:        fdaffeb82243fdbc676fb19c1795df37643fef8e4093514472361b87b411653d
+    Size:           12780 bytes
+
+  corpus/tuist-XcodeProj/WithoutWorkspace.pbxproj
+    Upstream path:  Fixtures/WithoutWorkspace/WithoutWorkspace.xcodeproj/project.pbxproj
+    URL:            https://github.com/tuist/XcodeProj/blob/6de48e03302d0caa3580add46f17f324a9e2c765/Fixtures/WithoutWorkspace/WithoutWorkspace.xcodeproj/project.pbxproj
+    objectVersion:  46; LastUpgradeCheck 9999
+    Git blob:       d364afeda112e1da61d92494de4c7b4a19b163f0
+    SHA-256:        2167ffbf20e883364ada8ac6f8f184ad36cada902091b223144c6bc2f7fbb9a4
+    Size:           14787 bytes
+
+------------------------------------------------------------------------------
+CocoaPods/Xcodeproj
+  Source:    https://github.com/CocoaPods/Xcodeproj
+  Commit:    f427b24aec168be2faa5c43ad64fa6bf91880e13
+  Licence:   MIT (upstream LICENSE; text in licenses/CocoaPods-Xcodeproj.LICENSE)
+  Copyright: Copyright (c) 2012 Eloy Durán <eloy.de.enige@gmail.com>
+
+  corpus/CocoaPods-Xcodeproj/CocoaApplication.pbxproj
+    Upstream path:  spec/fixtures/Sample Project/Cocoa Application.xcodeproj/project.pbxproj
+    URL:            https://github.com/CocoaPods/Xcodeproj/blob/f427b24aec168be2faa5c43ad64fa6bf91880e13/spec/fixtures/Sample%20Project/Cocoa%20Application.xcodeproj/project.pbxproj
+    objectVersion:  45; LastUpgradeCheck 0510
+    Git blob:       21febfbf9e769c3e67977455a4faabd648b2167f
+    SHA-256:        a80e114da77cf926f686d718349d26bdd7decd5fb9d8cb9e1d96b0a716ab9db8
+    Size:           170259 bytes
+
+  corpus/CocoaPods-Xcodeproj/6.3-format.pbxproj
+    Upstream path:  spec/fixtures/Sample Project/6.3-format.xcodeproj/project.pbxproj
+    URL:            https://github.com/CocoaPods/Xcodeproj/blob/f427b24aec168be2faa5c43ad64fa6bf91880e13/spec/fixtures/Sample%20Project/6.3-format.xcodeproj/project.pbxproj
+    objectVersion:  47; LastUpgradeCheck 0630
+    Git blob:       78b66baa5f3888ede9809b7c976011d2b3986fce
+    SHA-256:        777d22b0b52e8859e581826458ec032b0e5855a2d9b1ef9a303106ec9e975e07
+    Size:           170257 bytes
+
+  corpus/CocoaPods-Xcodeproj/8.0-format.pbxproj
+    Upstream path:  spec/fixtures/Sample Project/8.0-format.xcodeproj/project.pbxproj
+    URL:            https://github.com/CocoaPods/Xcodeproj/blob/f427b24aec168be2faa5c43ad64fa6bf91880e13/spec/fixtures/Sample%20Project/8.0-format.xcodeproj/project.pbxproj
+    objectVersion:  48; LastUpgradeCheck 0630
+    Git blob:       226888cc46b8e81eb105593dd5ead8a279b64b3d
+    SHA-256:        4f9d9f0f43ee3a3a91549d3719bfe63b711a6b0a45c825da5de83c5393151175
+    Size:           170257 bytes
+
+  corpus/CocoaPods-Xcodeproj/Emoji.pbxproj
+    Upstream path:  spec/fixtures/Sample Project/Emoji.xcodeproj/project.pbxproj
+    URL:            https://github.com/CocoaPods/Xcodeproj/blob/f427b24aec168be2faa5c43ad64fa6bf91880e13/spec/fixtures/Sample%20Project/Emoji.xcodeproj/project.pbxproj
+    objectVersion:  45; LastUpgradeCheck 0620
+    Git blob:       8b7ef82e153d9f8b526b3b2e6c3b44c41f824c1f
+    SHA-256:        709bad882122c6cf365c092f9edc853535cff4d938b616fb85cf9feed4e35375
+    Size:           170586 bytes
+
+  corpus/CocoaPods-Xcodeproj/Extensions.pbxproj
+    Upstream path:  spec/fixtures/Sample Project/Extensions/Extensions.xcodeproj/project.pbxproj
+    URL:            https://github.com/CocoaPods/Xcodeproj/blob/f427b24aec168be2faa5c43ad64fa6bf91880e13/spec/fixtures/Sample%20Project/Extensions/Extensions.xcodeproj/project.pbxproj
+    objectVersion:  46; LastUpgradeCheck 0730, LastSwiftUpdateCheck 0730; CreatedOnToolsVersion 7.3
+    Git blob:       9a1348e6620ec008bf8dbd1c7ccf6efd2ab9bc9f
+    SHA-256:        60e7ed0f79f293b109997dffda1b1b46256d1652bd12d6bac16e5463cbb2b49a
+    Size:           42478 bytes
+
+  corpus/CocoaPods-Xcodeproj/Circular.pbxproj
+    Upstream path:  spec/fixtures/Sample Project/Circular.xcodeproj/project.pbxproj
+    URL:            https://github.com/CocoaPods/Xcodeproj/blob/f427b24aec168be2faa5c43ad64fa6bf91880e13/spec/fixtures/Sample%20Project/Circular.xcodeproj/project.pbxproj
+    objectVersion:  46; LastUpgradeCheck 0700; CreatedOnToolsVersion 7.0
+    Git blob:       2795072185fa08232a528127a9607097269d0a1a
+    SHA-256:        f88664f4af88ea9607e7622edde336080ff71496156cc7e4df735e795b8d8a91
+    Size:           4876 bytes
+
+  corpus/CocoaPods-Xcodeproj/ReferencedProject.pbxproj
+    Upstream path:  spec/fixtures/Sample Project/ReferencedProject/ReferencedProject.xcodeproj/project.pbxproj
+    URL:            https://github.com/CocoaPods/Xcodeproj/blob/f427b24aec168be2faa5c43ad64fa6bf91880e13/spec/fixtures/Sample%20Project/ReferencedProject/ReferencedProject.xcodeproj/project.pbxproj
+    objectVersion:  46; LastUpgradeCheck 0450
+    Git blob:       37522a3cbb4e03c0e3b75445834205f849e1d497
+    SHA-256:        4bf005a449029acf24b5116d676fa91ac3426d422cbee854cd3c31a2c30ada59
+    Size:           29978 bytes
+
+------------------------------------------------------------------------------
+Alamofire/Alamofire
+  Source:    https://github.com/Alamofire/Alamofire
+  Commit:    bda9ed57d72988a3a2ada33d824583541f86eac6
+  Licence:   MIT (upstream LICENSE; text in licenses/Alamofire-Alamofire.LICENSE)
+  Copyright: Copyright (c) 2014-2022 Alamofire Software Foundation (http://alamofire.org/)
+
+  corpus/Alamofire-Alamofire/Alamofire.pbxproj
+    Upstream path:  Alamofire.xcodeproj/project.pbxproj
+    URL:            https://github.com/Alamofire/Alamofire/blob/bda9ed57d72988a3a2ada33d824583541f86eac6/Alamofire.xcodeproj/project.pbxproj
+    objectVersion:  77; LastUpgradeCheck 2700, LastSwiftUpdateCheck 1500; CreatedOnToolsVersion 12.5, 15.0, 6.0, 6.1.1, 7.1
+    Git blob:       80fab5affdc57a7d95770dfb6a81ebf033112c84
+    SHA-256:        06999fc34fbbcfda7fc2e1b8afd9e4af4d162d9a2b29cbb9634b4ec95e524267
+    Size:           222891 bytes
+
+  corpus/Alamofire-Alamofire/watchOS-Example.pbxproj
+    Upstream path:  watchOS Example/watchOS Example.xcodeproj/project.pbxproj
+    URL:            https://github.com/Alamofire/Alamofire/blob/bda9ed57d72988a3a2ada33d824583541f86eac6/watchOS%20Example/watchOS%20Example.xcodeproj/project.pbxproj
+    objectVersion:  54; LastUpgradeCheck 2700, LastSwiftUpdateCheck 1130; CreatedOnToolsVersion 11.3.1
+    Git blob:       6cfbe66f8d313ae8eba05d88e6ebf15b4dcbf282
+    SHA-256:        3c6662e96351db2b8fe40a51deabfaef6cb1616e106296b594dcdae93ad3ba82
+    Size:           24412 bytes
+
+------------------------------------------------------------------------------
+onevcat/Kingfisher
+  Source:    https://github.com/onevcat/Kingfisher
+  Commit:    127d300c9c2582daade601ceaf84f8c62e3cb733
+  Licence:   MIT (upstream LICENSE; text in licenses/onevcat-Kingfisher.LICENSE)
+  Copyright: Copyright (c) 2019 Wei Wang
+
+  corpus/onevcat-Kingfisher/Kingfisher.pbxproj
+    Upstream path:  Kingfisher.xcodeproj/project.pbxproj
+    URL:            https://github.com/onevcat/Kingfisher/blob/127d300c9c2582daade601ceaf84f8c62e3cb733/Kingfisher.xcodeproj/project.pbxproj
+    objectVersion:  54; LastUpgradeCheck 1600, LastSwiftUpdateCheck 0720; CreatedOnToolsVersion 6.2
+    Git blob:       e474b8522b626db71ba5bafe2abd357a84f52204
+    SHA-256:        328dca47f28bab4ca6be8a923ff3257522a6ff0768161402c29f6a3b712820d4
+    Size:           100211 bytes
+
+  corpus/onevcat-Kingfisher/Kingfisher-Demo.pbxproj
+    Upstream path:  Demo/Kingfisher-Demo.xcodeproj/project.pbxproj
+    URL:            https://github.com/onevcat/Kingfisher/blob/127d300c9c2582daade601ceaf84f8c62e3cb733/Demo/Kingfisher-Demo.xcodeproj/project.pbxproj
+    objectVersion:  54; LastUpgradeCheck 1640, LastSwiftUpdateCheck 1100; CreatedOnToolsVersion 6.2, 7.1, 7.2
+    Git blob:       6220411138b72c439907505659dc245845307b4b
+    SHA-256:        0419068f9fdb9dd959347d613bf569c81785289220bcb99039f809a82d1ebaaf
+    Size:           68116 bytes
+
+------------------------------------------------------------------------------
+SnapKit/SnapKit
+  Source:    https://github.com/SnapKit/SnapKit
+  Commit:    250529bec615066185ff328984855101820fcbee
+  Licence:   MIT (upstream LICENSE; text in licenses/SnapKit-SnapKit.LICENSE)
+  Copyright: Copyright (c) 2011-Present SnapKit Team - https://github.com/SnapKit
+
+  corpus/SnapKit-SnapKit/Example-iOS.pbxproj
+    Upstream path:  Example-iOS/Example-iOS.xcodeproj/project.pbxproj
+    URL:            https://github.com/SnapKit/SnapKit/blob/250529bec615066185ff328984855101820fcbee/Example-iOS/Example-iOS.xcodeproj/project.pbxproj
+    objectVersion:  54; LastUpgradeCheck 1250, LastSwiftUpdateCheck 1250; CreatedOnToolsVersion 12.5
+    Git blob:       5e97d60b72300a88f2b61b876aa6ada6daea67ff
+    SHA-256:        1b71ee1344fe8b9bb1cd20186f16dc34fb4c584a9f3def6098f434528be3bca3
+    Size:           15116 bytes
+
+------------------------------------------------------------------------------
+ml-explore/mlx-swift
+  Source:    https://github.com/ml-explore/mlx-swift
+  Commit:    901941965d82e4a216d4d117231d847d194c563d
+  Licence:   MIT (upstream LICENSE; text in licenses/ml-explore-mlx-swift.LICENSE)
+  Copyright: Copyright (c) 2023 ml-explore
+
+  corpus/ml-explore-mlx-swift/MLX.pbxproj
+    Upstream path:  xcode/MLX.xcodeproj/project.pbxproj
+    URL:            https://github.com/ml-explore/mlx-swift/blob/901941965d82e4a216d4d117231d847d194c563d/xcode/MLX.xcodeproj/project.pbxproj
+    objectVersion:  77; LastUpgradeCheck 1640, LastSwiftUpdateCheck 2700; CreatedOnToolsVersion 16.4, 27.0
+    Git blob:       f93ecb09f469d77fc88aa8423926fcca0dfcc16f
+    SHA-256:        54b73a8199f9e6709a5fef350e888420b7d4654bf8fb009833259e0c4a435461
+    Size:           91575 bytes
+
+------------------------------------------------------------------------------
+pointfreeco/sqlite-data
+  Source:    https://github.com/pointfreeco/sqlite-data
+  Commit:    6390b5c076764c74713a3fd4ebcc3b61b2220dda
+  Licence:   MIT (upstream LICENSE; text in licenses/pointfreeco-sqlite-data.LICENSE)
+  Copyright: Copyright (c) 2025 Point-Free, Inc.
+
+  corpus/pointfreeco-sqlite-data/Examples.pbxproj
+    Upstream path:  Examples/Examples.xcodeproj/project.pbxproj
+    URL:            https://github.com/pointfreeco/sqlite-data/blob/6390b5c076764c74713a3fd4ebcc3b61b2220dda/Examples/Examples.xcodeproj/project.pbxproj
+    objectVersion:  77; LastUpgradeCheck 2610, LastSwiftUpdateCheck 2700; CreatedOnToolsVersion 16.2, 16.3, 16.4, 27.0
+    Git blob:       f11a0dede748a157427185196cf07a8458552e96
+    SHA-256:        219f5cab01343d5be21ee7cb8a4051f5255d5f28439ef8951ea719c9bf365074
+    Size:           55883 bytes
+
+------------------------------------------------------------------------------
+pointfreeco/episode-code-samples
+  Source:    https://github.com/pointfreeco/episode-code-samples
+  Commit:    f054d94bf2eef87bafcc7cb56f2f531f84eeeca0
+  Licence:   MIT (upstream LICENSE; text in licenses/pointfreeco-episode-code-samples.LICENSE)
+  Copyright: Copyright (c) 2017 Point-Free
+
+  corpus/pointfreeco-episode-code-samples/Trips.pbxproj
+    Upstream path:  0377-wwdc26-pt8/Trips/Trips.xcodeproj/project.pbxproj
+    URL:            https://github.com/pointfreeco/episode-code-samples/blob/f054d94bf2eef87bafcc7cb56f2f531f84eeeca0/0377-wwdc26-pt8/Trips/Trips.xcodeproj/project.pbxproj
+    objectVersion:  100; LastUpgradeCheck 2700, LastSwiftUpdateCheck 2700; CreatedOnToolsVersion 26.3, 27.0
+    Git blob:       1831b282f5e3928db0bba1de2582eb2ed7b8ccdc
+    SHA-256:        e0cab557bbf0ff2e428431dab9baa6c8f580b66f39da3299b964334710e42a63
+    Size:           23502 bytes
+
+------------------------------------------------------------------------------
+Lakr233/Irisin
+  Source:    https://github.com/Lakr233/Irisin
+  Commit:    1f6698080a5f84a8a11728d85b7a0769f2c13ca5
+  Licence:   MIT (upstream LICENSE; text in licenses/Lakr233-Irisin.LICENSE)
+  Copyright: Copyright (c) 2026 OwnGoal Studio
+
+  corpus/Lakr233-Irisin/Irisin.pbxproj
+    Upstream path:  Irisin.xcodeproj/project.pbxproj
+    URL:            https://github.com/Lakr233/Irisin/blob/1f6698080a5f84a8a11728d85b7a0769f2c13ca5/Irisin.xcodeproj/project.pbxproj
+    objectVersion:  77; LastUpgradeCheck 2700, LastSwiftUpdateCheck 2700; CreatedOnToolsVersion 27.0
+    Git blob:       7fba30eaa3c195bd360eba05e2280fad1d68c81b
+    SHA-256:        6bc677df79d6eac85af92a969b7c5b38fdf7a7868c1fae3f24f300525ba31ff6
+    Size:           37441 bytes

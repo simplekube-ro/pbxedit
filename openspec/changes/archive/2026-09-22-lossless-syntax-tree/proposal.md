@@ -31,6 +31,6 @@ None.
 
 ## Impact
 
-- New repository content: `Package.swift`, `Sources/PBXSyntax/`, `Tests/PBXSyntaxTests/`, `Tests/Fixtures/`, `.github/workflows/ci.yml`.
+- New repository content: `Package.swift`, `Sources/PBXSyntax/`, `Tests/PBXSyntaxTests/`, `Tests/Fixtures/` (hand-written fixtures, plus a corpus of third-party `project.pbxproj` files under MIT with `NOTICE` and licence texts), `.github/workflows/ci.yml`, `.gitignore`, and a `.gitattributes` that stops git normalizing fixture bytes.
 - No dependencies.
 - `docs/design.md` § Architecture 1 is implemented as written, with one refinement recorded in design.md of this change: the set of characters accepted in a bare string is wider than the set the writer leaves unquoted.

@@ -1,0 +1,25 @@
+// !$*UTF8*$!
+{
+	objects = {
+		G1 /* Deep */ = {
+			isa = PBXGroup;
+			children = (
+				A1 /* a.swift */,
+				A2 /* b.swift */,
+			);
+		};
+	G2 /* Shallow */ = {
+		isa = PBXGroup;
+		children = (
+		B1 /* c.swift */,
+		B2 /* d.swift */
+		);
+	};
+    G3 = { isa = PBXGroup ; children = ( C1 , C2 ) ; name = 'single quoted' ; };
+		D1 = {isa = Blob; payload = <0fbd777f 1c2735ae>; hyphen = bare-hyphen:ok; };
+	};
+
+
+	rootObject = P1;   /* trailing comment */
+}
+/* after the root */ // and no newline at the end
