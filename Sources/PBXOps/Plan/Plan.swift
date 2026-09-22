@@ -68,6 +68,40 @@ public struct Plan: Equatable, Sendable {
 
     /// Nothing to write.
     public var isNoOp: Bool { steps.isEmpty }
+
+    /// The objects the plan deletes.
+    public var deletedObjects: Set<ObjectID> {
+        var result: Set<ObjectID> = []
+        for case .deleteObject(let id) in steps { result.insert(id) }
+        return result
+    }
+
+    /// The deleted objects whose ID still occurs in `bytes` as a whole
+    /// identifier token — a maximal run of letters, digits and `_` — in ID
+    /// order (remove design D6). A short ID is a substring of longer ones,
+    /// hence tokens rather than a substring search. Empty is the expected
+    /// answer for any plan the rule set has passed.
+    public func deletedObjectsMentioned(in bytes: [UInt8]) -> [ObjectID] {
+        let deleted = deletedObjects
+        guard !deleted.isEmpty else { return [] }
+        var mentioned: Set<ObjectID> = []
+        var start: Int?
+        for (index, byte) in bytes.enumerated() {
+            let isIdentifier = (byte >= 0x30 && byte <= 0x39) || (byte >= 0x41 && byte <= 0x5A) || (byte >= 0x61 && byte <= 0x7A) || byte == 0x5F
+            if isIdentifier {
+                if start == nil { start = index }
+            } else if let from = start {
+                let id = ObjectID(String(decoding: bytes[from..<index], as: UTF8.self))
+                if deleted.contains(id) { mentioned.insert(id) }
+                start = nil
+            }
+        }
+        if let from = start {
+            let id = ObjectID(String(decoding: bytes[from...], as: UTF8.self))
+            if deleted.contains(id) { mentioned.insert(id) }
+        }
+        return mentioned.sorted()
+    }
 }
 
 /// A step that could not be applied: which one, and why the model refused.

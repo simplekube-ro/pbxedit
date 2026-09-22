@@ -8,7 +8,9 @@ path-argument convention and the `MembershipReport` shape (change
 `query-command`); `add`, with the operation machinery every mutating command
 shares — `Plan`, `OperationRunner`, sibling inference, `--dry-run` — (change
 `add-command`); `.pbxedit.yml`, the config layer of `Conventions`, lint
-exemptions and the baseline default (change `conventions-config`).
+exemptions and the baseline default (change `conventions-config`); `remove`,
+with `--target`/`--all`, empty-group pruning and the widened check scope
+(change `remove-command`).
 
 ## Purpose
 
@@ -142,7 +144,16 @@ them.
   one place configuration reaches a planner directly, because the group
   question is deliberately not a convention.
 - `OperationRunner` (in this layer, called by the CLI) owns everything after
-  planning: execute, check, write, verify — the pipeline § 4 describes.
+  planning: execute, check, write, verify — the pipeline § 4 describes. In a
+  debug build it also asserts, once the scoped check has passed, that no ID
+  the plan deleted still occurs in the result as a whole identifier token
+  (`Plan.deletedObjectsMentioned(in:)`): a failure there would be a key
+  missing from S2's list, not a user error.
+- Planners so far: `Sources/PBXOps/Add/` (`AddPlanner`) and
+  `Sources/PBXOps/Remove/` (`RemovePlanner`, which takes `target`/`all`
+  instead of conventions — nothing is inferred for a removal). Both share
+  `PlanBuilder`, `PlanError` and, in the CLI, one renderer
+  (`OperationReport`).
 
 ### 4. CLI
 
@@ -184,7 +195,7 @@ them.
 |---|---|
 | `add <path>…` | File must exist on disk (a bundle directory such as `.xcassets` counts as a file). Creates whatever is missing — file reference, group chain, build file, phase entry — as one plan, reusing what exists: re-adding a member is a no-op, never a second ID, and partial membership is completed with the existing objects. `--target <name>` (repeatable) replaces the inferred targets, `--platform <list>|none` the inferred `platformFilters`, `--phase sources|resources|headers|none` the phase the file type implies; an unknown extension needs `--phase`. A path in a synchronized folder is reported as already a member. Output lists each decision with its provenance and each object with its ID; `--json` carries `decisions`, `changes`, `notes`, `findings`, `diff` and the membership report per path |
 | `move <from> <to>` | File must already be at `<to>` on disk. Re-parents the reference, rewrites its path, and swaps build-phase membership when the destination implies different targets |
-| `remove <path>…` | Removes build files, phase entries, the group child and the reference. If several targets use the reference, requires `--target` to detach one or `--all` |
+| `remove <path>…` | The file need not exist on disk; it is never read. Removes every build file of the reference, each from every phase listing it, the reference from every group listing it, and the reference — referrers first, enumerated from the indexes so damaged membership (no phase, no group, two build files in one target) is removed just the same. A `PBXGroup` the removal leaves empty is removed too, up the chain, never the main group or the products group, never a group that was empty before; each is listed. If the reference's build files are owned by several targets, requires `--target <name>` to detach it from that target only — its phase entries go, a build file left in no phase is deleted, the reference and its group child stay, and the output notes when no target builds it any more — or `--all`. Exit `1` on a path no reference resolves to (a typo must not pass silently), on `--target` naming a target the file is not in (listing the ones it is in), on a child of a variant or version group, and on a path covered only by a synchronized folder; `2` on a target name the project does not have or `--target` with `--all`. The pre-write and post-write checks are scoped to the touched objects *and every former referrer* of a deleted one (its groups, phases and their targets), and deleted IDs are searched for as whole tokens in the result. `--dry-run`, `--json` and the output shape are `add`'s |
 | `lint` | Runs the rule set; errors before warnings, each ordered by rule then object ID. `--fix` repairs what is unambiguous; `--write-baseline <file>` records the current findings (keyed by rule and object ID) and exits 0; `--baseline <file>` reports and fails only on findings not in the baseline, and lists entries that no longer occur as resolved (`lint.baseline` in the config is the default; `--no-baseline` ignores it); `lint.exempt` globs suppress and count findings; `--disk` enables disk rules; `--strict` makes warnings fail |
 | `query <path>…` | Read-only: for each path, whether a file reference resolves to it, its ID, group path and groups, and each membership — target, phase, build file ID, `platformFilters` — or the synchronized group covering it. Facts, not findings: a missing group or phase is reported as such with a hint to run `lint`. Exits `1` when a path is neither a member nor covered, `2` when the project file does not load. `query --target <name>` lists every build-phase entry of a target by phase then path; an unknown name exits `2` listing the targets |
 
@@ -239,8 +250,10 @@ D1 and D2 can hold a disk reader, by construction.
 ### Severity and repair
 
 - A mutation fails on any S or M error among the objects it touched, even in a
-  project that already has unrelated findings. A mutation can never create a
-  new orphan.
+  project that already has unrelated findings; a reference a mutation keeps
+  and touches (a re-add, a `remove --target`) counts as touched, so a file
+  whose own membership is damaged must be repaired or removed whole first. A
+  mutation can never create a new orphan.
 - `lint --fix`: M1 adds the phase entry when the target is unambiguous; M2
   drops the dangling entry; M3 inserts the reference into the group matching
   its resolved path, creating groups as needed. It never mints an ID for an

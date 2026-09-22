@@ -86,6 +86,11 @@ public struct OperationRunner {
                                    warnings: warnings, project: nil, diff: nil, error: nil)
         }
         let newBytes = result.serialize()
+        // Remove design D6, belt and braces: once the scoped rule set is
+        // clean, no deleted ID can still be named anywhere in the file. A
+        // failure here is a gap in S2's key list, not a user error.
+        assert(plan.deletedObjectsMentioned(in: newBytes).isEmpty,
+               "deleted objects still mentioned after a clean check: \(plan.deletedObjectsMentioned(in: newBytes))")
         if dryRun {
             let diff = UnifiedDiff.make(from: originalBytes, to: newBytes, name: url.lastPathComponent)
             return OperationResult(plan: plan, outcome: .ok, modified: false, findings: [], warnings: warnings, project: result,

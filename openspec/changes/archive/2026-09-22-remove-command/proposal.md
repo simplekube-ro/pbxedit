@@ -10,7 +10,7 @@ There is no way to take a file out of the project except by hand: delete the bui
 - `--target <name>` detaches the file from that target only and keeps it in the project.
 - When a file belongs to several targets, require `--target` or `--all`, so a shared source is never removed from a target by accident.
 - Remove groups the operation leaves empty.
-- Refuse what v1 cannot do correctly: localized variants, paths that are members only through a synchronized folder.
+- Refuse what v1 cannot do correctly: children of variant groups (localized variants) and version groups (versioned models), and paths that are members only through a synchronized folder.
 
 ## Capabilities
 
@@ -30,7 +30,7 @@ None.
 
 ## Impact
 
-- New: `Sources/PBXOps/Remove/`, `Sources/pbxedit/Remove.swift`, tests, fixtures.
-- Reuses `OperationRunner`, `Plan`, `PathArgument`, `MembershipReport`. No new `Step` kinds: `removeChild`, `removePhaseEntry` and `deleteObject` were defined with `add-command`.
-- `docs/design.md`: the `remove` row of the Commands table gains "removes groups left empty".
+- New: `Sources/PBXOps/Remove/RemovePlanner.swift`, `Sources/pbxedit/Remove.swift`, tests, fixtures under `Tests/Fixtures/remove/` (`app.pbxproj`, a superset of `add/app.pbxproj` with build configuration lists so the oracle lane can read it; `roots.pbxproj`).
+- Reuses `OperationRunner`, `Plan`, `PlanBuilder`, `PlanError`, `PathArgument`, `MembershipReport`, and the `add` renderer, which moves from `Add.swift` to `Sources/pbxedit/OperationReport.swift` unchanged (`OperationReport`, formerly `AddReport`) so both commands print the same shape. No new `Step` kinds: `removeChild`, `removePhaseEntry` and `deleteObject` were defined with `add-command`. `PlanError` gains the refusal cases; `Plan` gains `deletedObjects` and the tokenized `deletedObjectsMentioned(in:)`; `OperationRunner` gains a debug-only assertion on them.
+- `docs/design.md`: the `remove` row of the Commands table gains `--target`/`--all` semantics, "removes groups left empty", exit `1` on an unknown path and the refusals; the status line names this change.
 - Depends on `add-command`.
