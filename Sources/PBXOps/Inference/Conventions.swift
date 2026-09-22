@@ -93,7 +93,7 @@ public struct Conventions {
             guard !inTarget.isEmpty else { continue }
             considered += 1
             for entry in inTarget {
-                variants[entry.platformFilters ?? entry.platformFilter.map { [$0] } ?? [], default: 0] += 1
+                variants[PlatformFilters.read(from: entry.buildFile), default: 0] += 1
             }
         }
         let source = Decision.Source.inferred(siblings: considered, directory: siblings.directory)

@@ -23,13 +23,25 @@
 		BB0000000000000000000113 /* Cache.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000232 /* Cache.swift */; };
 		BB0000000000000000000120 /* TV1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000240 /* TV1.swift */; platformFilters = (tvos, ); };
 		BB0000000000000000000121 /* TV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000241 /* TV2.swift */; platformFilters = (tvos, ); };
-		BB0000000000000000000130 /* OnlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000250 /* OnlyApp.swift */; };
-		BB0000000000000000000131 /* OnlyExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000251 /* OnlyExt.swift */; };
+		BB0000000000000000000130 /* OnlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000250 /* OnlyApp.swift */; platformFilters = (macos, ); };
+		BB0000000000000000000131 /* OnlyExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000251 /* OnlyExt.swift */; platformFilter = ios; };
 		BB0000000000000000000140 /* F1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000260 /* F1.swift */; platformFilter = ios; };
-		BB0000000000000000000141 /* F2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000261 /* F2.swift */; };
+		BB0000000000000000000141 /* F2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000261 /* F2.swift */; platformFilter = maccatalyst; };
 		BB0000000000000000000150 /* AppKit.h in Headers */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000270 /* AppKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		BB0000000000000000000151 /* Kit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000271 /* Kit.swift */; };
+		BB0000000000000000000151 /* Kit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000271 /* Kit.swift */; platformFilter = maccatalyst; };
 		BB0000000000000000000160 /* Thing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000280 /* Thing.swift */; };
+		BB0000000000000000000170 /* SlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000300 /* SlowTests.swift */; };
+		BB0000000000000000000180 /* RateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000310 /* RateTests.swift */; };
+		BB0000000000000000000190 /* Panel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000320 /* Panel.swift */; platformFilters = (ios, maccatalyst, ); };
+		BB0000000000000000000200 /* Common.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000330 /* Common.swift */; platformFilters = (ios, tvos, ); };
+		BB0000000000000000000210 /* StateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000340 /* StateTests.swift */; };
+		BB0000000000000000000220 /* Top.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000350 /* Top.swift */; };
+		BB0000000000000000000221 /* A1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000351 /* A1.swift */; };
+		BB0000000000000000000222 /* A2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000352 /* A2.swift */; };
+		BB0000000000000000000223 /* B1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000353 /* B1.swift */; };
+		BB0000000000000000000224 /* B2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000354 /* B2.swift */; };
+		BB0000000000000000000240 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000370 /* User.swift */; };
+		BB0000000000000000000250 /* Old.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000380 /* Old.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +55,7 @@
 		AA0000000000000000000180 /* AppExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AppExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000190 /* AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000195 /* AppKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AppKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000196 /* AppSlowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppSlowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000200 /* ExtensionMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionMain.swift; sourceTree = "<group>"; };
 		AA0000000000000000000210 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AA0000000000000000000220 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -59,10 +72,26 @@
 		AA0000000000000000000271 /* Kit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Kit.swift; sourceTree = "<group>"; };
 		AA0000000000000000000280 /* Thing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Thing.swift; sourceTree = "<group>"; };
 		AA0000000000000000000290 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
+		AA0000000000000000000300 /* SlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlowTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000310 /* RateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000320 /* Panel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panel.swift; sourceTree = "<group>"; };
+		AA0000000000000000000330 /* Common.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Common.swift; sourceTree = "<group>"; };
+		AA0000000000000000000340 /* StateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StateTests.swift; path = AppTests/State/StateTests.swift; sourceTree = SOURCE_ROOT; };
+		AA0000000000000000000350 /* Top.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Top.swift; sourceTree = "<group>"; };
+		AA0000000000000000000351 /* A1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A1.swift; sourceTree = "<group>"; };
+		AA0000000000000000000352 /* A2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A2.swift; sourceTree = "<group>"; };
+		AA0000000000000000000353 /* B1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B1.swift; sourceTree = "<group>"; };
+		AA0000000000000000000354 /* B2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2.swift; sourceTree = "<group>"; };
+		AA0000000000000000000370 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		AA0000000000000000000380 /* Old.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Old.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AA0000000000000000000301 /* Generated */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Generated; sourceTree = "<group>"; };
+		AA0000000000000000000301 /* Generated */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Generated;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +126,7 @@
 				AA0000000000000000000002 /* App */,
 				AA0000000000000000000012 /* AppKit */,
 				AA0000000000000000000004 /* Tests */,
+				AA0000000000000000000028 /* AppSlowTests */,
 				AA0000000000000000000007 /* Frameworks */,
 				AA0000000000000000000008 /* Products */,
 			);
@@ -107,6 +137,7 @@
 			children = (
 				AA0000000000000000000110 /* AppMain.swift */,
 				AA0000000000000000000130 /* Shared.swift */,
+				AA0000000000000000000380 /* Old.swift */,
 				AA0000000000000000000290 /* App.entitlements */,
 				AA0000000000000000000003 /* Views */,
 				AA0000000000000000000009 /* Extension */,
@@ -117,6 +148,9 @@
 				AA0000000000000000000016 /* Filtered */,
 				AA0000000000000000000017 /* Features */,
 				AA0000000000000000000019 /* Empty */,
+				AA0000000000000000000020 /* iOS */,
+				AA0000000000000000000021 /* Shared */,
+				AA0000000000000000000026 /* Models */,
 				AA0000000000000000000301 /* Generated */,
 			);
 			path = App;
@@ -126,6 +160,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000120 /* Foo.swift */,
+				AA0000000000000000000023 /* Legacy */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -143,6 +178,8 @@
 			children = (
 				AA0000000000000000000006 /* Foo */,
 				AA0000000000000000000011 /* Views */,
+				AA0000000000000000000022 /* State */,
+				AA0000000000000000000027 /* Services */,
 			);
 			path = AppTests;
 			sourceTree = "<group>";
@@ -170,6 +207,7 @@
 				AA0000000000000000000180 /* AppExtension.appex */,
 				AA0000000000000000000190 /* AppTests.xctest */,
 				AA0000000000000000000195 /* AppKit.framework */,
+				AA0000000000000000000196 /* AppSlowTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -268,6 +306,90 @@
 			path = Empty;
 			sourceTree = "<group>";
 		};
+		AA0000000000000000000020 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000320 /* Panel.swift */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000021 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000330 /* Common.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000022 /* State */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000340 /* StateTests.swift */,
+			);
+			name = State;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000023 /* Legacy */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000350 /* Top.swift */,
+				AA0000000000000000000024 /* A */,
+				AA0000000000000000000025 /* B */,
+			);
+			path = Legacy;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000024 /* A */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000351 /* A1.swift */,
+				AA0000000000000000000352 /* A2.swift */,
+			);
+			path = A;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000025 /* B */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000353 /* B1.swift */,
+				AA0000000000000000000354 /* B2.swift */,
+			);
+			path = B;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000026 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000370 /* User.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000027 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000310 /* RateTests.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000028 /* AppSlowTests */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000029 /* Services */,
+			);
+			path = AppSlowTests;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000029 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000300 /* SlowTests.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -350,6 +472,21 @@
 			productReference = AA0000000000000000000195 /* AppKit.framework */;
 			productType = "com.apple.product-type.framework";
 		};
+		DD0000000000000000000005 /* AppSlowTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF0000000000000000000006 /* Build configuration list for PBXNativeTarget "AppSlowTests" */;
+			buildPhases = (
+				CC0000000000000000000010 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AppSlowTests;
+			productName = AppSlowTests;
+			productReference = AA0000000000000000000196 /* AppSlowTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -376,6 +513,7 @@
 				DD0000000000000000000002 /* AppExtension */,
 				DD0000000000000000000003 /* AppTests */,
 				DD0000000000000000000004 /* AppKit */,
+				DD0000000000000000000005 /* AppSlowTests */,
 			);
 		};
 /* End PBXProject section */
@@ -409,6 +547,15 @@
 				BB0000000000000000000140 /* F1.swift in Sources */,
 				BB0000000000000000000141 /* F2.swift in Sources */,
 				BB0000000000000000000160 /* Thing.swift in Sources */,
+				BB0000000000000000000190 /* Panel.swift in Sources */,
+				BB0000000000000000000200 /* Common.swift in Sources */,
+				BB0000000000000000000220 /* Top.swift in Sources */,
+				BB0000000000000000000221 /* A1.swift in Sources */,
+				BB0000000000000000000222 /* A2.swift in Sources */,
+				BB0000000000000000000223 /* B1.swift in Sources */,
+				BB0000000000000000000224 /* B2.swift in Sources */,
+				BB0000000000000000000240 /* User.swift in Sources */,
+				BB0000000000000000000250 /* Old.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -429,6 +576,8 @@
 			files = (
 				BB0000000000000000000060 /* FooTests.swift in Sources */,
 				BB0000000000000000000070 /* Bar.swift in Sources */,
+				BB0000000000000000000180 /* RateTests.swift in Sources */,
+				BB0000000000000000000210 /* StateTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -437,6 +586,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				BB0000000000000000000151 /* Kit.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CC0000000000000000000010 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000000000000000000170 /* SlowTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -494,6 +651,14 @@
 			};
 			name = Debug;
 		};
+		1000000000000000000000A6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.AppSlowTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -533,6 +698,14 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1000000000000000000000A5 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FF0000000000000000000006 /* Build configuration list for PBXNativeTarget "AppSlowTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1000000000000000000000A6 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

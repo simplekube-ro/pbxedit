@@ -20,7 +20,7 @@ public enum RuleID: String, CaseIterable, Sendable, Hashable, Comparable {
         case .S1: return "the file parses, round-trips and loads"
         case .S2: return "every referenced ID exists"
         case .S3: return "no duplicate IDs or repeated entries"
-        case .S4: return "platformFilters is an array of known platform names"
+        case .S4: return "platform filters are known platform names, spelled as Xcode spells them"
         case .S5: return "strings are quoted canonically"
         case .M1: return "every build file is in exactly one build phase"
         case .M2: return "every build-phase entry points to a build file whose file resolves"

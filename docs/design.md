@@ -14,8 +14,10 @@ with `--target`/`--all`, empty-group pruning and the widened check scope
 and the disk preconditions (change `move-command`); `lint --fix`, with the
 whole-project verification (change `lint-fix`); `--version`, the
 `ORACLE_REQUIRED` oracle mode and `docs/RELEASING.md` (change
-`release-distribution`, in progress — the release workflow, the tap and the
-first release wait on the owner's name, licence and tap decisions).
+`release-distribution`, in progress — `v0.1.0` released; `v1.0.0` waits on
+the open-and-save check); the platform-filter spelling Xcode 27 writes, read
+and written everywhere (change `platform-filter-canonical-form`, issue #6,
+found by that check).
 
 ## Purpose
 
@@ -41,6 +43,7 @@ failures share that one root cause:
 | Reusing an existing file reference skipped the group child | Lookup by basename; no model of group membership |
 | Two files with the same basename in different targets: the wrong one compiled | Lookup by basename |
 | Moving a file between targets needed four manual edits | No `move` or `remove` operation |
+| *(pbxedit `v0.1.0`, issue #6)* Every `platformFilters = (ios, );` the tool wrote was rewritten by Xcode 27 on save to `platformFilter = ios;`, a diff on each release check | The tool's own spelling had never been checked against an Xcode save; no corpus file carries a platform filter. Regression: `Tests/Fixtures/xcode27/` |
 
 Measured on the originating project: 655 of 1,719 file references (38%) have no
 parent group, mixed within the same directories — accumulated damage, not a
@@ -147,7 +150,11 @@ them.
   takes the exemptions (an optional parameter, `nil` without a config): an
   `M3`-exempt path gets a `SOURCE_ROOT` reference and no group child, the
   one place configuration reaches a planner directly, because the group
-  question is deliberately not a convention.
+  question is deliberately not a convention. `PlatformFilters`
+  (`Sources/PBXOps/Inference/`) holds S4's platform list, the `--platform`
+  parser, and the one reading and the one spelling of a build file's filter
+  (§ Conventions, "Platform-filter spelling"); `Step.createBuildFile` and
+  `MovePlanner` write through it.
 - `OperationRunner` (in this layer, called by the CLI) owns everything after
   planning: execute, check, write, verify — the pipeline § 4 describes. Its
   `verification` parameter is `.scoped` for every command but one: the
@@ -258,7 +265,7 @@ set, which is how a mutation's pre-write check ignores pre-existing damage.
 | S1 | The file parses, round-trips byte-for-byte, and loads as a project (has `objects` and a resolvable `rootObject`). When it does not, this is the only finding | error |
 | S2 | Every referenced ID exists. The keys checked are the ones that hold object IDs in the corpus: `fileRef`, `productRef`, `children`, `files`, `buildPhases`, `targets`, `mainGroup`, `productRefGroup`, `productReference`, `dependencies`, `target`, `targetProxy`, `containerPortal`, `buildConfigurationList`, `buildConfigurations`, `baseConfigurationReference`, `baseConfigurationReferenceAnchor`, `buildRules`, `currentVersion`, `package`, `packageProductDependencies`, `packageReferences`, `fileSystemSynchronizedGroups`, `exceptions`, `remoteRef`, `ProductGroup`, `ProjectRef`, `buildPhase`, `TestTargetID`. `remoteGlobalIDString` is deliberately not checked: it names an object in the container portal's project. A corpus test fails when a new key holding IDs appears | error |
 | S3 | No duplicate object IDs; no ID twice in one `children` or `files` array | error |
-| S4 | `platformFilters` is a plist array of known platform names (`ios`, `maccatalyst`, `macos`, `tvos`, `watchos`, `xros`, `driverkit`) | error |
+| S4 | `platformFilters` is a plist array of known platform names (`ios`, `maccatalyst`, `macos`, `tvos`, `watchos`, `xros`, `driverkit`), and `platformFilter` — the singular key Xcode writes for a lone `ios` or `maccatalyst` — is one of those two strings. A build file with either key and an allowed value is clean; the legal but non-canonical `platformFilters = (ios, )` is not a finding | error |
 | S5 | A string is quoted exactly when Xcode would quote it (the write-side rule of `PBXSyntax`, § 1). A bare string with an illegal character cannot parse at all — that is S1 — so what remains is a legal but non-canonical spelling, typically a bare hyphen written by another tool; harmless to Xcode, hence a warning | warning |
 
 ### Membership
@@ -325,7 +332,7 @@ error asking for `--target`.
 | Attribute | Rule |
 |---|---|
 | Targets | The **intersection** of the siblings' target sets. Targets that only some siblings belong to are reported as a note. An empty intersection is an error listing the variants |
-| `platformFilters` | Per chosen target, must be unanimous among the siblings' build files in that target, otherwise an error asking for `--platform`. When no sibling is built by the target, none — Xcode's default |
+| `platformFilters` | Per chosen target, must be unanimous among the siblings' build files in that target, otherwise an error asking for `--platform`. When no sibling is built by the target, none — Xcode's default. A sibling's filter is read from either key (see the spelling note below) |
 | `sourceTree` and `path` | Derived structurally, not inferred: the group for a directory is the one resolving to it (preferring one with its own `path`), the source root's being the main group; if none, a name-only group named like the directory under the parent directory's group is reused, else the missing chain is created. A reference under a group that resolves to its directory is `<group>` plus basename; under a name-only group it is `SOURCE_ROOT` plus the full path, with `name`. A created group follows the same rule relative to its parent. A new child goes in name order when the group's children already are, last otherwise |
 | Build phase | From the file type: a static extension table, never a default. An unknown extension is an error asking for `--phase`; with `--phase` it is written as `lastKnownFileType = file` |
 
@@ -338,6 +345,20 @@ or `targets: App (flag)`; in `--json` the decision's `source` carries `kind`
 configured one and `glob` for an exemption (`location: … in no group
 (config, exempt M3 "**/Generated/**")`), `null` otherwise. A configured attribute is never inferred, so the
 disagreement errors cannot arise for it.
+
+**Platform-filter spelling.** `platformFilters` is the attribute's name in
+pbxedit's vocabulary — `--platform`, the config key, the decision line, the
+JSON arrays — while the file has two keys, and Xcode 27 is particular about
+which (measured with Xcode 27.0, `Tests/Fixtures/xcode27/`; change
+`platform-filter-canonical-form`): exactly one filter that is `ios` or
+`maccatalyst` is written `platformFilter = ios;`, every other non-empty set
+`platformFilters = (…);` in the order given, none writes neither key. Reading
+is the union: the array when present, else the single key as a one-element
+list, else none — one function each, `PlatformFilters.read(from:)` and
+`PlatformFilters.spelling(of:)`, used by every reader and writer. A build
+file whose value an operation does not change is never re-spelled (the
+untouched-bytes rule); one whose value changes ends up with the canonical
+spelling and none of the old key. `lint --fix` writes no filter.
 
 ### Config
 

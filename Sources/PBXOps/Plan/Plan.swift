@@ -10,7 +10,8 @@ public enum Step: Equatable, Sendable {
     case createFileReference(id: ObjectID, path: String, name: String?, sourceTree: String, lastKnownFileType: String?)
     /// A `PBXGroup` with no children yet; `addChild` steps fill it.
     case createGroup(id: ObjectID, name: String?, path: String?, sourceTree: String)
-    /// A `PBXBuildFile`; empty `platformFilters` writes no attribute.
+    /// A `PBXBuildFile`; the filters are written as Xcode spells them
+    /// (`PlatformFilters.spelling`): empty writes no attribute.
     case createBuildFile(id: ObjectID, fileRef: ObjectID, platformFilters: [String])
     case addChild(ObjectID, to: ObjectID, position: InsertPosition)
     case addPhaseEntry(ObjectID, to: ObjectID, position: InsertPosition)
@@ -157,8 +158,11 @@ extension Plan {
             try project.createObject(id, isa: Kind.group, attributes: attributes)
         case .createBuildFile(let id, let fileRef, let platformFilters):
             var attributes = [NewEntry("fileRef", project.reference(to: fileRef))]
-            if !platformFilters.isEmpty {
-                attributes.append(NewEntry("platformFilters", .array(platformFilters.map { .string($0) })))
+            // The spelling Xcode writes (platform-filters design D2); the
+            // model sorts the keys, so the key lands after `fileRef`.
+            let spelling = PlatformFilters.spelling(of: platformFilters)
+            if let key = spelling.key, let value = spelling.value {
+                attributes.append(NewEntry(key, value))
             }
             try project.createObject(id, isa: Kind.buildFile, attributes: attributes)
         case .addChild(let child, let group, let position):

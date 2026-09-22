@@ -77,6 +77,14 @@ final class OracleTests: XCTestCase {
         ("remove: damaged membership", "add/partial.pbxproj", [], [["remove", "AppTests/Views/FooTests.swift"]]),
         ("add then remove", "add/app.pbxproj", ["App/Features/New/Thing.swift"],
          [["add", "App/Features/New/Thing.swift"], ["remove", "App/Features/New/Thing.swift"]]),
+        // platform-filter-canonical-form task 4.4: the singular spelling, written and rewritten, on the Xcode 27-saved probe.
+        ("add: lone ios written singular", "move/app.pbxproj", ["App/Views/Bar.swift"], [["add", "App/Views/Bar.swift", "--platform", "ios"]]),
+        ("add: singular filter inferred from a singular sibling", "xcode27/platform-filters-after-xcode27-save.pbxproj", ["App/Mixed/New.swift"],
+         [["add", "App/Mixed/New.swift", "--target", "AppExtension"]]),
+        ("move: singular filter rewritten to the array", "xcode27/platform-filters-after-xcode27-save.pbxproj", ["App/Shared/F1.swift"],
+         [["move", "App/Filtered/F1.swift", "App/Shared/F1.swift"]]),
+        ("move: array rewritten to the singular key", "xcode27/platform-filters-after-xcode27-save.pbxproj", ["App/Mixed/Common.swift"],
+         [["move", "App/Shared/Common.swift", "App/Mixed/Common.swift", "--target", "AppExtension"]]),
     ]
 
     func testXcodebuildReadsEveryPostOperationProject() throws {

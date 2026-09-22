@@ -1,0 +1,101 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BF01 /* Foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12 /* Foo.swift */; platformFilter = tvos; };
+		BF02 /* Foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12 /* Foo.swift */; platformFilter = ios; };
+		BF03 /* Foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12 /* Foo.swift */; platformFilter = maccatalyst; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AB12 /* Foo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Foo.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		G001 = {
+			isa = PBXGroup;
+			children = (
+				G002 /* App */,
+			);
+			sourceTree = "<group>";
+		};
+		G002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AB12 /* Foo.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		T001 /* App */ = {
+			isa = PBXNativeTarget;
+			buildPhases = (
+				S001 /* Sources */,
+			);
+			name = App;
+			productName = App;
+			productType = "com.apple.product-type.application";
+		};
+		T002 /* AppExtension */ = {
+			isa = PBXNativeTarget;
+			buildPhases = (
+				S002 /* Sources */,
+			);
+			name = AppExtension;
+			productName = AppExtension;
+			productType = "com.apple.product-type.app-extension";
+		};
+		T003 /* Widget */ = {
+			isa = PBXNativeTarget;
+			buildPhases = (
+				S003 /* Sources */,
+			);
+			name = Widget;
+			productName = Widget;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		P001 /* Project object */ = {
+			isa = PBXProject;
+			mainGroup = G001;
+			targets = (
+				T001 /* App */,
+				T002 /* AppExtension */,
+				T003 /* Widget */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		S001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				BF01 /* Foo.swift in Sources */,
+			);
+		};
+		S002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				BF02 /* Foo.swift in Sources */,
+			);
+		};
+		S003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				BF03 /* Foo.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+	};
+	rootObject = P001 /* Project object */;
+}

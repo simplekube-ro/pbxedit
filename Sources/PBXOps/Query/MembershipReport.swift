@@ -37,7 +37,8 @@ public struct MembershipReport: Equatable, Sendable {
         public let target: ObjectRef?
         public let phase: ObjectRef?
         public let buildFile: ObjectID
-        /// `platformFilters`, else the single `platformFilter`, else empty.
+        /// `PlatformFilters.read`: `platformFilters`, else the single
+        /// `platformFilter` as one element, else empty.
         public let platformFilters: [String]
 
         public init(target: ObjectRef?, phase: ObjectRef?, buildFile: ObjectID, platformFilters: [String]) {
@@ -105,7 +106,7 @@ public struct MembershipReport: Equatable, Sendable {
         let membership = project.membership(of: reference.id)
         var entries: [Entry] = []
         for buildFile in membership.buildFiles {
-            let filters = buildFile.platformFilters ?? buildFile.platformFilter.map { [$0] } ?? []
+            let filters = PlatformFilters.read(from: buildFile.buildFile)
             if buildFile.phases.isEmpty {
                 entries.append(Entry(target: nil, phase: nil, buildFile: buildFile.buildFile.id, platformFilters: filters))
                 continue

@@ -113,6 +113,38 @@ final class StructuralRuleTests: XCTestCase {
         XCTAssertTrue(notAnArray.message.contains("not an array"), notAnArray.message)
     }
 
+    // Spec: Structural rules — S4 on the singular key (platform-filter-canonical-form task 2.1).
+    func testS4OnTheSingularKey() throws {
+        let findings = try lint("s4-singular-unknown.pbxproj")
+        XCTAssertEqual(findings.map(\.rule), [.S4], "\(findings)")
+        XCTAssertEqual(findings.map(\.object), ["BF01"], "ios and maccatalyst are what the singular key allows")
+        XCTAssertEqual(findings.map(\.path), ["App/Foo.swift"])
+        let unknown = try XCTUnwrap(findings.first)
+        XCTAssertEqual(unknown.severity, .error)
+        XCTAssertTrue(unknown.message.contains("'tvos'"), unknown.message)
+        XCTAssertTrue(unknown.message.contains("'platformFilter'"), unknown.message)
+        XCTAssertTrue(unknown.message.contains("ios, maccatalyst"), unknown.message)
+        XCTAssertFalse(unknown.message.contains("tvos, watchos"), "the plural key's list is not the singular key's: \(unknown.message)")
+    }
+
+    func testS4OnASingularKeyThatIsNotAStringAndAPluralKeyThatIsNotAnArray() throws {
+        let findings = try lint("s4-singular-not-string.pbxproj")
+        XCTAssertEqual(findings.map(\.rule), [.S4, .S4], "\(findings)")
+        XCTAssertEqual(findings.map(\.object), ["BF01", "BF02"])
+        let notAString = try XCTUnwrap(findings.first)
+        XCTAssertTrue(notAString.message.contains("'platformFilter'"), notAString.message)
+        XCTAssertTrue(notAString.message.contains("not a string"), notAString.message)
+        let notAnArray = try XCTUnwrap(findings.last)
+        XCTAssertTrue(notAnArray.message.contains("'platformFilters'"), notAnArray.message)
+        XCTAssertTrue(notAnArray.message.contains("not an array"), notAnArray.message)
+    }
+
+    func testS4IsSilentOnTheXcodeSavedProbe() throws {
+        let findings = RuleSet.standard.evaluate(bytes: try Fixtures.load("xcode27/platform-filters-after-xcode27-save.pbxproj"))
+        XCTAssertEqual(findings.filter { $0.rule == .S4 }, [])
+        XCTAssertEqual(findings.filter { $0.severity == .error }, [], "the probe is a clean project")
+    }
+
     // Spec: Structural rules — S5 on a bare hyphen.
     func testS5OnABareHyphen() throws {
         let findings = try lint("s5-bare-hyphen.pbxproj")
