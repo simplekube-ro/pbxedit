@@ -1,0 +1,52 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA0000000000000000000001 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000011 /* App.swift */; };
+		AA0000000000000000000002 /* My-File.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000012 /* My-File.swift */; settings = {ATTRIBUTES = (Public, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AA0000000000000000000011 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		AA0000000000000000000012 /* My-File.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "My-File.swift"; sourceTree = "<group>"; };
+		TVOSTEST0002 /* synthetic, non-hex identifier */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Caf\U00e9 \"quoted\".swift"; path = "Sources/Café.swift"; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		AA0000000000000000000021 = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000011 /* App.swift */,
+				AA0000000000000000000012 /* My-File.swift */,
+				TVOSTEST0002 /* synthetic, non-hex identifier */,
+			);
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000022 /* Empty */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Empty;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA0000000000000000000031 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000000000000000000001 /* App.swift in Sources */,
+				AA0000000000000000000002 /* My-File.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+	};
+	rootObject = AA0000000000000000000041 /* Project object */;
+}

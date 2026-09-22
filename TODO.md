@@ -35,11 +35,11 @@ For each change, on a branch named after it:
 ## Checklist
 
 ### 1. lossless-syntax-tree
-- [ ] Artifacts re-verified, `openspec validate --strict` green
-- [ ] Applied — all tasks ticked
-- [ ] `swift test` summary read; corpus round-trip and fuzzer green
-- [ ] Open question answered: Xcode 27 canonical quoting set (design D5)
-- [ ] Archived, merged
+- [x] Artifacts re-verified, `openspec validate --strict` green
+- [x] Applied — all tasks ticked (18/18)
+- [x] `swift test` summary read; corpus round-trip and fuzzer green (103 tests, 0 failures; 26 corpus files; fuzzer 2,000 iterations in 3.2 s; parse + 100 edits + serialize 7.2 ms median in a release build)
+- [x] Open question answered: Xcode 27 canonical quoting set (design D5) — write-side set unchanged; no Xcode-written corpus file contradicts it. No witness either way for `:`, `//` or `___` as the only cause of quoting, nor for Xcode 27 leaving `$` bare; recorded as unknown in D5
+- [ ] Archived, merged — archived as `openspec/changes/archive/2026-09-22-lossless-syntax-tree`; not yet merged
 
 ### 2. typed-project-model
 - [ ] Artifacts re-verified

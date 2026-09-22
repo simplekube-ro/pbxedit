@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repository
 
-`pbxedit` is a Swift CLI that manages **file membership** in an Xcode `project.pbxproj` (`add`, `move`, `remove`, `lint [--fix]`, `query`). It is **pre-implementation**: there is no `Package.swift` or Swift source yet. What exists is the approved design and a chain of ten OpenSpec changes that build v1.
+`pbxedit` is a Swift CLI that manages **file membership** in an Xcode `project.pbxproj` (`add`, `move`, `remove`, `lint [--fix]`, `query`). It is being built through a chain of ten OpenSpec changes against the approved design. Shipped so far: layer 1, `PBXSyntax` (`lossless-syntax-tree`, archived under `openspec/changes/archive/`); `openspec list --specs` shows what has landed. The remaining changes are still pending under `openspec/changes/`.
 
 - `docs/design.md` — the approved design. Authoritative for architecture, rule IDs and v1 scope. Read it before writing any artifact or code. A change that departs from it updates `docs/design.md` in the same change.
 - `TODO.md` — the ordered change chain, the per-change procedure and the checklist. Tick a box only when the step's evidence exists, in the same PR as the change.
 - `openspec/config.yaml` — project context and artifact rules injected into every `/opsx:*` skill.
-- `openspec/changes/<change>/` — `proposal.md`, `design.md`, `specs/<capability>/spec.md`, `tasks.md`. `openspec/specs/` is empty until the first change is archived.
+- `openspec/changes/<change>/` — `proposal.md`, `design.md`, `specs/<capability>/spec.md`, `tasks.md`. Archiving a change moves it to `openspec/changes/archive/<date>-<change>/` and syncs its delta into `openspec/specs/<capability>/spec.md`.
 
 ## Workflow
 
@@ -33,7 +33,7 @@ openspec validate <change> --strict
 openspec list --specs
 ```
 
-`Package.swift` is created by task 1.1 of `lossless-syntax-tree` (Swift 6 language mode, macOS 13+); until then the `swift` commands have nothing to build.
+`Package.swift` targets Swift 6 language mode, macOS 13+. `swift test -c release --filter PerformanceTests` runs the release-build performance check that CI also runs. `PBXEDIT_EXTRA_CORPUS` names extra `project.pbxproj` files or directories for the corpus tests to run against locally (private projects are never committed).
 
 ## Architecture
 
