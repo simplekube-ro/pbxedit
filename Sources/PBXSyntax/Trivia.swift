@@ -33,6 +33,21 @@ public struct Trivia: Sendable, Equatable {
         self.text = text
     }
 
+    /// Trivia from arbitrary text, or `nil` unless `text` is entirely
+    /// whitespace and well-formed comments. A byte order mark is not accepted:
+    /// it is only trivia at the start of a file.
+    public init?(validating text: String) {
+        let bytes = Array(text.utf8)
+        let valid = bytes.withUnsafeBufferPointer { buffer in
+            if case .success(let end) = TriviaScanner.triviaEnd(in: buffer, from: 0, allowByteOrderMark: false) {
+                return end == buffer.count
+            }
+            return false
+        }
+        guard valid else { return nil }
+        self.text = text
+    }
+
     public static let empty = Trivia(unchecked: "")
 
     public var isEmpty: Bool { text.utf8.isEmpty }

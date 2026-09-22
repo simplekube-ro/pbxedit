@@ -108,6 +108,10 @@ Creating an object SHALL place it inside the `/* Begin <isa> section */ … /* E
 - **WHEN** a `PBXVariantGroup` is created in a project that has none
 - **THEN** a `PBXVariantGroup` section with Begin and End markers is created after the alphabetically preceding section
 
+#### Scenario: Last object of a kind
+- **WHEN** the only `PBXVariantGroup` in a project is deleted
+- **THEN** the `PBXVariantGroup` section's Begin and End markers are removed with it and the neighbouring sections are unchanged
+
 ### Requirement: Annotation comments match Xcode
 References written by the model SHALL carry the comments Xcode writes: `/* <name> */` after a reference to a file or group, `/* <name> in <phase name> */` after a reference to a build file, and the same comment on the object's own definition line. Changing a file reference's name SHALL update every such comment that refers to it or to its build files.
 

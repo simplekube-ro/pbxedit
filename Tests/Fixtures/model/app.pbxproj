@@ -1,0 +1,355 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BB0000000000000000000010 /* AppMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000110 /* AppMain.swift */; };
+		BB0000000000000000000020 /* Foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000120 /* Foo.swift */; };
+		BB0000000000000000000030 /* Shared.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000130 /* Shared.swift */; };
+		BB0000000000000000000040 /* Shared.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000130 /* Shared.swift */; platformFilters = (ios, maccatalyst, ); };
+		BB0000000000000000000050 /* ExtensionMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000200 /* ExtensionMain.swift */; };
+		BB0000000000000000000060 /* FooTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000140 /* FooTests.swift */; };
+		BB0000000000000000000070 /* Bar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000150 /* Bar.swift */; };
+		BB0000000000000000000080 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000160 /* Foundation.framework */; };
+		BB0000000000000000000090 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000201 /* Localizable.strings */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AA0000000000000000000110 /* AppMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMain.swift; sourceTree = "<group>"; };
+		AA0000000000000000000120 /* Foo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Foo.swift; sourceTree = "<group>"; };
+		AA0000000000000000000130 /* Shared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared.swift; sourceTree = "<group>"; };
+		AA0000000000000000000140 /* FooTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FooTests.swift; path = AppTests/Views/FooTests.swift; sourceTree = SOURCE_ROOT; };
+		AA0000000000000000000150 /* Bar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bar.swift; sourceTree = "<group>"; };
+		AA0000000000000000000160 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		AA0000000000000000000170 /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000180 /* AppExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AppExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000190 /* AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000200 /* ExtensionMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionMain.swift; sourceTree = "<group>"; };
+		AA0000000000000000000210 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		AA0000000000000000000301 /* Generated */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Generated; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		CC0000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000000000000000000080 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CC0000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA0000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000002 /* App */,
+				AA0000000000000000000004 /* Tests */,
+				AA0000000000000000000007 /* Frameworks */,
+				AA0000000000000000000008 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000110 /* AppMain.swift */,
+				AA0000000000000000000130 /* Shared.swift */,
+				AA0000000000000000000003 /* Views */,
+				AA0000000000000000000009 /* Extension */,
+				AA0000000000000000000010 /* Resources */,
+				AA0000000000000000000301 /* Generated */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000003 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000120 /* Foo.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000004 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000140 /* FooTests.swift */,
+				AA0000000000000000000005 /* AppTests */,
+			);
+			name = Tests;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000005 /* AppTests */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000006 /* Foo */,
+			);
+			path = AppTests;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000006 /* Foo */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000150 /* Bar.swift */,
+			);
+			path = Foo;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000007 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000160 /* Foundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000008 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000170 /* App.app */,
+				AA0000000000000000000180 /* AppExtension.appex */,
+				AA0000000000000000000190 /* AppTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000009 /* Extension */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000200 /* ExtensionMain.swift */,
+			);
+			path = Extension;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000010 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000201 /* Localizable.strings */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		DD0000000000000000000001 /* App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF0000000000000000000002 /* Build configuration list for PBXNativeTarget "App" */;
+			buildPhases = (
+				CC0000000000000000000001 /* Sources */,
+				CC0000000000000000000002 /* Frameworks */,
+				CC0000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AA0000000000000000000301 /* Generated */,
+			);
+			name = App;
+			productName = App;
+			productReference = AA0000000000000000000170 /* App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DD0000000000000000000002 /* AppExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF0000000000000000000003 /* Build configuration list for PBXNativeTarget "AppExtension" */;
+			buildPhases = (
+				CC0000000000000000000004 /* Sources */,
+				CC0000000000000000000006 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AppExtension;
+			productName = AppExtension;
+			productReference = AA0000000000000000000180 /* AppExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		DD0000000000000000000003 /* AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF0000000000000000000004 /* Build configuration list for PBXNativeTarget "AppTests" */;
+			buildPhases = (
+				CC0000000000000000000005 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AppTests;
+			productName = AppTests;
+			productReference = AA0000000000000000000190 /* AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EE0000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 2700;
+			};
+			buildConfigurationList = FF0000000000000000000001 /* Build configuration list for PBXProject "App" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AA0000000000000000000001;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = AA0000000000000000000008 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DD0000000000000000000001 /* App */,
+				DD0000000000000000000002 /* AppExtension */,
+				DD0000000000000000000003 /* AppTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CC0000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000000000000000000090 /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CC0000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000000000000000000010 /* AppMain.swift in Sources */,
+				BB0000000000000000000020 /* Foo.swift in Sources */,
+				BB0000000000000000000030 /* Shared.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CC0000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000000000000000000040 /* Shared.swift in Sources */,
+				BB0000000000000000000050 /* ExtensionMain.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CC0000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000000000000000000060 /* FooTests.swift in Sources */,
+				BB0000000000000000000070 /* Bar.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		AA0000000000000000000201 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				AA0000000000000000000210 /* en */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		1000000000000000000000A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		1000000000000000000000A2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.App;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		1000000000000000000000A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.App.AppExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		1000000000000000000000A4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.AppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		FF0000000000000000000001 /* Build configuration list for PBXProject "App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1000000000000000000000A1 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FF0000000000000000000002 /* Build configuration list for PBXNativeTarget "App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1000000000000000000000A2 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FF0000000000000000000003 /* Build configuration list for PBXNativeTarget "AppExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1000000000000000000000A3 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FF0000000000000000000004 /* Build configuration list for PBXNativeTarget "AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1000000000000000000000A4 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EE0000000000000000000001 /* Project object */;
+}

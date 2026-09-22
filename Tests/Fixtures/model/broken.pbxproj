@@ -1,0 +1,146 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 999;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BB0000000000000000000010 /* Missing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000999 /* Missing.swift */; };
+		BB0000000000000000000020 /* Foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000100 /* Foo.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		5L0WTSTSP000000000000SRC /* Splash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Splash.swift; sourceTree = "<group>"; };
+		AA0000000000000000000100 /* Foo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Foo.swift; sourceTree = "<group>"; };
+		TVOSTEST0002 /* TVOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVOS.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		AA0000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				TVOSTEST00020 /* TVOS */,
+				SPLASH00000001 /* SlowTests */,
+				TVOSTEST00020 /* TVOS */,
+			);
+			sourceTree = "<group>";
+		};
+		SPLASH00000001 /* SlowTests */ = {
+			isa = PBXGroup;
+			children = (
+				5L0WTSTSP000000000000SRC /* Splash.swift */,
+			);
+			path = SlowTests;
+			sourceTree = "<group>";
+		};
+		TVOSTEST00020 /* TVOS */ = {
+			isa = PBXGroup;
+			children = (
+				TVOSTEST0002 /* TVOS.swift */,
+			);
+			path = TVOS;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		DD0000000000000000000001 /* App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF0000000000000000000002 /* Build configuration list for PBXNativeTarget "App" */;
+			buildPhases = (
+				CC0000000000000000000001 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = App;
+			productName = App;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EE0000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 9900;
+			};
+			buildConfigurationList = FF0000000000000000000001 /* Build configuration list for PBXProject "Broken" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = AA0000000000000000000001;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DD0000000000000000000001 /* App */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSomethingNew section */
+		EE0000000000000000000002 /* PBXSomethingNew */ = {
+			isa = PBXSomethingNew;
+			futureAttribute = {
+				nested = (
+					value,
+				);
+			};
+			target = DD0000000000000000000001 /* App */;
+		};
+/* End PBXSomethingNew section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CC0000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000000000000000000010 /* Missing.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1000000000000000000000A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		1000000000000000000000A2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		FF0000000000000000000001 /* Build configuration list for PBXProject "Broken" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1000000000000000000000A1 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FF0000000000000000000002 /* Build configuration list for PBXNativeTarget "App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1000000000000000000000A2 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EE0000000000000000000001 /* Project object */;
+}

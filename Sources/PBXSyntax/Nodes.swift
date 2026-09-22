@@ -86,15 +86,22 @@ public struct StringNode: Sendable, Equatable {
 
     /// The decoded value.
     public var value: String {
-        isQuoted ? StringCoding.decodeQuoted(token.text) : token.text
+        guard isQuoted else { return token.text }
+        if !hasEscapes { return String(decoding: token.text.utf8.dropFirst().dropLast(), as: UTF8.self) }
+        return StringCoding.decodeQuoted(token.text)
     }
 
     /// Whether the decoded value is byte-for-byte `other`. `String ==` would
     /// also accept canonically equivalent text; identifiers must not.
     public func matches(_ other: String) -> Bool {
         if !isQuoted { return token.text.utf8.elementsEqual(other.utf8) }
+        if !hasEscapes { return token.text.utf8.dropFirst().dropLast().elementsEqual(other.utf8) }
         return value.utf8.elementsEqual(other.utf8)
     }
+
+    /// A quoted string without a backslash decodes to the bytes between its
+    /// quotes; most quoted strings in a project file are of that kind.
+    private var hasEscapes: Bool { token.text.utf8.contains(0x5C) }
 }
 
 /// A `<hex>` data literal, kept as one opaque token.

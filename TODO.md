@@ -42,10 +42,10 @@ For each change, on a branch named after it:
 - [ ] Archived, merged — archived as `openspec/changes/archive/2026-09-22-lossless-syntax-tree`; not yet merged
 
 ### 2. typed-project-model
-- [ ] Artifacts re-verified
-- [ ] Applied
-- [ ] `swift test` green; 700-mutation measurement recorded (decides whether a batch scope is needed for change 9)
-- [ ] Archived, merged
+- [x] Artifacts re-verified, `openspec validate --strict` green — drift fixed: trivia access needed the closing delimiter and key/value annotations too (design D5), the fixture needs three targets for the spec's scenarios, task 7.1 named "the originating project's file from the corpus" which is never committed, and the group/target kinds that share a structural role are recorded (design D1)
+- [x] Applied — all tasks ticked (18/18)
+- [x] `swift test` green; 700-mutation measurement recorded (110 syntax + 63 model tests, 0 failures; corpus loads and serializes byte for byte through the model, every definition-line comment Xcode wrote agrees with `annotation(for:)`; 700 create-and-add-child repairs on `Alamofire.pbxproj` in a release build: 0.198 s with no queries, 0.202 s with a parent query after each, 0.200 s with a path query after each, against a 1 s limit — **no batch scope needed for change 9**; see the archived design's Risks)
+- [ ] Archived, merged — archived as `openspec/changes/archive/2026-09-22-typed-project-model`, delta synced into `openspec/specs/pbx-model/`; not yet merged
 
 ### 3. integrity-rules-lint
 - [ ] Artifacts re-verified
