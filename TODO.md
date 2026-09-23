@@ -174,6 +174,18 @@ Issue #20: `pbxedit merge` 1.1.2 kept ours' value silently when theirs changed a
 - [ ] Manual check (RELEASING § 2)
 - [ ] Released as `v1.2.0`
 
+### 17. merge-both-frameworks-links
+Issue #21: `pbxedit merge` 1.1.2 could not keep both links when two branches each linked a different framework into one target's Frameworks phase — `both` wherever offered failed check A (`M1 … is listed in no build phase`), every other combination dropped one side's link. Not in the original chain; ships as `v1.2.0` with issue #20.
+- [x] Artifacts written and `openspec validate --strict` green: a MODIFIED `merge` delta (the admitted-array list drops the `PBXFrameworksBuildPhase` exclusion and states the file-wide test; the order-matters scenario keeps only `LD_RUNPATH_SEARCH_PATHS`; three scenarios added), design D1–D2, 8 tasks
+- [x] Applied, all tasks ticked (8/8): the exclusion is gone from `UnorderedInsertions.admits`. Found while applying: dropping it alone offers `both` for a *reorder* against an insertion, because zealous trimming can shorten the hunk's base stretch until the reorder looks like an insertion (measured: base `(Foundation, CoreHaptics)`, ours swaps them, theirs adds a third → counterfactuals `(CoreHaptics)`, `(CoreHaptics, Foundation)`, `(CoreHaptics, GameController)`), and the merge then exits `1` on check C — the defect of issue #12. So for this key the insertion test also runs on the three files (`UnorderedInsertions.insertionsOnly`, `AnalysedHunk.Inputs` threaded from `MergeEngine`). The same counterfactual blind spot can offer a `both` that check C refuses for the arrays admitted since `v1.1.1` (`knownRegions` with a reorder against an insertion, measured on `v1.1.2`): older and wider than this change, left to a change of its own
+- [x] `swift test` green: 111 syntax + 376 ops + 64 model + 128 CLI tests, 0 failures, none skipped, so the oracle lane ran (Xcode 27.0, Build version 27A266a). New: `HunkTests` +3 (the two links offer `both`; a removal and a reorder, and the same framework under two IDs, keep `ours` and `theirs`) replacing the old "keeps ours and theirs" test, `MergeEngineTests` +2 (all-`both` writes both links with base's entry first and checks A–F passed; `both` without the phase hunk still fails check A as 1.1.2 always did), `MergeCommandTests` +1 (the repro through the binary), the `both-frameworks` fixture in `MergeFixtureFileTests` and in the merged-project oracle
+- [x] Release `PerformanceTests` green: the Alamofire merge takes 0.063 s to the decisions report and 0.123 s decided with all six checks (limit 2 s), the 10k-line line merge 0.004 s
+- [x] `docs/design.md` reconciled: status line, the `merge` Commands row (the admitted key list and the Frameworks rule), a Motivation-table row for issue #21. The archived `merge-both-unordered-insertions` design has a dated note at D2
+- [ ] Archived
+- [ ] Merged
+- [ ] Manual check (RELEASING § 2)
+- [ ] Released as `v1.2.0`
+
 ## After v1 — adoption in the originating project
 
 A separate OpenSpec change in that project's repository, closing its file-membership issue:

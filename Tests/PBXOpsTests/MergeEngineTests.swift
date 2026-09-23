@@ -336,6 +336,51 @@ final class MergeEngineTests: XCTestCase {
         }
     }
 
+    // MARK: Issue #21 — different links inserted into one Frameworks phase
+
+    // Spec: Different links inserted into one Frameworks phase.
+    func testDifferentFrameworkLinksMergeWithBoth() throws {
+        let sides = try MergeFixture.frameworkLinks()
+        let open = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded)
+        XCTAssertEqual(open.units.count, 0, "a Frameworks link is not membership")
+        XCTAssertEqual(open.hunks.count, 4, open.hunks.map { $0.analysed.governed.map(\.description).joined(separator: ", ") }.joined(separator: " / "))
+        XCTAssertTrue(open.hunks.allSatisfy { $0.analysed.choices == [.ours, .theirs, .both] },
+                      "\(open.hunks.map { "\($0.analysed.governed.map(\.description)): \($0.analysed.choices)" })")
+
+        let result = try merged(try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs,
+                                                      decisions: try MergeFixture.decide(open, hunks: { _ in "both" })))
+        let leaves = PlistLeaves(result)
+        XCTAssertEqual(leaves[["objects", "CC0000000000000000000002", "files"]],
+                       .array(["BB0000000000000000000080", "AB0000000000000000000011", "AC0000000000000000000011"].map { .string($0) }),
+                       "base's entry, then ours' link, then theirs'")
+        XCTAssertEqual(leaves[["objects", "AA0000000000000000000007", "children"]],
+                       .array(["AA0000000000000000000160", "AB0000000000000000000010", "AC0000000000000000000010"].map { .string($0) }))
+        for (buildFile, reference, name) in [("AB0000000000000000000011", "AB0000000000000000000010", "CoreHaptics"),
+                                             ("AC0000000000000000000011", "AC0000000000000000000010", "GameController")]
+            as [(ObjectID, String, String)] {
+            XCTAssertEqual(leaves[["objects", buildFile.rawValue, "fileRef"]], .string(reference))
+            XCTAssertEqual(leaves[["objects", reference, "name"]], .string("\(name).framework"))
+            XCTAssertEqual(leaves[["objects", reference, "sourceTree"]], .string("SDKROOT"))
+            XCTAssertEqual(result.phases(of: buildFile).map(\.id), ["CC0000000000000000000002"])
+        }
+    }
+
+    /// The trap the issue reports: `both` for the objects and the references
+    /// while the phase keeps `ours` leaves theirs' build file in no phase,
+    /// which is what 1.1.2 could only ever produce.
+    func testBothWithoutThePhaseStillFailsCheckA() throws {
+        let sides = try MergeFixture.frameworkLinks()
+        let open = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs)
+        let phase = try XCTUnwrap(open.hunks.first { $0.analysed.governed.contains(["objects", "CC0000000000000000000002", "files"]) }).key
+        let report = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs,
+                                           decisions: try MergeFixture.decide(open, hunks: { $0.key == phase ? "ours" : "both" }))
+        XCTAssertEqual(report.status, .failed)
+        let failed = try XCTUnwrap(report.checks.first { !$0.passed })
+        XCTAssertEqual(failed.check, .A)
+        XCTAssertTrue(failed.problems.contains { $0.message.contains("AC0000000000000000000011") }, "\(failed.problems.map(\.message))")
+    }
+
     /// The trap the issue reports: the list decided `both` while the objects
     /// are decided `ours` leaves theirs' entry naming nothing.
     func testTheListBothWithTheObjectsOursStillFailsCheckA() throws {

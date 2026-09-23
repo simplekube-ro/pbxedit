@@ -12,7 +12,7 @@ final class HunkTests: XCTestCase {
         let base = try base ?? MergeFixture.base()
         let merge = ThreeWay.merge(base: TextLines.split(base.serialize()), ours: TextLines.split(ours.serialize()),
                                    theirs: TextLines.split(theirs.serialize()))
-        return try AnalysedHunk.analyse(merge)
+        return try AnalysedHunk.analyse(merge, inputs: AnalysedHunk.Inputs(base: base, ours: ours, theirs: theirs))
     }
 
     // Spec: Conflicting setting values.
@@ -76,7 +76,9 @@ final class HunkTests: XCTestCase {
                                 theirs: [Array("\t\t\t\tSWIFT_VERSION = {\n".utf8)])),
             .stable(Array(lines[(index + 1)...])),
         ])
-        XCTAssertThrowsError(try AnalysedHunk.analyse(merge)) { error in
+        let plain = try MergeFixture.base()
+        let inputs = AnalysedHunk.Inputs(base: plain, ours: plain, theirs: plain)
+        XCTAssertThrowsError(try AnalysedHunk.analyse(merge, inputs: inputs)) { error in
             guard case HunkError.unparseable(let hunk, let side, let message) = error else { return XCTFail("\(error)") }
             XCTAssertEqual(hunk, 1)
             XCTAssertEqual(side, .theirs)
@@ -160,15 +162,43 @@ final class HunkTests: XCTestCase {
         XCTAssertEqual(hunk.choices, [.ours, .theirs])
     }
 
-    // Spec: An array whose order matters keeps ours and theirs (a Frameworks phase's files).
-    func testInsertionsIntoAFrameworksPhaseKeepOursAndTheirs() throws {
-        let old = "\t\t\t\tBB0000000000000000000080 /* Foundation.framework in Frameworks */,\n"
-        let plain = try MergeFixture.base()
-        let ours = try MergeFixture.edit(plain, replacing: old, with: "\t\t\t\tBB0000000000000000000081 /* A.framework in Frameworks */,\n" + old)
-        let theirs = try MergeFixture.edit(plain, replacing: old, with: "\t\t\t\tBB0000000000000000000082 /* B.framework in Frameworks */,\n" + old)
-        let hunks = try analyse(ours: ours, theirs: theirs)
-        let hunk = try hunk(governing: ["objects", "CC0000000000000000000002", "files"], in: hunks)
-        XCTAssertEqual(hunk.choices, [.ours, .theirs])
+    // MARK: Issue #21 — different links inserted into one Frameworks phase
+
+    /// The `files` of `App`'s Frameworks phase, `CC0000000000000000000002`.
+    private let frameworksFiles: LeafPath = ["objects", "CC0000000000000000000002", "files"]
+
+    // Spec: Different links inserted into one Frameworks phase.
+    func testInsertionsIntoAFrameworksPhaseOfferBoth() throws {
+        let sides = try MergeFixture.frameworkLinks()
+        let hunks = try analyse(ours: sides.ours, theirs: sides.theirs)
+        XCTAssertEqual(try hunk(governing: frameworksFiles, in: hunks).choices, [.ours, .theirs, .both])
+    }
+
+    // Spec: A removal or a reorder in a Frameworks phase keeps ours and theirs.
+    func testARemovalOrAReorderInAFrameworksPhaseKeepsOursAndTheirs() throws {
+        let foundation = "\t\t\t\tBB0000000000000000000080 /* Foundation.framework in Frameworks */,\n"
+        let ourLink = "\t\t\t\tAB0000000000000000000011 /* CoreHaptics.framework in Frameworks */,\n"
+        let sides = try MergeFixture.frameworkLinks()
+        // Each side replaces base's entry with its own link: base's array is no subsequence of either.
+        let ourOnly = try MergeFixture.edit(sides.ours, replacing: foundation, with: "")
+        let theirOnly = try MergeFixture.edit(sides.theirs, replacing: foundation, with: "")
+        XCTAssertEqual(try hunk(governing: frameworksFiles, in: try analyse(ours: ourOnly, theirs: theirOnly)).choices, [.ours, .theirs])
+
+        // A base that links two frameworks: ours swaps the two, theirs adds a third.
+        let two = sides.ours
+        let swapped = try MergeFixture.edit(two, replacing: foundation + ourLink, with: ourLink + foundation)
+        let third = try MergeFixture.linking("GameController", reference: "AC0000000000000000000010", buildFile: "AC0000000000000000000011",
+                                             in: two)
+        XCTAssertEqual(try hunk(governing: frameworksFiles, in: try analyse(base: two, ours: swapped, theirs: third)).choices,
+                       [.ours, .theirs])
+    }
+
+    // Spec: The same framework under two IDs keeps ours and theirs.
+    func testTheSameFrameworkUnderTwoIDsKeepsOursAndTheirs() throws {
+        let base = try MergeFixture.base()
+        let ours = try MergeFixture.linking("GameController", reference: "AB0000000000000000000010", buildFile: "AB0000000000000000000011", in: base)
+        let theirs = try MergeFixture.linking("GameController", reference: "AC0000000000000000000010", buildFile: "AC0000000000000000000011", in: base)
+        XCTAssertEqual(try hunk(governing: frameworksFiles, in: try analyse(ours: ours, theirs: theirs)).choices, [.ours, .theirs])
     }
 
     func testARemovalBesideAnInsertionKeepsOursAndTheirs() throws {
