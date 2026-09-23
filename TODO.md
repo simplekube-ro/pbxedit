@@ -172,7 +172,7 @@ Issue #20: `pbxedit merge` 1.1.2 kept ours' value silently when theirs changed a
 - [x] Archived — `openspec/changes/archive/2026-09-23-merge-attribute-conflicts-asked`; the `merge` delta synced into `openspec/specs/merge/spec.md` (three requirements modified), `openspec validate --specs --strict` green
 - [x] Merged — into `main` by PR #22 (rebase, 2026-09-23, `a598482`), closing #20
 - [x] Manual check (RELEASING § 2) — **not run** for `v1.2.0`, skipped by the release owner's decision (2026-09-24); recorded as skipped in `docs/RELEASING.md` § 2
-- [ ] Released as `v1.2.0`
+- [x] Released as `v1.2.0` — tagged on `a7f1758` (2026-09-24); `release.yml` run 35933216336 green: https://github.com/simplekube-ro/pbxedit/releases/tag/v1.2.0 (universal `x86_64 arm64`, both slices `minos 13.0`, sha256 `e211e80385d94c2e4f6bbddff97018de991cbf359efccabfc6533a18cf78fb57`, `--version` prints `1.2.0` from the downloaded binary, checksum verified with `shasum -a 256 -c`); tap commit `633d650` in `simplekube-ro/homebrew-tap`, its formula naming that url and sha256. RELEASING § 2 was not run for this release, by the release owner's decision
 
 ### 17. merge-both-frameworks-links
 Issue #21: `pbxedit merge` 1.1.2 could not keep both links when two branches each linked a different framework into one target's Frameworks phase — `both` wherever offered failed check A (`M1 … is listed in no build phase`), every other combination dropped one side's link. Not in the original chain; ships as `v1.2.0` with issue #20.
@@ -184,7 +184,7 @@ Issue #21: `pbxedit merge` 1.1.2 could not keep both links when two branches eac
 - [x] Archived — `openspec/changes/archive/2026-09-23-merge-both-frameworks-links`; the `merge` delta synced into `openspec/specs/merge/spec.md` (one requirement modified), `openspec validate --specs --strict` green
 - [x] Merged — into `main` by PR #23 (rebase, 2026-09-23, `6953852`), closing #21
 - [x] Manual check (RELEASING § 2) — **not run** for `v1.2.0`, skipped by the release owner's decision (2026-09-24); recorded as skipped in `docs/RELEASING.md` § 2
-- [ ] Released as `v1.2.0`
+- [x] Released as `v1.2.0` — tagged on `a7f1758` (2026-09-24); `release.yml` run 35933216336 green: https://github.com/simplekube-ro/pbxedit/releases/tag/v1.2.0 (universal `x86_64 arm64`, both slices `minos 13.0`, sha256 `e211e80385d94c2e4f6bbddff97018de991cbf359efccabfc6533a18cf78fb57`, `--version` prints `1.2.0` from the downloaded binary, checksum verified with `shasum -a 256 -c`); tap commit `633d650` in `simplekube-ro/homebrew-tap`, its formula naming that url and sha256. RELEASING § 2 was not run for this release, by the release owner's decision
 
 ### 18. merge-both-order-agreement
 Issue #24, found while applying § 17: since `v1.1.1` `merge` offered `both` where one side had *reordered* an array the other only inserted into — the insertion test reads the hunk's counterfactual texts, which zealous trimming can shorten until a reorder looks like an insertion — and the decision then exited `1` on check C. Ships as `v1.2.0` with issues #20 and #21.
@@ -196,7 +196,7 @@ Issue #24, found while applying § 17: since `v1.1.1` `merge` offered `both` whe
 - [x] Archived — `openspec/changes/archive/2026-09-23-merge-both-order-agreement`; the `merge` delta synced into `openspec/specs/merge/spec.md` (one requirement modified), `openspec validate --specs --strict` green
 - [x] Merged — into `main` by PR #25 (rebase, 2026-09-23, `5bd8f05`), closing #24
 - [x] Manual check (RELEASING § 2) — **not run** for `v1.2.0`, skipped by the release owner's decision (2026-09-24)
-- [ ] Released as `v1.2.0`
+- [x] Released as `v1.2.0` — tagged on `a7f1758` (2026-09-24); `release.yml` run 35933216336 green: https://github.com/simplekube-ro/pbxedit/releases/tag/v1.2.0 (universal `x86_64 arm64`, both slices `minos 13.0`, sha256 `e211e80385d94c2e4f6bbddff97018de991cbf359efccabfc6533a18cf78fb57`, `--version` prints `1.2.0` from the downloaded binary, checksum verified with `shasum -a 256 -c`); tap commit `633d650` in `simplekube-ro/homebrew-tap`, its formula naming that url and sha256. RELEASING § 2 was not run for this release, by the release owner's decision
 
 ## After v1 — adoption in the originating project
 

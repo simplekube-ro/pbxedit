@@ -32,7 +32,8 @@ links inserted into one Frameworks phase, where the two sides' insertions
 reorder nothing base held (change `merge-both-frameworks-links`, issue #21);
 `both` refused where the two sides order what they both hold differently in
 the files, which the hunk's own texts can hide (change
-`merge-both-order-agreement`, issue #24, for `v1.2.0`).
+`merge-both-order-agreement`, issue #24). Issues #20, #21 and #24 shipped
+together as `v1.2.0` (2026-09-24).
 
 ## Purpose
 
