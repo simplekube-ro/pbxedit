@@ -336,6 +336,58 @@ final class MergeEngineTests: XCTestCase {
         }
     }
 
+    // MARK: Issue #24 — a reorder against an insertion
+
+    /// The issue's repro: ours swaps base's two regions, theirs inserts a third.
+    static func reorderedArraySides() throws -> (base: Project, ours: Project, theirs: Project) {
+        let plain = try MergeFixture.base()
+        return (try MergeFixture.knownRegions(["en", "Base"], of: plain),
+                try MergeFixture.knownRegions(["Base", "en"], of: plain),
+                try MergeFixture.knownRegions(["en", "Base", "fr"], of: plain))
+    }
+
+    // Spec: A reorder against an insertion keeps ours and theirs.
+    func testAReorderAgainstAnInsertionIsNeverBoth() throws {
+        let (base, ours, theirs) = try MergeEngineTests.reorderedArraySides()
+        let open = try MergeFixture.merge(base: base, ours: ours, theirs: theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded)
+        XCTAssertTrue(open.result == nil, "nothing is written")
+        let hunk = try XCTUnwrap(open.hunks.first { $0.analysed.governed.contains(["objects", "EE0000000000000000000001", "knownRegions"]) })
+        XCTAssertEqual(hunk.analysed.choices, [.ours, .theirs])
+
+        // Asking for the choice it does not offer is a usage error, not an exit 1 later.
+        var asking = try XCTUnwrap(open.template)
+        asking.hunks[hunk.key] = .some("both")
+        let refused = try MergeFixture.merge(base: base, ours: ours, theirs: theirs, decisions: asking)
+        XCTAssertEqual(refused.status, .unsupported)
+        XCTAssertTrue(refused.error?.contains("both is not offered") == true, refused.error ?? "")
+
+        // And ours or theirs resolves it. The line merge reads ours' move as a
+        // deletion of the head line plus an insertion after `Base`, and only the
+        // insertion point conflicts, so `theirs` keeps that deletion: `(Base, fr)`.
+        for (choice, regions) in [("ours", ["Base", "en"]), ("theirs", ["Base", "fr"])] {
+            let result = try merged(try MergeFixture.merge(base: base, ours: ours, theirs: theirs,
+                                                          decisions: try MergeFixture.decide(open, hunks: { _ in choice })))
+            XCTAssertEqual(PlistLeaves(result)[["objects", "EE0000000000000000000001", "knownRegions"]],
+                           .array(regions.map { .string($0) }), choice)
+        }
+    }
+
+    // Spec: An insertion against a removal still merges with both.
+    func testAnInsertionAgainstARemovalStillMergesWithBoth() throws {
+        let plain = try MergeFixture.base()
+        let base = try MergeFixture.knownRegions(["en", "Base", "it"], of: plain)
+        let ours = try MergeFixture.knownRegions(["de", "en", "Base"], of: plain)
+        let theirs = try MergeFixture.knownRegions(["fr", "en", "Base", "it"], of: plain)
+        let open = try MergeFixture.merge(base: base, ours: ours, theirs: theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded)
+        XCTAssertTrue(open.hunks.contains { $0.analysed.choices.contains(.both) }, "\(open.hunks.map(\.analysed.choices))")
+        let result = try merged(try MergeFixture.merge(base: base, ours: ours, theirs: theirs,
+                                                      decisions: try MergeFixture.decide(open, hunks: { _ in "both" })))
+        XCTAssertEqual(PlistLeaves(result)[["objects", "EE0000000000000000000001", "knownRegions"]],
+                       .array(["de", "fr", "en", "Base"].map { .string($0) }))
+    }
+
     // MARK: Issue #21 — different links inserted into one Frameworks phase
 
     // Spec: Different links inserted into one Frameworks phase.

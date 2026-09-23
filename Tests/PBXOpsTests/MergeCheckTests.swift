@@ -26,7 +26,7 @@ final class MergeCheckTests: XCTestCase {
         let base = try MergeFixture.base()
         let merge = ThreeWay.merge(base: TextLines.split(base.serialize()), ours: TextLines.split(ours.serialize()),
                                    theirs: TextLines.split(theirs.serialize()))
-        let decided = try AnalysedHunk.analyse(merge, inputs: AnalysedHunk.Inputs(base: base, ours: ours, theirs: theirs))
+        let decided = try AnalysedHunk.analyse(merge, sides: AnalysedHunk.Sides(ours: ours, theirs: theirs))
             .map { DecidedHunk(hunk: $0, choice: choose($0)) }
         let text = merge.text { index, _ in decided[index].hunk.resolution(decided[index].choice) }
         return (try Project.load(text), decided)

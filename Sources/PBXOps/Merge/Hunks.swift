@@ -66,16 +66,15 @@ public struct AnalysedHunk: Equatable, Sendable {
         merge.text { i, hunk in i == index ? lines : hunk.ours }
     }
 
-    /// The three files `merge` was built from, for the order-sensitive part
-    /// of the shared-insertion test (issue #21): a hunk's counterfactuals can
-    /// make a reorder look like an insertion where trimming cut the array.
-    public struct Inputs: Sendable {
-        let base: PlistValue
+    /// Ours and theirs as the line merge read them (issues #21, #24), for the
+    /// one question a hunk's counterfactuals cannot answer: whether the two
+    /// sides contradict each other about the order of an array they share.
+    /// Base is not needed — nothing is measured against it here.
+    public struct Sides: Sendable {
         let ours: PlistValue
         let theirs: PlistValue
 
-        public init(base: Project, ours: Project, theirs: Project) {
-            self.base = PlistValue(base.tree.root)
+        public init(ours: Project, theirs: Project) {
             self.ours = PlistValue(ours.tree.root)
             self.theirs = PlistValue(theirs.tree.root)
         }
@@ -83,7 +82,7 @@ public struct AnalysedHunk: Equatable, Sendable {
 
     /// Design D7, for every hunk of `merge`. Throws `HunkError` when an
     /// `ours` or `theirs` counterfactual does not parse and load.
-    public static func analyse(_ merge: ThreeWay.Merge, inputs: Inputs) throws -> [AnalysedHunk] {
+    public static func analyse(_ merge: ThreeWay.Merge, sides: Sides) throws -> [AnalysedHunk] {
         var result: [AnalysedHunk] = []
         var keys: [String: Int] = [:]
         var theirsVersion: PlistValue??
@@ -131,7 +130,7 @@ public struct AnalysedHunk: Equatable, Sendable {
             let shared = oursTouched.intersection(theirsTouched)
             if let baseLeaves, let baseTree,
                shared.isEmpty || UnorderedInsertions.admits(shared, base: PlistValue(baseTree.root), ours: PlistValue(ours.root),
-                                                            theirs: PlistValue(theirs.root), theirsVersion: allTheirs, inputs: inputs) {
+                                                            theirs: PlistValue(theirs.root), theirsVersion: allTheirs, sides: sides) {
                 // Leaves one side changes take its value; a shared array passes check C's array rule.
                 var expected = baseLeaves.values
                 for path in oursTouched { expected[path] = oursLeaves[path] }

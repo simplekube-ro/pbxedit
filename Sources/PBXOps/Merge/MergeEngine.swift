@@ -132,7 +132,7 @@ public struct MergeEngine {
                                    theirs: TextLines.split(neutralTheirs.serialize()))
         let analysed: [AnalysedHunk]
         do {
-            analysed = try AnalysedHunk.analyse(merge, inputs: AnalysedHunk.Inputs(base: neutralBase, ours: ours, theirs: neutralTheirs))
+            analysed = try AnalysedHunk.analyse(merge, sides: AnalysedHunk.Sides(ours: ours, theirs: neutralTheirs))
         } catch {
             return stop(.unsupported, "\(error)")
         }
