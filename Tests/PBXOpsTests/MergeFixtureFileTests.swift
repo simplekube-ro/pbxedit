@@ -30,6 +30,8 @@ final class MergeFixtureFileTests: XCTestCase {
         ]))
         try phaseRemoved.deleteObject("CC0000000000000000000008")
 
+        let sharedArray = try MergeEngineTests.sharedArraySides()
+
         return [
             ("both-add", try MergeFixture.add(["App/Views/Bar.swift"], to: base, seed: 1),
              try MergeFixture.add(["App/Services/New.swift"], to: base, platforms: ["ios"], seed: 2)),
@@ -40,6 +42,7 @@ final class MergeFixtureFileTests: XCTestCase {
             ("settings-residual", base, settings),
             ("theirs-adds-target", base, try MergeEngineTests.addingTarget("Widget", to: base)),
             ("phase-removed", base, phaseRemoved),
+            ("shared-array", sharedArray.ours, sharedArray.theirs),
         ]
     }
 
@@ -66,7 +69,7 @@ final class MergeFixtureFileTests: XCTestCase {
     func testEachScenarioEndsAsTheCommandTestsExpect() throws {
         let expected: [String: MergeReport.Status] = [
             "both-add": .merged, "rename": .merged, "conflicting-setting": .decisionsNeeded, "settings-residual": .decisionsNeeded,
-            "theirs-adds-target": .unsupported, "phase-removed": .decisionsNeeded,
+            "theirs-adds-target": .unsupported, "phase-removed": .decisionsNeeded, "shared-array": .decisionsNeeded,
         ]
         for scenario in try MergeFixtureFileTests.scenarios() {
             let report = MergeEngine().run(base: try MergeFixture.baseBytes(), ours: scenario.ours.serialize(), theirs: scenario.theirs.serialize())

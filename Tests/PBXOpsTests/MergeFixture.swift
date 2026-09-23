@@ -46,6 +46,17 @@ enum MergeFixture {
         return try Project(tree: tree)
     }
 
+    /// `knownRegions` of the project object, one element per line as Xcode
+    /// writes it, by a text edit: two changes at the two ends of the array
+    /// then fall in two hunks, as they do in a real file.
+    static func knownRegions(_ regions: [String], of project: Project) throws -> Project {
+        let text = String(decoding: project.serialize(), as: UTF8.self)
+        let old = "\t\t\tknownRegions = (\n\t\t\t\ten,\n\t\t\t\tBase,\n\t\t\t);\n"
+        let range = try XCTUnwrap(text.range(of: old), "the base spells knownRegions as (en, Base)")
+        let new = "\t\t\tknownRegions = (\n" + regions.map { "\t\t\t\t\($0),\n" }.joined() + "\t\t\t);\n"
+        return try Project.load(Array(text.replacingCharacters(in: range, with: new).utf8))
+    }
+
     /// `lint.exempt` from YAML, as `.pbxedit.yml` would give it.
     static func exemptions(_ yaml: String) throws -> Exemptions {
         Exemptions(try Config.parse(yaml, file: ".pbxedit.yml").lint.exempt)

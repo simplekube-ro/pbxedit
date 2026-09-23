@@ -221,6 +221,29 @@ final class MergeCommandTests: XCTestCase {
         XCTAssertTrue(owed.stdout.contains("owed: AppKit/Extra.h"), owed.stdout)
     }
 
+    // Spec: Two decided hunks govern one array (issue #12): the issue's three rows, through the binary.
+    func testTwoDecidedHunksOverOneArray() throws {
+        for (head, tail, regions) in [("ours", "theirs", "de en Base es"), ("theirs", "theirs", "fr en Base es"), ("theirs", "ours", "fr en Base it")] {
+            let workspace = try workspace("shared-array")
+            let open = try pbxedit(["merge", "--json", "b.pbxproj", "o.pbxproj", "t.pbxproj"], in: workspace.root)
+            XCTAssertEqual(open.status, 3, open.stdout + open.stderr)
+            var template = try XCTUnwrap(try jsonObject(open)["template"] as? [String: Any])
+            var choices: [String: String] = [:]
+            for hunk in try XCTUnwrap(try jsonObject(open)["hunks"] as? [[String: Any]]) {
+                let key = try XCTUnwrap(hunk["key"] as? String)
+                let ours = hunk["ours"] as? String ?? ""
+                choices[key] = ours.contains("de,") ? head : ours.contains("it,") ? tail : "ours"
+            }
+            XCTAssertEqual(choices.count, 3)
+            template["hunks"] = choices
+            try JSONSerialization.data(withJSONObject: template).write(to: workspace.root.appendingPathComponent("decisions.json"))
+            let result = try pbxedit(["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj", "--decisions", "decisions.json"], in: workspace.root)
+            XCTAssertEqual(result.status, 0, "\(head)/\(tail): " + result.stdout + result.stderr)
+            let expected = "knownRegions = (\n" + regions.split(separator: " ").map { "\t\t\t\t\($0),\n" }.joined() + "\t\t\t);"
+            XCTAssertTrue(String(decoding: try workspace.bytes(), as: UTF8.self).contains(expected), "\(head)/\(tail)")
+        }
+    }
+
     // Spec: Stale decisions; Unknown key or refused choice.
     func testStaleAndUnknownDecisions() throws {
         let workspace = try workspace("conflicting-setting")

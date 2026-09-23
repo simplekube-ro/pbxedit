@@ -199,6 +199,39 @@ final class MergeEngineTests: XCTestCase {
         XCTAssertEqual(leaves[["objects", a1.rawValue, "buildSettings", "OTHER_LDFLAGS"]], .string("-ObjC"))
     }
 
+    /// Issue #12: both sides change both ends of `knownRegions`, which gives
+    /// two hunks governing the one leaf, beside an unrelated conflicting
+    /// setting. Every combination of the two decisions is a valid resolution.
+    static func sharedArraySides() throws -> (ours: Project, theirs: Project) {
+        let base = try MergeFixture.base()
+        let a1: ObjectID = "1000000000000000000000A1"
+        let ours = try MergeFixture.setting("SWIFT_VERSION", "5.10", in: a1, of: MergeFixture.knownRegions(["de", "en", "Base", "it"], of: base))
+        let theirs = try MergeFixture.setting("SWIFT_VERSION", "6.2", in: a1, of: MergeFixture.knownRegions(["fr", "en", "Base", "es"], of: base))
+        return (ours, theirs)
+    }
+
+    // Spec: Two decided hunks govern one array.
+    func testTwoDecidedHunksGoverningOneArrayAcceptEveryCombination() throws {
+        let (ours, theirs) = try MergeEngineTests.sharedArraySides()
+        let project: ObjectID = "EE0000000000000000000001"
+        let open = try MergeFixture.merge(ours: ours, theirs: theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded)
+        let regions = open.hunks.filter { $0.analysed.governed.contains(["objects", project.rawValue, "knownRegions"]) }
+        XCTAssertEqual(regions.map(\.analysed.number), [1, 2], "the head and the tail are two hunks")
+        let (head, tail) = (regions[0].key, regions[1].key)
+        let elements = ["ours": (head: "de", tail: "it"), "theirs": (head: "fr", tail: "es")]
+        for headChoice in ["ours", "theirs"] {
+            for tailChoice in ["ours", "theirs"] {
+                let decisions = try MergeFixture.decide(open, hunks: { hunk in
+                    hunk.key == head ? headChoice : hunk.key == tail ? tailChoice : "ours"
+                })
+                let result = try merged(try MergeFixture.merge(ours: ours, theirs: theirs, decisions: decisions))
+                let expected: [PlistValue] = [elements[headChoice]!.head, "en", "Base", elements[tailChoice]!.tail].map { .string($0) }
+                XCTAssertEqual(PlistLeaves(result)[["objects", project.rawValue, "knownRegions"]], .array(expected), "\(headChoice)/\(tailChoice)")
+            }
+        }
+    }
+
     // Spec: A target only ours added.
     func testATargetOnlyOursAdded() throws {
         let base = try MergeFixture.base()
