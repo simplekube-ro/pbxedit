@@ -113,10 +113,12 @@ final class OracleTests: XCTestCase {
 
     /// merge-command task 8.4 (spec: Xcode can read the result): the
     /// both-sides-add, rename and `theirs-membership` merges of the committed
-    /// three-way fixtures, written into the project whose file is ours.
+    /// three-way fixtures (the attribute conflict of issue #20 among them),
+    /// written into the project whose file is ours.
     func testXcodebuildReadsEveryMergedProject() throws {
         try Self.skipWithoutXcodebuild()
-        for (scenario, units) in [("both-add", nil), ("rename", nil), ("settings-residual", "theirs-membership")] as [(String, String?)] {
+        for (scenario, units) in [("both-add", nil), ("rename", nil), ("settings-residual", "theirs-membership"),
+                                  ("attribute-conflict", "theirs-membership")] as [(String, String?)] {
             let project = try TemporaryProject(fixture: "merge/\(scenario)/ours.pbxproj")
             for (name, file) in [("b", "base"), ("o", "ours"), ("t", "theirs")] {
                 try Data(try Fixtures.load("merge/\(scenario)/\(file).pbxproj")).write(to: project.root.appendingPathComponent("\(name).pbxproj"))

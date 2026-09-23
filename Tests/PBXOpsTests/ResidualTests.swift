@@ -84,6 +84,65 @@ final class ResidualTests: XCTestCase {
         XCTAssertTrue(message.contains("has no Resources phase"), message)
     }
 
+    // MARK: Conflicting attributes (issue #20)
+
+    // Spec: A conflicting attribute is a difference whichever value the result holds.
+    func testAConflictingAttributeIsAResidualWhicheverValueTheResultHolds() throws {
+        let sides = try MergeFixture.attributeConflict()
+        let found = residuals(try trial(["App/Filtered/F1.swift"], theirs: sides.theirs, ours: sides.ours))
+        XCTAssertEqual(found.map(\.kind), [.attribute("fileEncoding")], "\(found)")
+        let residual = try XCTUnwrap(found.first)
+        XCTAssertTrue(residual.conflicting, "\(residual)")
+        XCTAssertEqual(residual.object, "AA0000000000000000000260")
+        XCTAssertEqual(residual.ours, "4")
+        XCTAssertEqual(residual.theirs, "10")
+        XCTAssertEqual(residual.merged, "4", "the replay keeps ours' reference")
+        XCTAssertTrue(residual.description.contains("both sides changed fileEncoding"), residual.description)
+
+        // The same conflict on a result that holds theirs' value.
+        let asTheirs = PathComparison.compare(paths: ["App/Filtered/F1.swift"], base: MembershipSnapshot(sides.base),
+                                              ours: MembershipSnapshot(sides.ours), theirs: MembershipSnapshot(sides.theirs),
+                                              result: MembershipSnapshot(sides.theirs))
+        let conflicts = asTheirs.filter(\.conflicting)
+        XCTAssertEqual(conflicts.map(\.kind), [.attribute("fileEncoding")], "\(asTheirs)")
+        XCTAssertEqual(conflicts.first?.ours, "4")
+        XCTAssertEqual(conflicts.first?.merged, "10")
+    }
+
+    // Spec: A build-file attribute both sides changed is a conflict.
+    func testABuildFileAttributeBothSidesChangedIsAConflict() throws {
+        let base = try MergeFixture.base()
+        let row = { (project: Project) in MembershipSnapshot(project).references["App/Filtered/F1.swift"]?.rows.first { $0.target == "App" } }
+        let ours = try MergeFixture.attribute("compilerFlags", .string("-DOURS"), of: try XCTUnwrap(row(base)?.buildFile), in: base)
+        let detached = try MergeFixture.remove(["App/Filtered/F1.swift"], from: base, target: "App")
+        let refiltered = try MergeFixture.add(["App/Filtered/F1.swift"], to: detached, targets: ["App"], platforms: ["ios"])
+        let theirs = try MergeFixture.attribute("compilerFlags", .string("-DTHEIRS"), of: try XCTUnwrap(row(refiltered)?.buildFile),
+                                                in: refiltered)
+        let found = residuals(try trial(["App/Filtered/F1.swift"], theirs: theirs, ours: ours))
+        let conflict = try XCTUnwrap(found.first { $0.conflicting }, "\(found)")
+        XCTAssertEqual(conflict.kind, .buildFileAttribute(target: "App", key: "compilerFlags"))
+        XCTAssertEqual(conflict.ours, "\"-DOURS\"", "the value as the file spells it")
+        XCTAssertEqual(conflict.theirs, "\"-DTHEIRS\"")
+    }
+
+    func testAnAttributeBothSidesChangedToTheSameValueHasNoResidual() throws {
+        let sides = try MergeFixture.attributeConflict(ours: "4", theirs: "4")
+        XCTAssertEqual(residuals(try trial(["App/Filtered/F1.swift"], theirs: sides.theirs, ours: sides.ours)), [])
+    }
+
+    /// The conflicts of design D3, found without a replay, are the
+    /// conflicting residuals of the comparison.
+    func testConflictsAreTheComparisonsConflictingResiduals() throws {
+        let sides = try MergeFixture.attributeConflict()
+        let found = PathComparison.conflicts(paths: ["App/Filtered/F1.swift"], base: MembershipSnapshot(sides.base),
+                                             ours: MembershipSnapshot(sides.ours), theirs: MembershipSnapshot(sides.theirs))
+        XCTAssertEqual(found.map(\.kind), [.attribute("fileEncoding")], "\(found)")
+        XCTAssertTrue(found.allSatisfy(\.conflicting))
+        let same = try MergeFixture.attributeConflict(ours: "4", theirs: "4")
+        XCTAssertEqual(PathComparison.conflicts(paths: ["App/Filtered/F1.swift"], base: MembershipSnapshot(same.base),
+                                                ours: MembershipSnapshot(same.ours), theirs: MembershipSnapshot(same.theirs)), [])
+    }
+
     func testAFaithfulReplayHasNoResidual() throws {
         let theirs = try MergeFixture.move("App/Views/Foo.swift", to: "App/Features/Foo.swift", in: try MergeFixture.base())
         XCTAssertEqual(residuals(try trial(["App/Features/Foo.swift", "App/Views/Foo.swift"], theirs: theirs)), [])

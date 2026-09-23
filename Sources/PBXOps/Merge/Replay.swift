@@ -165,9 +165,17 @@ public struct Residual: Equatable, Sendable, CustomStringConvertible {
     /// What theirs has, and what the replay produced; `nil` for absent.
     public let theirs: String?
     public let merged: String?
+    /// Ours' value, for a conflicting difference; `nil` otherwise and for absent.
+    public var ours: String? = nil
+    /// Issue #20: both sides changed this attribute, to different values, so
+    /// neither can be kept without dropping the other's change.
+    public var conflicting: Bool = false
 
     public var description: String {
         let subject = object.map { "\(path) (\($0))" } ?? path
+        if conflicting {
+            return "\(subject): both sides changed \(kind): ours \(ours ?? "absent"), theirs \(theirs ?? "absent")"
+        }
         return "\(subject): \(kind) is \(merged ?? "absent"), theirs \(theirs ?? "absent")"
     }
 }
@@ -203,6 +211,15 @@ public enum Trial {
 /// attribute of the reference and its build files equals theirs' where
 /// only theirs changed it and ours' where only ours did.
 public enum PathComparison {
+    /// Design D3 (issue #20): the attributes base, ours and theirs do not
+    /// agree on, found without a replay. Conflict is a property of the three
+    /// versions alone, so this is `compare` against ours' own snapshot,
+    /// filtered: one implementation of the rule, one place it can change.
+    public static func conflicts(paths: [String], base: MembershipSnapshot, ours: MembershipSnapshot,
+                                 theirs: MembershipSnapshot) -> [Residual] {
+        compare(paths: paths, base: base, ours: ours, theirs: theirs, result: ours).filter(\.conflicting)
+    }
+
     public static func compare(paths: [String], base: MembershipSnapshot, ours: MembershipSnapshot, theirs: MembershipSnapshot,
                                result: MembershipSnapshot) -> [Residual] {
         var residuals: [Residual] = []
@@ -223,6 +240,14 @@ public enum PathComparison {
                 guard theirsValue != mergedValue else { return }
                 residuals.append(Residual(path: path, kind: kind, object: object, source: source, theirs: theirsValue, merged: mergedValue))
             }
+            // Issue #20: both sides changed the attribute, to different
+            // values. That is a residual whatever value the result holds:
+            // keeping either drops the other side's change unnamed.
+            func conflict(_ kind: Residual.Kind, theirs t: PlistValue?, ours o: PlistValue?, has m: PlistValue?,
+                          object: ObjectID? = merged.id, source: ObjectID? = wanted.id) {
+                residuals.append(Residual(path: path, kind: kind, object: object, source: source, theirs: t?.description,
+                                          merged: m?.description, ours: o?.description, conflicting: true))
+            }
             differ(.spelling("path"), wanted.path, merged.path)
             differ(.spelling("name"), wanted.name, merged.name)
             differ(.spelling("sourceTree"), wanted.sourceTree, merged.sourceTree)
@@ -234,10 +259,13 @@ public enum PathComparison {
             let referenceKeys = [wanted.attributes, merged.attributes, before?.attributes ?? [:], held?.attributes ?? [:]].flatMap(\.keys)
             for key in Set(referenceKeys).sorted() {
                 // Where ours holds no counterpart, ours changed nothing about it: theirs' value stands.
-                let expected = held == nil ? wanted.attributes[key]
-                    : expectation(base: before?.attributes[key], ours: held?.attributes[key], theirs: wanted.attributes[key],
-                                  merged: merged.attributes[key])
+                if let held, conflicting(base: before?.attributes[key], ours: held.attributes[key], theirs: wanted.attributes[key]) {
+                    conflict(.attribute(key), theirs: wanted.attributes[key], ours: held.attributes[key], has: merged.attributes[key])
+                    continue
+                }
                 let fromTheirs = held == nil || wanted.attributes[key] != before?.attributes[key]
+                let expected = held == nil ? wanted.attributes[key]
+                    : expectation(base: before?.attributes[key], ours: held?.attributes[key], theirs: wanted.attributes[key])
                 differ(.attribute(key), expected?.description, merged.attributes[key]?.description,
                        source: fromTheirs ? wanted.id : held?.id ?? wanted.id)
             }
@@ -257,9 +285,13 @@ public enum PathComparison {
                 let ourRow = held?.rows.first { $0.target == target }
                 let rowKeys = [want.attributes, have.attributes, was?.attributes ?? [:], ourRow?.attributes ?? [:]].flatMap(\.keys)
                 for key in Set(rowKeys).sorted() {
+                    if let ourRow, conflicting(base: was?.attributes[key], ours: ourRow.attributes[key], theirs: want.attributes[key]) {
+                        conflict(.buildFileAttribute(target: target, key: key), theirs: want.attributes[key], ours: ourRow.attributes[key],
+                                 has: have.attributes[key], object: have.buildFile)
+                        continue
+                    }
                     let expected = ourRow == nil ? want.attributes[key]
-                        : expectation(base: was?.attributes[key], ours: ourRow?.attributes[key], theirs: want.attributes[key],
-                                      merged: have.attributes[key])
+                        : expectation(base: was?.attributes[key], ours: ourRow?.attributes[key], theirs: want.attributes[key])
                     differ(.buildFileAttribute(target: target, key: key), expected?.description, have.attributes[key]?.description,
                            object: have.buildFile)
                 }
@@ -268,13 +300,18 @@ public enum PathComparison {
         return residuals
     }
 
-    /// Theirs' value where theirs changed it, else ours'. Where both changed
-    /// it, either side's value is accepted: the one the result has.
-    private static func expectation(base: PlistValue?, ours: PlistValue?, theirs: PlistValue?, merged: PlistValue?) -> PlistValue? {
-        let theirsChanged = theirs != base
-        let oursChanged = ours != base
-        if theirsChanged, oursChanged, merged == ours { return ours }
-        return theirsChanged ? theirs : ours
+    /// Theirs' value where theirs changed it, else ours'. A key both sides
+    /// changed to different values never reaches here: `compare` reports it
+    /// as a conflicting residual (design D1, issue #20).
+    private static func expectation(base: PlistValue?, ours: PlistValue?, theirs: PlistValue?) -> PlistValue? {
+        theirs != base ? theirs : ours
+    }
+
+    /// Design D1: each side changed the key, to different values. An absent
+    /// value counts as a value, so dropping an attribute base held is a
+    /// change like rewriting it.
+    static func conflicting(base: PlistValue?, ours: PlistValue?, theirs: PlistValue?) -> Bool {
+        ours != base && theirs != base && ours != theirs
     }
 }
 

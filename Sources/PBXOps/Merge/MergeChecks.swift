@@ -64,6 +64,8 @@ struct MergeFaults: OptionSet, Sendable {
     static let multisetArrays = MergeFaults(rawValue: 1 << 4)
     /// The replay removes every path and adds it back.
     static let replayRemoveAll = MergeFaults(rawValue: 1 << 5)
+    /// The classification does not see a conflicting attribute (issue #20).
+    static let ignoreAttributeConflicts = MergeFaults(rawValue: 1 << 6)
 }
 
 /// A hunk and the choice that resolved it.

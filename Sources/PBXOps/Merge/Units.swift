@@ -155,15 +155,28 @@ public struct ClassifiedUnit: Equatable, Sendable {
 
     /// Design D4: compare masked membership; for a replay candidate and a
     /// decision, run the trial against ours to find residuals.
+    /// `ignoringConflicts` is the fault seam of design D4 (issue #20): the
+    /// classification of 1.1.2, which does not see a conflicting attribute.
     public static func classify(_ units: [MergeUnit], base: MembershipSnapshot, ours: Project, oursSnapshot: MembershipSnapshot,
                                 theirs: MembershipSnapshot, exemptions: Exemptions? = nil, minter: IDMinter = IDMinter(),
-                                removeAll: Bool = false) -> [ClassifiedUnit] {
+                                removeAll: Bool = false, ignoringConflicts: Bool = false) -> [ClassifiedUnit] {
         units.map { unit in
             let states = unit.paths.map {
                 PathStates(path: $0, base: base.masked(at: $0), ours: oursSnapshot.masked(at: $0), theirs: theirs.masked(at: $0))
             }
+            let owing = { (residuals: [Residual]) in
+                ClassifiedUnit(unit: unit, outcome: .decision, choices: [.ours, .theirsMembership], residuals: residuals, reason: nil,
+                               states: states)
+            }
+            // Issue #20: a conflicting attribute is asked about even where
+            // ours already holds theirs' membership, which the skip below
+            // compares without attributes.
             if states.allSatisfy({ $0.ours == $0.theirs }) {
-                return ClassifiedUnit(unit: unit, outcome: .skipped, choices: [], residuals: [], reason: nil, states: states)
+                let conflicts = ignoringConflicts ? []
+                    : PathComparison.conflicts(paths: unit.paths, base: base, ours: oursSnapshot, theirs: theirs)
+                return conflicts.isEmpty
+                    ? ClassifiedUnit(unit: unit, outcome: .skipped, choices: [], residuals: [], reason: nil, states: states)
+                    : owing(conflicts)
             }
             let candidate = states.allSatisfy { $0.ours == $0.base }
             let trial = Trial.run(paths: unit.paths, base: base, ours: ours, oursSnapshot: oursSnapshot, theirs: theirs,
@@ -171,13 +184,12 @@ public struct ClassifiedUnit: Equatable, Sendable {
             switch trial {
             case .failed(let reason):
                 return ClassifiedUnit(unit: unit, outcome: .decision, choices: [.ours], residuals: [], reason: reason, states: states)
-            case .replayed(let residuals) where residuals.isEmpty:
+            case .replayed(let found):
+                let residuals = ignoringConflicts ? found.filter { !$0.conflicting } : found
+                guard residuals.isEmpty else { return owing(residuals) }
                 return candidate
                     ? ClassifiedUnit(unit: unit, outcome: .replayed, choices: [], residuals: [], reason: nil, states: states)
                     : ClassifiedUnit(unit: unit, outcome: .decision, choices: [.ours, .theirs], residuals: [], reason: nil, states: states)
-            case .replayed(let residuals):
-                return ClassifiedUnit(unit: unit, outcome: .decision, choices: [.ours, .theirsMembership], residuals: residuals, reason: nil,
-                                      states: states)
             }
         }
     }

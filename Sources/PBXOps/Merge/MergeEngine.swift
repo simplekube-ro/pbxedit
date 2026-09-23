@@ -113,7 +113,8 @@ public struct MergeEngine {
             return stop(.unsupported, "\(path): two file references resolve there in one version (M4); the merge cannot say which one it means")
         }
         let classified = ClassifiedUnit.classify(units, base: baseSnapshot, ours: ours, oursSnapshot: oursSnapshot, theirs: theirsSnapshot,
-                                                 exemptions: exemptions, minter: minter)
+                                                 exemptions: exemptions, minter: minter,
+                                                 ignoringConflicts: faults.contains(.ignoreAttributeConflicts))
 
         // Neutralisation and the line merge.
         let unitPaths = units.flatMap(\.paths)
