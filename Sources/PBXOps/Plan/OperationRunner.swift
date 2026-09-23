@@ -185,3 +185,12 @@ public struct OperationRunner {
         }
     }
 }
+
+/// The write every command shares (design D7): a temporary file beside the
+/// target, `fsync`, `rename(2)`. `merge` writes through here too (merge
+/// design D11).
+public enum AtomicFile {
+    public static func write(_ bytes: [UInt8], to url: URL) throws {
+        try OperationRunner.writeAtomically(bytes, to: url)
+    }
+}

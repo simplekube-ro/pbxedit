@@ -10,10 +10,10 @@ struct PbxEdit: ParsableCommand {
         abstract: "Manage file membership in an Xcode project.pbxproj.",
         discussion: """
             Exit codes: 0 success or no-op, 1 rule violation or refused operation, \
-            2 usage or parse error.
+            2 usage or parse error, 3 decisions needed (merge only).
             """,
         version: Version.current,
-        subcommands: [Add.self, Move.self, Remove.self, Lint.self, Query.self]
+        subcommands: [Add.self, Move.self, Remove.self, Merge.self, Lint.self, Query.self]
     )
 
     /// Parses and runs, mapping every way out to the documented exit codes
@@ -44,12 +44,15 @@ enum CommandOutcome {
     case ok
     case violations
     case usage
+    /// `merge`: a unit or hunk needs a decision that was not supplied.
+    case decisionsNeeded
 
     var code: Int32 {
         switch self {
         case .ok: return 0
         case .violations: return 1
         case .usage: return 2
+        case .decisionsNeeded: return 3
         }
     }
 

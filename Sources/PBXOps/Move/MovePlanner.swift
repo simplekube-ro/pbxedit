@@ -19,7 +19,8 @@ public enum MovePlanner {
     /// `PathArgument`). Throws `PlanError` when the move cannot be planned;
     /// then nothing is planned for any file.
     public static func plan(from: String, to: String, in project: Project, conventions: Conventions, keepMembership: Bool = false,
-                            disk: any DiskReader, exemptions: Exemptions? = nil, minter: IDMinter = IDMinter()) throws -> Plan {
+                            disk: any DiskReader, exemptions: Exemptions? = nil, minter: IDMinter = IDMinter(),
+                            keeping: Set<ObjectID> = []) throws -> Plan {
         var builder = PlanBuilder(project: project, minter: minter)
         let (moves, isDirectory) = try resolveMoves(from: from, to: to, in: project)
         for move in moves { try validate(move, in: project) }
@@ -30,7 +31,7 @@ public enum MovePlanner {
             try plan(move, conventions: conventions, keepMembership: keepMembership, exemptions: exemptions, builder: &builder,
                      removedChildren: &removedChildren, emptied: &emptied)
         }
-        RemovePlanner.prune(emptied, removedChildren: removedChildren, builder: &builder)
+        RemovePlanner.prune(emptied, removedChildren: removedChildren, keeping: keeping, builder: &builder)
         if isDirectory { noteExtraFiles(under: to, moves: moves, disk: disk, builder: &builder) }
         return builder.build()
     }
@@ -247,27 +248,13 @@ public enum MovePlanner {
             let filters = try platformFilters(for: to, kind: kind, target: target, conventions: conventions, in: project)
             var decided = false
             for entry in membership.buildFiles where entry.phases.contains(where: { $0.targets.contains { $0.id == target.id } }) {
-                let existing = PlatformFilters.read(from: entry.buildFile)
-                guard existing != filters.value else { continue }
+                guard PlatformFilters.read(from: entry.buildFile) != filters.value else { continue }
                 if !decided {
-                    builder.decide(Decision(path: to, attribute: "platformFilters", value: "\(target.name ?? target.id.rawValue): \(describe(filters.value))",
+                    builder.decide(Decision(path: to, attribute: "platformFilters", value: "\(target.name ?? target.id.rawValue): \(PlatformFilters.describe(filters.value))",
                                             source: filters.source))
                     decided = true
                 }
-                // The new value in the spelling Xcode writes (platform-filters
-                // design D2): set its key, then clear whichever of the two
-                // keys the build file carries but should not.
-                let spelling = PlatformFilters.spelling(of: filters.value)
-                if let key = spelling.key, let value = spelling.value {
-                    builder.add(.setAttribute(key: key, of: entry.buildFile.id, to: value), touching: [entry.buildFile.id])
-                }
-                for other in [PlatformFilters.singularKey, PlatformFilters.pluralKey]
-                where other != spelling.key && entry.buildFile.object.attributes?[other] != nil {
-                    builder.add(.setAttribute(key: other, of: entry.buildFile.id, to: nil), touching: [entry.buildFile.id])
-                }
-                let detail = filters.value.isEmpty ? "platformFilters removed (was \(describe(existing)))"
-                    : "platformFilters = \(describe(filters.value)) (was \(describe(existing)))"
-                builder.record(Change(path: to, action: .setAttribute, object: entry.buildFile.id, detail: detail))
+                builder.rewriteFilters(of: entry.buildFile, to: filters.value, path: to)
             }
         }
         for target in detached {
@@ -279,7 +266,7 @@ public enum MovePlanner {
                 throw PlanError.noSuchPhase(path: to, target: targetName, phase: PhaseChoice(kind: kind).displayName)
             }
             let filters = try platformFilters(for: to, kind: kind, target: target, conventions: conventions, in: project)
-            builder.decide(Decision(path: to, attribute: "platformFilters", value: "\(targetName): \(describe(filters.value))", source: filters.source))
+            builder.decide(Decision(path: to, attribute: "platformFilters", value: "\(targetName): \(PlatformFilters.describe(filters.value))", source: filters.source))
             let buildFile = builder.mint()
             builder.add(.createBuildFile(id: buildFile, fileRef: reference.id, platformFilters: filters.value), touching: [buildFile])
             builder.record(Change(path: to, action: .createdBuildFile, object: buildFile, detail: "build file for \(targetName)"))
@@ -306,9 +293,6 @@ public enum MovePlanner {
         }
     }
 
-    private static func describe(_ filters: [String]) -> String {
-        filters.isEmpty ? "none" : filters.joined(separator: ", ")
-    }
 
     /// The file's kind: from its extension, else from the phase its build
     /// files are in; `nil` when neither says (nothing is built, nothing to follow).

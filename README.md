@@ -1,7 +1,8 @@
 # pbxedit
 
 A Swift command-line tool that manages **file membership** in an Xcode
-`project.pbxproj`: `add`, `move`, `remove`, `query`, and `lint [--fix]`.
+`project.pbxproj`: `add`, `move`, `remove`, `query`, `lint [--fix]`, and a
+semantic three-way `merge`.
 It edits the project file losslessly — untouched bytes are never rewritten —
 and checks the result against a rule set before anything is written.
 
@@ -11,11 +12,44 @@ pbxedit move App/Old.swift App/Legacy/Old.swift  # after you moved the file on d
 pbxedit remove App/Legacy/Old.swift
 pbxedit query App/Views/Settings.swift --json
 pbxedit lint --fix --dry-run                     # repairs orphans and dangling entries
+pbxedit merge base.pbxproj ours.pbxproj theirs.pbxproj   # resolves a conflicted project file
 ```
 
 Every command takes `--project`, `--json` and, for mutations, `--dry-run`
 (prints the plan and a unified diff). Conventions can be pinned in a
 `.pbxedit.yml`; see `docs/design.md` § Config.
+
+## Merging a conflicted project file
+
+`pbxedit merge <base> <ours> <theirs>` merges three versions of one
+`project.pbxproj`. File membership theirs changed is replayed onto ours with
+pbxedit's own `add`, `remove` and `move`; everything else is merged line by
+line. Two branches that each add a file no longer conflict. Nothing is
+written until every change either side made is accounted for (checks A–F).
+The output is the project's `project.pbxproj` (or `--output <file>`). The
+command never prompts and has no git integration of its own. During a
+conflicted `git merge` or `git rebase`:
+
+```sh
+P=App.xcodeproj/project.pbxproj
+git show ":1:$P" > /tmp/base.pbxproj     # the common ancestor
+git show ":2:$P" > /tmp/ours.pbxproj     # the branch being merged into (HEAD)
+git show ":3:$P" > /tmp/theirs.pbxproj   # the branch being merged
+pbxedit merge /tmp/base.pbxproj /tmp/ours.pbxproj /tmp/theirs.pbxproj --project App.xcodeproj
+```
+
+Exit `0` means merged and verified: `git add "$P"`. Exit `3` means some
+unit of membership or hunk of text needs your choice. The report lists each
+one with its key, the three versions and the allowed choices, and ends with a
+JSON decisions template. Save the template, replace each `null` with a choice
+(`ours`, `theirs`, `theirs-membership`, or `both` where offered), and run
+again with `--decisions decisions.json`. The template is bound to the three
+inputs' SHA-256, so it cannot be applied to other inputs. Exit `1` means a
+check failed and nothing was written; exit `2`, input the merge does not
+support (a target theirs adds or removes, a file that does not parse). In a
+rebase, `:2:` is the branch being rebased onto and `:3:` your commit.
+`.pbxedit.yml` is read only for its `lint.exempt` globs; resolve a conflict
+in it first.
 
 ## Install
 

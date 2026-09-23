@@ -130,3 +130,11 @@ enum StringCoding {
         return Token(kind: .quotedString, text: String(decoding: text, as: UTF8.self), leadingTrivia: leadingTrivia)
     }
 }
+
+extension StringNode {
+    /// `value` as the write side of design D5 spells it: bare when it may
+    /// be, else quoted with escapes. For reports that print values.
+    public static func canonicalText(_ value: String) -> String {
+        StringCoding.token(for: value, leadingTrivia: .empty).text
+    }
+}

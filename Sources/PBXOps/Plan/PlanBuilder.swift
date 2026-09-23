@@ -56,3 +56,28 @@ public struct PlanBuilder {
 
     public func build() -> Plan { plan }
 }
+
+extension PlanBuilder {
+    /// Rewrites a kept build file's filters in place, in the spelling Xcode
+    /// writes (platform-filters design D2): set the new value's key, then
+    /// clear whichever of the two keys the build file carries but should
+    /// not. Returns whether anything changed. Shared by `move` (a kept
+    /// target) and the merge's replay (merge design D5).
+    @discardableResult
+    public mutating func rewriteFilters(of buildFile: BuildFile, to filters: [String], path: String) -> Bool {
+        let existing = PlatformFilters.read(from: buildFile)
+        guard existing != filters else { return false }
+        let spelling = PlatformFilters.spelling(of: filters)
+        if let key = spelling.key, let value = spelling.value {
+            add(.setAttribute(key: key, of: buildFile.id, to: value), touching: [buildFile.id])
+        }
+        for other in [PlatformFilters.singularKey, PlatformFilters.pluralKey]
+        where other != spelling.key && buildFile.object.attributes?[other] != nil {
+            add(.setAttribute(key: other, of: buildFile.id, to: nil), touching: [buildFile.id])
+        }
+        let detail = filters.isEmpty ? "platformFilters removed (was \(PlatformFilters.describe(existing)))"
+            : "platformFilters = \(PlatformFilters.describe(filters)) (was \(PlatformFilters.describe(existing)))"
+        record(Change(path: path, action: .setAttribute, object: buildFile.id, detail: detail))
+        return true
+    }
+}

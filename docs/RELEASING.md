@@ -54,18 +54,25 @@ build files, unreachable references) and that would show as a diff:
 ```sh
 xcodebuild -version                       # record below
 swift build && P="$PWD/.build/debug/pbxedit"
-W=$(mktemp -d) && mkdir -p "$W/ops/App.xcodeproj" "$W/repair/App.xcodeproj"
-cp Tests/Fixtures/xcode27/platform-filters-after-xcode27-save.pbxproj "$W/ops/App.xcodeproj/project.pbxproj"
+B=Tests/Fixtures/xcode27/platform-filters-after-xcode27-save.pbxproj
+W=$(mktemp -d) && mkdir -p "$W/ops/App.xcodeproj" "$W/repair/App.xcodeproj" "$W/sides/ours/App.xcodeproj" "$W/sides/theirs/App.xcodeproj"
+cp "$B" "$W/ops/App.xcodeproj/project.pbxproj"
+cp "$B" "$W/sides/base.pbxproj" && cp "$B" "$W/sides/ours/App.xcodeproj/project.pbxproj" && cp "$B" "$W/sides/theirs/App.xcodeproj/project.pbxproj"
 cp Tests/Fixtures/xcode27/repair-fixable.pbxproj "$W/repair/App.xcodeproj/project.pbxproj"
-cd "$W" && git init -q && git add -A && git commit -qm base
-mkdir -p ops/App/Features ops/App/Views && touch ops/App/Views/Bar.swift ops/App/Features/Foo.swift
-cd ops
-"$P" add App/Views/Bar.swift --project App.xcodeproj                          # pbxedit add
-"$P" move App/Views/Foo.swift App/Features/Foo.swift --project App.xcodeproj  # pbxedit move
+cd "$W" && echo sides/ > .gitignore && git init -q && git add -A && git commit -qm base
+mkdir -p ops/App/Features ops/App/Views sides/ours/App/Views sides/theirs/App/Features
+touch ops/App/Views/Bar.swift ops/App/Features/Foo.swift sides/ours/App/Views/Bar.swift sides/theirs/App/Features/Foo.swift
+cd sides/ours
+"$P" add App/Views/Bar.swift --project App.xcodeproj                          # pbxedit add, on one branch
+cd ../theirs
+"$P" move App/Views/Foo.swift App/Features/Foo.swift --project App.xcodeproj  # pbxedit move, on the other
+cd ../../ops
+"$P" merge ../sides/base.pbxproj ../sides/ours/App.xcodeproj/project.pbxproj \
+  ../sides/theirs/App.xcodeproj/project.pbxproj --project App.xcodeproj       # pbxedit merge, into ops/
 "$P" remove App/Services/Rate.swift --project App.xcodeproj                   # pbxedit remove
 cd ../repair
 "$P" lint --fix --project App.xcodeproj                                       # pbxedit lint --fix
-cd .. && git add -A && git commit -qm "pbxedit add, move, remove, lint --fix"
+cd .. && git add -A && git commit -qm "pbxedit add, move, merge, remove, lint --fix"
 open ops/App.xcodeproj repair/App.xcodeproj
 ```
 
@@ -74,8 +81,11 @@ open ops/App.xcodeproj repair/App.xcodeproj
 synchronized folder, five targets; `repair-fixable.pbxproj` is the same file
 with one group child removed, an M3 orphan `lint --fix` restores byte for
 byte. Both projects are named `App.xcodeproj`, as the file's own comments
-say; a different name makes Xcode rewrite those comments. Each command
-prints `project.pbxproj: modified`.)
+say; a different name makes Xcode rewrite those comments. `add` and `move`
+run on two copies outside the repository, as two branches would, and
+`merge` combines them into `ops/` — the rename replayed as one unit, every
+check passed — before `remove` runs on the merge. Each command prints
+`project.pbxproj: modified`; `merge` exits `0`.)
 
 In each Xcode window: wait for indexing, touch the project (rename a file
 in the navigator and rename it back, or change and revert a build setting)

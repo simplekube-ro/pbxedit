@@ -245,4 +245,12 @@ final class PlatformFilterTests: XCTestCase {
         XCTAssertEqual(definitionLine(of: f1, in: try applied(grown, to: saved)),
                        "\t\tBB0000000000000000000140 /* G1.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000260 /* G1.swift */; platformFilters = (ios, tvos, ); };")
     }
+
+    /// Review cleanup: one wording for filters, shared by `move`'s decision
+    /// line and the filter rewrite's change line.
+    func testFiltersAreDescribedOneWay() {
+        XCTAssertEqual(PlatformFilters.describe([]), "none")
+        XCTAssertEqual(PlatformFilters.describe(["ios"]), "ios")
+        XCTAssertEqual(PlatformFilters.describe(["ios", "macos"]), "ios, macos")
+    }
 }

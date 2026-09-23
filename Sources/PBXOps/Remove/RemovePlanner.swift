@@ -9,15 +9,29 @@ import PBXModel
 public enum RemovePlanner {
     /// `paths` are source-root-relative and normalized (see `PathArgument`).
     /// Throws `PlanError` when a path cannot be removed; then nothing is
-    /// planned for any path.
-    public static func plan(_ paths: [String], in project: Project, target: String? = nil, all: Bool = false) throws -> Plan {
+    /// planned for any path. A group in `keeping` is never pruned, however
+    /// empty it is left (merge design D6).
+    public static func plan(_ paths: [String], in project: Project, target: String? = nil, all: Bool = false,
+                            keeping: Set<ObjectID> = []) throws -> Plan {
         var builder = PlanBuilder(project: project)
         var removedChildren: [ObjectID: [ObjectID]] = [:]
         var emptiedBy: [(group: ObjectID, path: String)] = []
         for path in paths {
             try plan(path, target: target, all: all, builder: &builder, removedChildren: &removedChildren, emptied: &emptiedBy)
         }
-        prune(emptiedBy, removedChildren: removedChildren, builder: &builder)
+        prune(emptiedBy, removedChildren: removedChildren, keeping: keeping, builder: &builder)
+        return builder.build()
+    }
+
+    /// The merge's replay only (merge design D5): `remove --target` limited to
+    /// the rows of `path` in `target`'s phases of kind `phase`, so one of a
+    /// target's two rows (Sources and Resources) can go and the other stay.
+    static func plan(_ path: String, in project: Project, target: String, phase: PhaseChoice) throws -> Plan {
+        var builder = PlanBuilder(project: project)
+        guard let reference = project.fileReferences(at: path).first else { throw PlanError.notInProject(path: path) }
+        builder.touch(reference.id)
+        try detach(path, reference: reference, membership: project.membership(of: reference.id), from: target, phaseIsa: phase.isa,
+                   builder: &builder)
         return builder.build()
     }
 
@@ -39,7 +53,7 @@ public enum RemovePlanner {
         builder.touch(reference.id)
 
         if let target {
-            try detach(path, reference: reference, membership: membership, from: target, builder: &builder)
+            try detach(path, reference: reference, membership: membership, from: target, phaseIsa: nil, builder: &builder)
             return
         }
 
@@ -61,7 +75,7 @@ public enum RemovePlanner {
     /// no phase is deleted, one still listed elsewhere is kept, and one that
     /// was in no phase to begin with is not this target's business.
     private static func detach(_ path: String, reference: FileReference, membership: Membership, from targetName: String,
-                               builder: inout PlanBuilder) throws {
+                               phaseIsa: String?, builder: inout PlanBuilder) throws {
         let project = builder.project
         guard let target = project.targets.first(where: { $0.name?.utf8.elementsEqual(targetName.utf8) == true }) else {
             throw PlanError.unknownTarget(name: targetName, available: project.targets.compactMap(\.name).sorted())
@@ -69,7 +83,7 @@ public enum RemovePlanner {
         guard membership.targets.contains(where: { $0.id == target.id }) else {
             throw PlanError.notMemberOfTarget(path: path, target: targetName, targets: membership.targets.map { $0.name ?? $0.id.rawValue })
         }
-        let remaining = detach(path, membership: membership, from: target, builder: &builder)
+        let remaining = detach(path, membership: membership, from: target, phaseIsa: phaseIsa, builder: &builder)
         for parent in project.parents(of: reference.id) { builder.touch(parent.id) }
         if !remaining {
             builder.note("\(path): now built by no target; the file reference and its group child remain")
@@ -80,12 +94,15 @@ public enum RemovePlanner {
     /// each listing in a phase `target` owns goes, a build file left in no
     /// phase is deleted, one still listed elsewhere is kept. Returns whether
     /// some build file of the reference is still in a phase afterwards.
+    /// With `phaseIsa`, only listings in phases of that kind go.
     @discardableResult
-    static func detach(_ path: String, membership: Membership, from target: Target, builder: inout PlanBuilder) -> Bool {
+    static func detach(_ path: String, membership: Membership, from target: Target, phaseIsa: String? = nil, builder: inout PlanBuilder) -> Bool {
         let targetName = target.name ?? target.id.rawValue
         var remaining = false
         for entry in membership.buildFiles {
-            let owned = entry.phases.filter { listing in listing.targets.contains { $0.id == target.id } }
+            let owned = entry.phases.filter { listing in
+                listing.targets.contains { $0.id == target.id } && (phaseIsa == nil || listing.phase.isa == phaseIsa)
+            }
             guard !owned.isEmpty else {
                 if !entry.phases.isEmpty { remaining = true }
                 continue
@@ -155,7 +172,8 @@ public enum RemovePlanner {
     /// The children the same plan gives a group (`builder.addedChildren`: a
     /// move can empty a group and refill it with a new subgroup) count as
     /// remaining. Shared with `MovePlanner`.
-    static func prune(_ emptied: [(group: ObjectID, path: String)], removedChildren: [ObjectID: [ObjectID]], builder: inout PlanBuilder) {
+    static func prune(_ emptied: [(group: ObjectID, path: String)], removedChildren: [ObjectID: [ObjectID]], keeping: Set<ObjectID> = [],
+                      builder: inout PlanBuilder) {
         let addedChildren = builder.addedChildren
         let project = builder.project
         let mainGroup = project.mainGroup?.id
@@ -167,7 +185,7 @@ public enum RemovePlanner {
         while index < queue.count {
             let (id, path) = queue[index]
             index += 1
-            guard !pruned.contains(id), id != mainGroup, id != productRefGroup, let group = project.group(id), group.isa == Kind.group else { continue }
+            guard !pruned.contains(id), !keeping.contains(id), id != mainGroup, id != productRefGroup, let group = project.group(id), group.isa == Kind.group else { continue }
             var remaining = group.children
             for child in removed[id] ?? [] {
                 if let position = remaining.firstIndex(of: child) { remaining.remove(at: position) }

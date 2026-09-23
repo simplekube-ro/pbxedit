@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 
 /// The oracle lane (add-command task 7.1, remove-command task 6.3,
-/// move-command task 6.3, lint-fix task 8.3): `xcodebuild -list -json
+/// move-command task 6.3, lint-fix task 8.3, merge-command task 8.4): `xcodebuild -list -json
 /// -project` reads every post-operation project. Skipped cleanly where
 /// `xcodebuild` is absent — unless `ORACLE_REQUIRED` is set, in which case
 /// the absence is a failure (release-distribution task 3.1, design D3), so
@@ -109,6 +109,30 @@ final class OracleTests: XCTestCase {
         let after = try pbxedit(["lint", "--json", "--project", "Alamofire.xcodeproj"], in: project.root)
         XCTAssertEqual(after.status, 0, after.stdout)
         XCTAssertEqual((try jsonObject(after)["summary"] as? [String: Int])?["errors"], 0)
+    }
+
+    /// merge-command task 8.4 (spec: Xcode can read the result): the
+    /// both-sides-add, rename and `theirs-membership` merges of the committed
+    /// three-way fixtures, written into the project whose file is ours.
+    func testXcodebuildReadsEveryMergedProject() throws {
+        try Self.skipWithoutXcodebuild()
+        for (scenario, units) in [("both-add", nil), ("rename", nil), ("settings-residual", "theirs-membership")] as [(String, String?)] {
+            let project = try TemporaryProject(fixture: "merge/\(scenario)/ours.pbxproj")
+            for (name, file) in [("b", "base"), ("o", "ours"), ("t", "theirs")] {
+                try Data(try Fixtures.load("merge/\(scenario)/\(file).pbxproj")).write(to: project.root.appendingPathComponent("\(name).pbxproj"))
+            }
+            var merge = ["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj"]
+            if let units {
+                let open = try pbxedit(merge + ["--json", "--project", "App.xcodeproj"], in: project.root)
+                XCTAssertEqual(open.status, 3, "\(scenario): \(open.stdout)\(open.stderr)")
+                var template = try XCTUnwrap(try jsonObject(open)["template"] as? [String: Any])
+                let keys = (template["units"] as? [String: Any])?.keys.map { $0 } ?? []
+                template["units"] = Dictionary(uniqueKeysWithValues: keys.map { ($0, units) })
+                try JSONSerialization.data(withJSONObject: template).write(to: project.root.appendingPathComponent("decisions.json"))
+                merge += ["--decisions", "decisions.json"]
+            }
+            try Self.runAndList("merge: \(scenario)", project: project, invocations: [merge])
+        }
     }
 
     private struct XcodebuildMissing: Error, CustomStringConvertible {

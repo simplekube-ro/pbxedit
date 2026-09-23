@@ -26,7 +26,7 @@ final class ReleasingDocumentTests: XCTestCase {
         let text = try text()
         XCTAssertTrue(text.contains("Xcode version used:"), "no field for the Xcode version")
         XCTAssertTrue(text.contains("xcodebuild -version"))
-        for command in ["add", "move", "remove", "lint --fix"] {
+        for command in ["add", "move", "merge", "remove", "lint --fix"] {
             XCTAssertTrue(text.contains("# pbxedit \(command)"), "the manual check does not exercise \(command)")
         }
         XCTAssertTrue(text.contains("git diff --exit-code"), "the check must expect no diff after Xcode saves")
