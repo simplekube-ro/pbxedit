@@ -113,7 +113,7 @@ Recorded checks:
 |---|---|---|---|
 | `v1.0.0` (first attempt) | Xcode 27.0, Build version 27A266a | `64b9fe7` | diff — filed as #6 (platform-filter spelling), fixed by `platform-filter-canonical-form`; the rest was the procedure, rewritten above |
 | `v1.0.0` | Xcode 27.0, Build version 27A266a | `e418e90` | no diff |
-| `v1.1.0` | Xcode 27.0, Build version 27A266a | `ae99bf9` | no diff — the first run covering `merge` |
+| `v1.1.0` | Xcode 27.0, Build version 27A266a | `ae99bf9` (`347abad` on `main` after the rebase merge, identical tree) | no diff — the first run covering `merge` |
 
 ## 3. Tag
 
