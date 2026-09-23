@@ -26,7 +26,7 @@ A path that does not exist on disk, or is a directory other than a bundle Xcode 
 - **THEN** the command exits `1` naming the path, and the project file is unchanged
 
 ### Requirement: Idempotence and completion
-Adding a path that is already a complete member of the chosen targets SHALL change nothing and exit `0`. When membership is partial, the command SHALL add only what is missing and SHALL reuse every existing object; it SHALL NOT create a second file reference for a path or a second build file for a reference within one target (rules M4, M5).
+Adding a path that is already a complete member of the chosen targets SHALL change nothing and exit `0`. When membership is partial, the command SHALL add only what is missing and SHALL reuse every existing object; it SHALL NOT create a second file reference for a path or a second build file for a reference within one target (rules M4, M5). A target the file already belongs to SHALL keep its build file exactly as it is: the build file is reused and its platform filter is never rewritten, whatever `--platform` says. Adding a member to another target with its own `--platform` SHALL extend its membership with a build file carrying those filters, reusing the file reference. `merge` replays membership through these guarantees (`merge`: Replay reproduces theirs exactly or says what it cannot), with one difference the command itself never shows: the replay's `add` counts a target as already a member only through a build file in a phase of the kind it names, so it can write a file's second row in another phase of the same target (Resources beside Sources), which rule M5 allows.
 
 #### Scenario: Re-add
 - **WHEN** `pbxedit add App/Views/Foo.swift` runs against `app.pbxproj`, where the file is already a member of `App`
@@ -39,6 +39,14 @@ Adding a path that is already a complete member of the chosen targets SHALL chan
 #### Scenario: Add to a second target
 - **WHEN** `App/Services/Rate.swift` is a member of `App` and `pbxedit add App/Services/Rate.swift --target AppExtension` runs
 - **THEN** one build file and one phase entry are created for `AppExtension`'s Sources phase, and the file reference `AA0000000000000000000230` and the `Services` group are untouched
+
+#### Scenario: A second add with another platform set extends membership
+- **WHEN** `App/Services/Rate.swift` is a member of `App` with no filter and `pbxedit add App/Services/Rate.swift --target AppExtension --platform ios` runs
+- **THEN** a build file with `platformFilter = ios;` is created in `AppExtension`'s Sources phase for the reference `AA0000000000000000000230`, `App`'s build file `BB0000000000000000000110` is unchanged and still has no filter, and no second reference is created
+
+#### Scenario: A reused build file keeps its filter
+- **WHEN** `App/tvOS/TV1.swift` is a member of `App` with `platformFilters = (tvos, );` and `pbxedit add App/tvOS/TV1.swift --target App --platform ios` runs
+- **THEN** the build file `BB0000000000000000000120` is reused with `platformFilters = (tvos, );`, the run reports `modified: false`, exits `0`, and the project file's bytes are unchanged
 
 ### Requirement: Files are identified by path
 An existing file reference SHALL be reused only when it resolves to the same path (design: file lookup by resolved path, never basename).
