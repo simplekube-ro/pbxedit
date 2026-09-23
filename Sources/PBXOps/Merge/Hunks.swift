@@ -67,6 +67,14 @@ public struct AnalysedHunk: Equatable, Sendable {
     public static func analyse(_ merge: ThreeWay.Merge) throws -> [AnalysedHunk] {
         var result: [AnalysedHunk] = []
         var keys: [String: Int] = [:]
+        var theirsVersion: PlistValue??
+        /// The text with every hunk `theirs`, loaded once when needed; `nil` when it does not load.
+        func allTheirs() -> PlistValue? {
+            if theirsVersion == nil {
+                theirsVersion = .some((try? Project.load(merge.text { $1.theirs })).map { PlistValue($0.tree.root) })
+            }
+            return theirsVersion ?? nil
+        }
         for (index, hunk) in merge.hunks.enumerated() {
             let number = index + 1
             func load(_ lines: [[UInt8]], _ side: HunkChoice) throws -> SyntaxTree {
@@ -98,12 +106,24 @@ public struct AnalysedHunk: Equatable, Sendable {
             let values = governed.map { Values(path: $0, base: baseLeaves?[$0], ours: oursLeaves[$0], theirs: theirsLeaves[$0]) }
 
             var choices: [HunkChoice] = [.ours, .theirs]
-            if let baseLeaves, let baseTree, oursTouched.isDisjoint(with: theirsTouched),
+            let shared = oursTouched.intersection(theirsTouched)
+            if let baseLeaves, let baseTree,
+               shared.isEmpty || UnorderedInsertions.admits(shared, base: PlistValue(baseTree.root), ours: PlistValue(ours.root),
+                                                            theirs: PlistValue(theirs.root), theirsVersion: allTheirs),
                let both = try? load(hunk.ours + hunk.theirs, .both) {
+                // Leaves one side changes take its value; a shared array passes check C's array rule.
                 var expected = baseLeaves.values
                 for path in oursTouched { expected[path] = oursLeaves[path] }
                 for path in theirsTouched { expected[path] = theirsLeaves[path] }
-                if PlistLeaves(both).values == expected,
+                var actual = PlistLeaves(both).values
+                let arraysMerge = shared.allSatisfy { path in
+                    expected[path] = nil
+                    guard case .array(let was)? = baseLeaves[path], case .array(let mine)? = oursLeaves[path],
+                          case .array(let yours)? = theirsLeaves[path], case .array(let got)? = actual.removeValue(forKey: path)
+                    else { return false }
+                    return MergeChecks.arrayProblem(base: was, ours: mine, theirs: yours, result: got, unordered: false) == nil
+                }
+                if arraysMerge, actual == expected,
                    PlistValue.duplicateKeyCount(in: both.root) <= PlistValue.duplicateKeyCount(in: baseTree.root) {
                     choices.append(.both)
                 }

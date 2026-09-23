@@ -43,6 +43,8 @@ final class MergeFixtureFileTests: XCTestCase {
             ("theirs-adds-target", base, try MergeEngineTests.addingTarget("Widget", to: base)),
             ("phase-removed", base, phaseRemoved),
             ("shared-array", sharedArray.ours, sharedArray.theirs),
+            ("both-regions", try MergeFixture.knownRegions(["de", "en", "Base"], of: base),
+             try MergeFixture.knownRegions(["fr", "en", "Base"], of: base)),
         ]
     }
 
@@ -70,6 +72,7 @@ final class MergeFixtureFileTests: XCTestCase {
         let expected: [String: MergeReport.Status] = [
             "both-add": .merged, "rename": .merged, "conflicting-setting": .decisionsNeeded, "settings-residual": .decisionsNeeded,
             "theirs-adds-target": .unsupported, "phase-removed": .decisionsNeeded, "shared-array": .decisionsNeeded,
+            "both-regions": .decisionsNeeded,
         ]
         for scenario in try MergeFixtureFileTests.scenarios() {
             let report = MergeEngine().run(base: try MergeFixture.baseBytes(), ours: scenario.ours.serialize(), theirs: scenario.theirs.serialize())
