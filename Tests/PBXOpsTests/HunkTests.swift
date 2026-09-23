@@ -8,8 +8,8 @@ import PBXModel
 final class HunkTests: XCTestCase {
     private let a1: ObjectID = "1000000000000000000000A1"
 
-    private func analyse(ours: Project, theirs: Project) throws -> [AnalysedHunk] {
-        let base = try MergeFixture.base()
+    private func analyse(base: Project? = nil, ours: Project, theirs: Project) throws -> [AnalysedHunk] {
+        let base = try base ?? MergeFixture.base()
         let merge = ThreeWay.merge(base: TextLines.split(base.serialize()), ours: TextLines.split(ours.serialize()),
                                    theirs: TextLines.split(theirs.serialize()))
         return try AnalysedHunk.analyse(merge)
@@ -95,5 +95,97 @@ final class HunkTests: XCTestCase {
         let hunks = try analyse(ours: ours, theirs: theirs)
         XCTAssertEqual(hunks.count, 1)
         XCTAssertEqual(hunks.first?.choices, [.ours, .theirs])
+    }
+
+    // MARK: Issue #13 — insertions into one unordered array
+
+    private let project: ObjectID = "EE0000000000000000000001"
+    private let zero = (id: "EF0000000000000000000001", url: "https://example.com/zero")
+
+    /// The hunks governing `leaf`, which must be exactly one.
+    private func hunk(governing leaf: LeafPath, in hunks: [AnalysedHunk], file: StaticString = #filePath, line: UInt = #line) throws -> AnalysedHunk {
+        let governing = hunks.filter { $0.governed.contains(leaf) }
+        XCTAssertEqual(governing.count, 1, "hunks: \(hunks.map(\.governed))", file: file, line: line)
+        return try XCTUnwrap(governing.first, file: file, line: line)
+    }
+
+    // Spec: Different insertions into one unordered array.
+    func testDifferentInsertionsIntoOneUnorderedArrayOfferBoth() throws {
+        let base = try MergeFixture.base()
+        let hunks = try analyse(ours: try MergeFixture.knownRegions(["de", "en", "Base"], of: base),
+                                theirs: try MergeFixture.knownRegions(["fr", "en", "Base"], of: base))
+        XCTAssertEqual(hunks.count, 1)
+        let hunk = try XCTUnwrap(hunks.first)
+        XCTAssertEqual(hunk.governed.map(\.description), ["EE0000000000000000000001 knownRegions"])
+        XCTAssertEqual(hunk.choices, [.ours, .theirs, .both])
+        let both = PlistLeaves(try Project.load(hunk.counterfactual(.both)))
+        XCTAssertEqual(both[["objects", project.rawValue, "knownRegions"]], .array(["de", "fr", "en", "Base"].map { .string($0) }))
+    }
+
+    // Spec: Two packages added on both sides.
+    func testTwoPackagesAddedOnBothSidesOfferBoth() throws {
+        let plain = try MergeFixture.base()
+        let hunks = try analyse(base: try MergeFixture.packages([zero], of: plain),
+                                ours: try MergeFixture.packages([zero, ("EF0000000000000000000002", "https://example.com/a")], of: plain),
+                                theirs: try MergeFixture.packages([zero, ("EF0000000000000000000003", "https://example.com/b")], of: plain))
+        let hunk = try hunk(governing: ["objects", project.rawValue, "packageReferences"], in: hunks)
+        XCTAssertEqual(hunk.choices, [.ours, .theirs, .both])
+        let text = String(decoding: TextLines.join(hunk.resolution(.both)), as: UTF8.self)
+        XCTAssertEqual(text, "\t\t\t\tEF0000000000000000000002 /* XCRemoteSwiftPackageReference */,\n"
+                           + "\t\t\t\tEF0000000000000000000003 /* XCRemoteSwiftPackageReference */,\n")
+    }
+
+    // Spec: The same package under two IDs keeps ours and theirs.
+    func testTheSamePackageUnderTwoIDsKeepsOursAndTheirs() throws {
+        let plain = try MergeFixture.base()
+        let hunks = try analyse(base: try MergeFixture.packages([zero], of: plain),
+                                ours: try MergeFixture.packages([zero, ("EF0000000000000000000002", "https://example.com/a")], of: plain),
+                                theirs: try MergeFixture.packages([zero, ("EF0000000000000000000003", "https://example.com/a")], of: plain))
+        let hunk = try hunk(governing: ["objects", project.rawValue, "packageReferences"], in: hunks)
+        XCTAssertEqual(hunk.choices, [.ours, .theirs])
+    }
+
+    // Spec: An array whose order matters keeps ours and theirs (LD_RUNPATH_SEARCH_PATHS).
+    func testInsertionsIntoARunpathKeepOursAndTheirs() throws {
+        let old = "\t\t\t\tSWIFT_VERSION = 6.0;\n"
+        func runpath(_ paths: [String], _ project: Project) throws -> Project {
+            let list = "\t\t\t\tLD_RUNPATH_SEARCH_PATHS = (\n" + paths.map { "\t\t\t\t\t\"\($0)\",\n" }.joined() + "\t\t\t\t);\n"
+            return try MergeFixture.edit(project, replacing: old, with: old + list)
+        }
+        let plain = try MergeFixture.base()
+        let hunks = try analyse(base: try runpath(["$(inherited)"], plain),
+                                ours: try runpath(["@executable_path/Frameworks", "$(inherited)"], plain),
+                                theirs: try runpath(["@loader_path/Frameworks", "$(inherited)"], plain))
+        let hunk = try hunk(governing: ["objects", a1.rawValue, "buildSettings", "LD_RUNPATH_SEARCH_PATHS"], in: hunks)
+        XCTAssertEqual(hunk.choices, [.ours, .theirs])
+    }
+
+    // Spec: An array whose order matters keeps ours and theirs (a Frameworks phase's files).
+    func testInsertionsIntoAFrameworksPhaseKeepOursAndTheirs() throws {
+        let old = "\t\t\t\tBB0000000000000000000080 /* Foundation.framework in Frameworks */,\n"
+        let plain = try MergeFixture.base()
+        let ours = try MergeFixture.edit(plain, replacing: old, with: "\t\t\t\tBB0000000000000000000081 /* A.framework in Frameworks */,\n" + old)
+        let theirs = try MergeFixture.edit(plain, replacing: old, with: "\t\t\t\tBB0000000000000000000082 /* B.framework in Frameworks */,\n" + old)
+        let hunks = try analyse(ours: ours, theirs: theirs)
+        let hunk = try hunk(governing: ["objects", "CC0000000000000000000002", "files"], in: hunks)
+        XCTAssertEqual(hunk.choices, [.ours, .theirs])
+    }
+
+    func testARemovalBesideAnInsertionKeepsOursAndTheirs() throws {
+        let base = try MergeFixture.base()
+        // Each side replaces `en`: base's array is no subsequence of either.
+        let hunks = try analyse(ours: try MergeFixture.knownRegions(["de", "Base"], of: base),
+                                theirs: try MergeFixture.knownRegions(["fr", "Base"], of: base))
+        let hunk = try hunk(governing: ["objects", project.rawValue, "knownRegions"], in: hunks)
+        XCTAssertEqual(hunk.choices, [.ours, .theirs])
+    }
+
+    func testTheSameElementInsertedOnBothSidesKeepsOursAndTheirs() throws {
+        let base = try MergeFixture.base()
+        // Both insert `de`, among different neighbours: `both` would list it twice.
+        let hunks = try analyse(ours: try MergeFixture.knownRegions(["de", "it", "en", "Base"], of: base),
+                                theirs: try MergeFixture.knownRegions(["fr", "de", "en", "Base"], of: base))
+        let hunk = try hunk(governing: ["objects", project.rawValue, "knownRegions"], in: hunks)
+        XCTAssertEqual(hunk.choices, [.ours, .theirs])
     }
 }

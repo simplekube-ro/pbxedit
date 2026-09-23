@@ -57,16 +57,41 @@ enum MergeFixture {
         return try Project.load(Array(text.replacingCharacters(in: range, with: new).utf8))
     }
 
+    /// `project` with the text `old`, which must occur, replaced by `new`.
+    static func edit(_ project: Project, replacing old: String, with new: String) throws -> Project {
+        let text = String(decoding: project.serialize(), as: UTF8.self)
+        let range = try XCTUnwrap(text.range(of: old), "the project holds \(old)")
+        return try Project.load(Array(text.replacingCharacters(in: range, with: new).utf8))
+    }
+
+    /// Issue #13: the project object's `packageReferences`, one element per
+    /// line after `knownRegions`, and an `XCRemoteSwiftPackageReference`
+    /// section before the end of `objects`; each package is an ID and its URL.
+    static func packages(_ packages: [(id: String, url: String)], of project: Project) throws -> Project {
+        let regions = "\t\t\tknownRegions = (\n\t\t\t\ten,\n\t\t\t\tBase,\n\t\t\t);\n"
+        let list = "\t\t\tpackageReferences = (\n" + packages.map { "\t\t\t\t\($0.id) /* XCRemoteSwiftPackageReference */,\n" }.joined()
+            + "\t\t\t);\n"
+        let objects = packages.sorted { $0.id < $1.id }.map { package in
+            "\t\t\(package.id) /* XCRemoteSwiftPackageReference */ = {\n\t\t\tisa = XCRemoteSwiftPackageReference;\n"
+                + "\t\t\trepositoryURL = \"\(package.url)\";\n\t\t\trequirement = {\n\t\t\t\tkind = upToNextMajorVersion;\n"
+                + "\t\t\t\tminimumVersion = 1.0.0;\n\t\t\t};\n\t\t};\n"
+        }.joined()
+        let section = "/* Begin XCRemoteSwiftPackageReference section */\n" + objects + "/* End XCRemoteSwiftPackageReference section */\n"
+        let listed = try edit(project, replacing: regions, with: regions + list)
+        return try edit(listed, replacing: "/* End XCConfigurationList section */\n", with: "/* End XCConfigurationList section */\n\n" + section)
+    }
+
     /// `lint.exempt` from YAML, as `.pbxedit.yml` would give it.
     static func exemptions(_ yaml: String) throws -> Exemptions {
         Exemptions(try Config.parse(yaml, file: ".pbxedit.yml").lint.exempt)
     }
 
     /// Runs the engine on the base and the two sides, with deterministic IDs.
-    static func merge(ours: Project, theirs: Project, decisions: MergeDecisions? = nil, exemptions: Exemptions? = nil) throws -> MergeReport {
+    static func merge(base: Project? = nil, ours: Project, theirs: Project, decisions: MergeDecisions? = nil,
+                      exemptions: Exemptions? = nil) throws -> MergeReport {
         var engine = MergeEngine(exemptions: exemptions, decisions: decisions)
         engine.minter = IDMinter(generator: SplitMix(seed: 1234))
-        return engine.run(base: try baseBytes(), ours: ours.serialize(), theirs: theirs.serialize())
+        return engine.run(base: try base?.serialize() ?? baseBytes(), ours: ours.serialize(), theirs: theirs.serialize())
     }
 
     /// The report's template with every open unit and hunk set by `choose`.
