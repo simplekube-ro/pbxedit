@@ -77,6 +77,22 @@ public struct DecidedHunk: Equatable, Sendable {
     }
 }
 
+extension DecidedHunk {
+    /// The leaf in this hunk's `ours` or `theirs` counterfactual (design D7).
+    func value(at path: LeafPath) -> PlistValue? {
+        let values = hunk.values.first { $0.path == path }
+        return choice == .theirs ? values?.theirs : values?.ours
+    }
+
+    /// The leaf in the counterfactual of this hunk's choice, `both` included;
+    /// `nil` when that text does not load.
+    func resolvedValue(at path: LeafPath) -> PlistValue?? {
+        guard choice == .both else { return .some(value(at: path)) }
+        guard let project = try? Project.load(hunk.counterfactual(.both)) else { return nil }
+        return .some(PlistLeaves(project.tree)[path])
+    }
+}
+
 public enum MergeChecks {
     // MARK: C — accounting
 
@@ -91,11 +107,15 @@ public enum MergeChecks {
         let (b, o, t, r) = (PlistLeaves(base.tree, depth: depth), PlistLeaves(ours.tree, depth: depth),
                             PlistLeaves(theirs.tree, depth: depth), PlistLeaves(result.tree, depth: depth))
         let unordered = faults.contains(.multisetArrays)
-        var decided: [LeafPath: PlistValue?] = [:]
-        for decision in hunks where decision.choice != .both {
-            for values in decision.hunk.values {
-                decided.updateValue(decision.choice == .ours ? values.ours : values.theirs, forKey: values.path)
-            }
+        var governing: [LeafPath: [DecidedHunk]] = [:]
+        for decision in hunks {
+            for values in decision.hunk.values { governing[values.path, default: []].append(decision) }
+        }
+        var decisionsBuild: PlistLeaves?
+        /// The leaves with every hunk resolved as decided, built once, when needed.
+        func decisionsLeaves() -> PlistLeaves? {
+            if decisionsBuild == nil { decisionsBuild = decidedBuild(hunks, depth: depth) }
+            return decisionsBuild
         }
         var problems: [CheckProblem] = []
         var paths: [LeafPath] = []
@@ -111,9 +131,15 @@ public enum MergeChecks {
             let oursChanged = !same(mine, was)
             let theirsChanged = !same(yours, was)
             let problem: String?
-            if let expected = decided[path] {
+            let governors = governing[path] ?? []
+            if governors.count == 1, let only = governors.first, only.choice != .both {
                 // A decided hunk governs the leaf, whoever changed it.
+                let expected = only.value(at: path)
                 problem = same(got, expected) ? nil : "the decided hunk gives \(show(expected)); the merge has \(show(got))"
+            } else if governors.count > 1, governors.contains(where: { $0.choice != .both }) {
+                // Several hunks govern it: each one's choice, applied together.
+                problem = composedProblem(path: path, governors: governors, result: got, unordered: unordered, same: same,
+                                          decisionsBuild: decisionsLeaves)
             } else if theirsChanged && !oursChanged {
                 problem = same(got, yours) ? nil : "theirs changed it to \(show(yours)); the merge has \(show(got))"
             } else if !theirsChanged || same(mine, yours) {
@@ -127,6 +153,76 @@ public enum MergeChecks {
             if let problem { problems.append(CheckProblem(object: path.objectID, subject: path.description, message: problem)) }
         }
         return CheckResult(check: .C, problems: problems)
+    }
+
+    /// Design D9 C for a leaf several hunks govern, one at least decided
+    /// `ours` or `theirs` (issue #12). Each hunk's counterfactual shows what
+    /// its choice alone does to the leaf, against the build with every hunk
+    /// `ours`; the expectation applies all of them. An array holds the
+    /// all-`ours` elements plus every hunk's additions minus every hunk's
+    /// removals, each counterfactual's retained elements in its order. A
+    /// leaf that is not an array everywhere expects the one value the hunks
+    /// change it to, or, when they change it to several, its value in the
+    /// build with every decision applied.
+    static func composedProblem(path: LeafPath, governors: [DecidedHunk], result: PlistValue?, unordered: Bool,
+                                same: (PlistValue?, PlistValue?) -> Bool, decisionsBuild: () -> PlistLeaves?) -> String? {
+        let allOurs = governors[0].hunk.values.first { $0.path == path }?.ours
+        var sides: [PlistValue?] = []
+        for governor in governors {
+            guard let value = governor.resolvedValue(at: path) else {
+                return "hunk \(governor.hunk.number) decided \(governor.choice.rawValue) does not load as a project"
+            }
+            sides.append(value)
+        }
+        let what = "the decided hunks \(governors.map { "\($0.hunk.number) \($0.choice.rawValue)" }.joined(separator: ", "))"
+        if case .array(let base)? = allOurs, case .array(let got)? = result {
+            let arrays = sides.compactMap { side -> [PlistValue]? in
+                if case .array(let elements)? = side { return elements }
+                return nil
+            }
+            if arrays.count == sides.count {
+                var expected = Multiset(base)
+                var removed = Multiset()
+                for side in arrays {
+                    expected = expected + (Multiset(side) - Multiset(base))
+                    removed = removed + (Multiset(base) - Multiset(side))
+                }
+                expected = expected - removed
+                guard Multiset(got) == expected else {
+                    return "\(what) give the elements \(show(.array(expected.sorted()))), the merge has \(show(.array(got)))"
+                }
+                guard !unordered else { return nil }
+                for (governor, side) in zip(governors, arrays) {
+                    var kept = Multiset(side).intersection(Multiset(got))
+                    let retained = side.filter { kept.remove($0) }
+                    guard isSubsequence(retained, of: got) else {
+                        return "hunk \(governor.hunk.number)'s order of \(show(.array(retained))) is lost in \(show(.array(got)))"
+                    }
+                }
+                return nil
+            }
+        }
+        var changed: [PlistValue?] = []
+        for side in sides where !same(side, allOurs) && !changed.contains(where: { same($0, side) }) { changed.append(side) }
+        let expected: PlistValue?
+        switch changed.count {
+        case 0: expected = allOurs
+        case 1: expected = changed[0]
+        default:
+            guard let build = decisionsBuild() else { return "\(what) do not load as a project together" }
+            expected = build[path]
+        }
+        return same(result, expected) ? nil : "\(what) give \(show(expected)); the merge has \(show(result))"
+    }
+
+    /// The leaves of the text with every hunk resolved as decided; a hunk
+    /// not among `hunks` is resolved `ours`.
+    static func decidedBuild(_ hunks: [DecidedHunk], depth: Int?) -> PlistLeaves? {
+        guard let merge = hunks.first?.hunk.merge else { return nil }
+        let byIndex = Dictionary(hunks.map { ($0.hunk.number - 1, $0) }, uniquingKeysWith: { first, _ in first })
+        let text = merge.text { index, hunk in byIndex[index].map { $0.hunk.resolution($0.choice) } ?? hunk.ours }
+        guard let project = try? Project.load(text) else { return nil }
+        return PlistLeaves(project.tree, depth: depth)
     }
 
     // MARK: F — no membership as bytes

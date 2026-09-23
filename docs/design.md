@@ -19,7 +19,8 @@ spelling Xcode 27 writes, read and written everywhere (change
 `platform-filter-canonical-form`, issue #6, found by the open-and-save
 check); `merge`, a semantic three-way merge of one `project.pbxproj` with
 its decisions round trip and checks A–F (change `merge-command`, issue #9,
-for `v1.1.0`).
+for `v1.1.0`); check C accounting for a leaf that several decided hunks
+govern (change `merge-accounting-shared-leaves`, issue #12).
 
 ## Purpose
 
@@ -46,6 +47,7 @@ failures share that one root cause:
 | Two files with the same basename in different targets: the wrong one compiled | Lookup by basename |
 | Moving a file between targets needed four manual edits | No `move` or `remove` operation |
 | *(pbxedit `v0.1.0`, issue #6)* Every `platformFilters = (ios, );` the tool wrote was rewritten by Xcode 27 on save to `platformFilter = ios;`, a diff on each release check | The tool's own spelling had never been checked against an Xcode save; no corpus file carries a platform filter. Regression: `Tests/Fixtures/xcode27/` |
+| *(pbxedit `v1.1.0`, issue #12)* `merge` refused a valid resolution (exit `1`, check C) when two decided hunks governed one array, e.g. both ends of `knownRegions` | Check C took a governed leaf's expectation from one hunk's counterfactual, in which every other hunk is `ours`. Regression: `Tests/Fixtures/merge/shared-array/` |
 
 Measured on the originating project: 655 of 1,719 file references (38%) have no
 parent group, mixed within the same directories — accumulated damage, not a

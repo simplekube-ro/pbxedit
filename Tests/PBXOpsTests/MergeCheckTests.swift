@@ -130,6 +130,44 @@ final class MergeCheckTests: XCTestCase {
         XCTAssertFalse(try accounting(ours: ours, theirs: theirs, result: reordered).passed, "ours' en before Base is lost")
     }
 
+    /// Issue #12: the head and the tail of `knownRegions` are two hunks.
+    /// Decided `theirs`/`theirs`, the text merge is theirs' array; a result
+    /// that loses an element, keeps the wrong one or breaks an order still fails.
+    func testTwoDecidedHunksOverOneArrayExpectBothDecisions() throws {
+        let (ours, theirs) = try MergeEngineTests.sharedArraySides()
+        let known = { (values: [String]) in NewValue.array(values.map { .string($0) }) }
+        let project: ObjectID = "EE0000000000000000000001"
+        let regions: LeafPath = ["objects", project.rawValue, "knownRegions"]
+        let (result, hunks) = try textMerge(ours: ours, theirs: theirs) { $0.governed.contains(regions) ? .theirs : .ours }
+        XCTAssertEqual(hunks.filter { $0.hunk.governed.contains(regions) }.count, 2)
+        XCTAssertEqual(PlistLeaves(result)[regions], .array(["fr", "en", "Base", "es"].map { .string($0) }))
+        XCTAssertTrue(try accounting(ours: ours, theirs: theirs, result: result, hunks: hunks).passed)
+        for wrong in [["fr", "en", "Base"], ["fr", "en", "Base", "it"], ["de", "en", "Base", "es"], ["en", "fr", "Base", "es"]] {
+            let bad = try MergeFixture.attribute("knownRegions", known(wrong), of: project, in: result)
+            XCTAssertEqual(try accounting(ours: ours, theirs: theirs, result: bad, hunks: hunks).problems.map(\.subject),
+                           ["EE0000000000000000000001 knownRegions"], "\(wrong)")
+            XCTAssertEqual(errors(bad), [], "lint alone reports nothing")
+        }
+        // The `multisetArrays` fault: without order, the reordered result passes.
+        let reordered = try MergeFixture.attribute("knownRegions", known(["en", "fr", "Base", "es"]), of: project, in: result)
+        XCTAssertTrue(try accounting(ours: ours, theirs: theirs, result: reordered, hunks: hunks, faults: .multisetArrays).passed)
+    }
+
+    /// A `both` hunk sharing the array with a decided one counts with its
+    /// own counterfactual: both heads, then theirs' tail.
+    func testABothHunkSharingAnArrayWithADecidedOneCounts() throws {
+        let (ours, theirs) = try MergeEngineTests.sharedArraySides()
+        let regions: LeafPath = ["objects", "EE0000000000000000000001", "knownRegions"]
+        let (result, hunks) = try textMerge(ours: ours, theirs: theirs) { hunk in
+            !hunk.governed.contains(regions) ? .ours : hunk.number == 1 ? .both : .theirs
+        }
+        XCTAssertEqual(PlistLeaves(result)[regions], .array(["de", "fr", "en", "Base", "es"].map { .string($0) }))
+        XCTAssertTrue(try accounting(ours: ours, theirs: theirs, result: result, hunks: hunks).passed)
+        let lost = try MergeFixture.attribute("knownRegions", .array(["fr", "en", "Base", "es"].map { .string($0) }),
+                                              of: "EE0000000000000000000001", in: result)
+        XCTAssertFalse(try accounting(ours: ours, theirs: theirs, result: lost, hunks: hunks).passed, "ours' de is lost")
+    }
+
     // MARK: Engine seams
 
     private func engine(_ faults: MergeFaults = []) -> MergeEngine {
@@ -157,6 +195,21 @@ final class MergeCheckTests: XCTestCase {
         let check = failed(try merge(ours: base, theirs: theirs, faults: .skipTextMerge))
         XCTAssertEqual(check?.check, .C)
         XCTAssertEqual(check?.problems.map(\.subject), ["1000000000000000000000A4 buildSettings.PRODUCT_NAME"])
+    }
+
+    // Issue #12 through the engine: with the text merge replaced by ours,
+    // the two decided hunks over `knownRegions` are what check C misses.
+    func testTheSkipTextMergeFaultFailsAccountingOnASharedArray() throws {
+        let (ours, theirs) = try MergeEngineTests.sharedArraySides()
+        let open = try merge(ours: ours, theirs: theirs)
+        let decisions = try MergeFixture.decide(open, hunks: { $0.analysed.number <= 2 ? "theirs" : "ours" })
+        var decided = engine()
+        decided.decisions = decisions
+        XCTAssertEqual(decided.run(base: try MergeFixture.baseBytes(), ours: ours.serialize(), theirs: theirs.serialize()).status, .merged)
+        decided.faults = .skipTextMerge
+        let check = failed(decided.run(base: try MergeFixture.baseBytes(), ours: ours.serialize(), theirs: theirs.serialize()))
+        XCTAssertEqual(check?.check, .C)
+        XCTAssertEqual(check?.problems.map(\.subject), ["EE0000000000000000000001 knownRegions"])
     }
 
     // MARK: F
