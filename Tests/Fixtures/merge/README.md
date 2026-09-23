@@ -5,7 +5,8 @@ The inputs of `pbxedit merge` for the command and oracle tests
 holds `base.pbxproj`, `ours.pbxproj` and `theirs.pbxproj`. Every `base` is
 `xcode27/platform-filters-after-xcode27-save.pbxproj`, byte for byte, except
 `both-objects`, whose base is that file with a `packageReferences` list and
-one `XCRemoteSwiftPackageReference`; `ours` and `theirs` are that base after
+one `XCRemoteSwiftPackageReference`, and `reordered-array`, whose base is that
+file with `knownRegions` written one element per line; `ours` and `theirs` are that base after
 the operations below, made in memory with
 pbxedit's own planners (settings by a text edit of the tree), with seeded ID
 minting so the files are the same on every run. They are pbxedit's own
@@ -34,3 +35,4 @@ PBXEDIT_WRITE_MERGE_FIXTURES=1 swift test --filter MergeFixtureFileTests
 | `both-objects` | one more `XCRemoteSwiftPackageReference` (`EF…02`, `https://example.com/a`) in the list and its own object | one more (`EF…03`, `https://example.com/b`) | exit `3`: two hunks, the list and the two multi-line objects, both offering `ours`, `theirs` and `both` (issue #17); with both `both`, exit `0` and all three packages |
 | `attribute-conflict` | `fileEncoding = 4;` on `AA0000000000000000000260` (`App/Filtered/F1.swift`) | that file re-filtered (`remove --target App`, `add --target App --platform ios,macos`) and `fileEncoding = 10;` on its reference | exit `3`: the unit offers `ours` or `theirs-membership` over the conflicting `fileEncoding` (issue #20); with `theirs-membership`, exit `0`, theirs' filters and `fileEncoding` owed |
 | `both-frameworks` | `CoreHaptics.framework` linked into `App`'s Frameworks phase (an SDKROOT reference, a build file, a child of the `Frameworks` group, an entry of `CC0000000000000000000002`) | the same for `GameController.framework` | exit `3`: four hunks, each offering `ours`, `theirs` and `both` (issue #21); with all four `both`, exit `0` and both frameworks linked, ours' entry before theirs' |
+| `reordered-array` | `knownRegions = (Base, en, );` — base's two regions swapped | `knownRegions = (en, Base, fr, );` — one inserted | exit `3`: the hunk over `knownRegions` offers `ours` and `theirs` only, though its own texts look like two insertions (issue #24); `both` for it is exit `2` |

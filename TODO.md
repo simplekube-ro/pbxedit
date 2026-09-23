@@ -186,6 +186,17 @@ Issue #21: `pbxedit merge` 1.1.2 could not keep both links when two branches eac
 - [ ] Manual check (RELEASING § 2)
 - [ ] Released as `v1.2.0`
 
+### 18. merge-both-order-agreement
+Issue #24, found while applying § 17: since `v1.1.1` `merge` offered `both` where one side had *reordered* an array the other only inserted into — the insertion test reads the hunk's counterfactual texts, which zealous trimming can shorten until a reorder looks like an insertion — and the decision then exited `1` on check C. Ships as `v1.2.0` with issues #20 and #21.
+- [x] Artifacts written and `openspec validate --strict` green: a MODIFIED `merge` delta (the order-agreement condition on the three files; the Frameworks sentence folded into the general rule; two scenarios added), design D1–D2, 8 tasks
+- [x] Applied, all tasks ticked (8/8): `UnorderedInsertions.ordersAgree` asks the three files whether ours and theirs order what they both hold the same way, for every admitted leaf; `insertionsOnly` and `isFrameworksPhase` (§ 17's Frameworks-only test) are gone, so `admits` has one rule for every key again, and `AnalysedHunk.Inputs` became `Sides` — ours and theirs without the base only the subsequence test needed. Red first: the repro offered `ours | theirs | both` before. Measured while applying: a file-wide *subsequence* test would have refused a `both` that works today (base `(en, Base, it)`, ours `(de, en, Base)`, theirs `(fr, en, Base, it)` merges to `(de, fr, en, Base)`), so order agreement — the necessary condition for check C — is what the rule asks
+- [x] `swift test` green: 111 syntax + 380 ops + 64 model + 129 CLI tests, 0 failures, none skipped, so the oracle lane ran (Xcode 27.0, Build version 27A266a); re-run green after the `Inputs` → `Sides` rename. New: `HunkTests` +2 (the repro refused; an insertion against a removal still offers `both`), `MergeEngineTests` +2 (the repro is `decisionsNeeded` with two choices and `both` for it is `unsupported`; the insertion-against-removal case merges to `(de, fr, en, Base)`), `MergeCommandTests` +1 (the fixture through the binary, `both` refused with exit `2`), the `reordered-array` fixture in `MergeFixtureFileTests`
+- [x] Release `PerformanceTests` green: the Alamofire merge takes 0.063 s to the decisions report and 0.123 s decided with all six checks (limit 2 s), the 10k-line line merge 0.004 s
+- [x] `docs/design.md` reconciled: status line, the `merge` Commands row, a Motivation-table row for issue #24. The archived `merge-both-unordered-insertions` and `merge-both-frameworks-links` designs have dated notes at D2 and D1
+- [ ] Archived
+- [ ] Merged
+- [ ] Released as `v1.2.0`
+
 ## After v1 — adoption in the originating project
 
 A separate OpenSpec change in that project's repository, closing its file-membership issue:

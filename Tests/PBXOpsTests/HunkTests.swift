@@ -12,7 +12,7 @@ final class HunkTests: XCTestCase {
         let base = try base ?? MergeFixture.base()
         let merge = ThreeWay.merge(base: TextLines.split(base.serialize()), ours: TextLines.split(ours.serialize()),
                                    theirs: TextLines.split(theirs.serialize()))
-        return try AnalysedHunk.analyse(merge, inputs: AnalysedHunk.Inputs(base: base, ours: ours, theirs: theirs))
+        return try AnalysedHunk.analyse(merge, sides: AnalysedHunk.Sides(ours: ours, theirs: theirs))
     }
 
     // Spec: Conflicting setting values.
@@ -77,8 +77,7 @@ final class HunkTests: XCTestCase {
             .stable(Array(lines[(index + 1)...])),
         ])
         let plain = try MergeFixture.base()
-        let inputs = AnalysedHunk.Inputs(base: plain, ours: plain, theirs: plain)
-        XCTAssertThrowsError(try AnalysedHunk.analyse(merge, inputs: inputs)) { error in
+        XCTAssertThrowsError(try AnalysedHunk.analyse(merge, sides: AnalysedHunk.Sides(ours: plain, theirs: plain))) { error in
             guard case HunkError.unparseable(let hunk, let side, let message) = error else { return XCTFail("\(error)") }
             XCTAssertEqual(hunk, 1)
             XCTAssertEqual(side, .theirs)
@@ -160,6 +159,30 @@ final class HunkTests: XCTestCase {
                                 theirs: try runpath(["@loader_path/Frameworks", "$(inherited)"], plain))
         let hunk = try hunk(governing: ["objects", a1.rawValue, "buildSettings", "LD_RUNPATH_SEARCH_PATHS"], in: hunks)
         XCTAssertEqual(hunk.choices, [.ours, .theirs])
+    }
+
+    // MARK: Issue #24 — a reorder against an insertion
+
+    private let regions: LeafPath = ["objects", "EE0000000000000000000001", "knownRegions"]
+
+    // Spec: A reorder against an insertion keeps ours and theirs.
+    func testAReorderAgainstAnInsertionKeepsOursAndTheirs() throws {
+        let plain = try MergeFixture.base()
+        let hunks = try analyse(base: try MergeFixture.knownRegions(["en", "Base"], of: plain),
+                                ours: try MergeFixture.knownRegions(["Base", "en"], of: plain),
+                                theirs: try MergeFixture.knownRegions(["en", "Base", "fr"], of: plain))
+        let hunk = try hunk(governing: regions, in: hunks)
+        XCTAssertEqual(hunk.choices, [.ours, .theirs],
+                       "the hunk's own texts show two insertions: base \(String(decoding: TextLines.join(hunk.hunk.base), as: UTF8.self))")
+    }
+
+    // Spec: An insertion against a removal still merges with both.
+    func testAnInsertionAgainstARemovalStillOffersBoth() throws {
+        let plain = try MergeFixture.base()
+        let hunks = try analyse(base: try MergeFixture.knownRegions(["en", "Base", "it"], of: plain),
+                                ours: try MergeFixture.knownRegions(["de", "en", "Base"], of: plain),
+                                theirs: try MergeFixture.knownRegions(["fr", "en", "Base", "it"], of: plain))
+        XCTAssertEqual(try hunk(governing: regions, in: hunks).choices, [.ours, .theirs, .both])
     }
 
     // MARK: Issue #21 — different links inserted into one Frameworks phase

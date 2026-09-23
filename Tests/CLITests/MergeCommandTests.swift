@@ -283,6 +283,32 @@ final class MergeCommandTests: XCTestCase {
     }
 
     // Spec: Stale decisions; Unknown key or refused choice.
+    // Issue #24: a reorder against an insertion is never offered `both`, through the binary.
+    func testAReorderAgainstAnInsertionKeepsOursAndTheirs() throws {
+        let workspace = try workspace("reordered-array")
+        let before = try workspace.bytes()
+        let open = try pbxedit(["merge", "--json", "b.pbxproj", "o.pbxproj", "t.pbxproj"], in: workspace.root)
+        XCTAssertEqual(open.status, 3, open.stdout + open.stderr)
+        let hunks = try XCTUnwrap(try jsonObject(open)["hunks"] as? [[String: Any]])
+        let regions = try XCTUnwrap(hunks.first { hunk in
+            (hunk["governed"] as? [[String: Any]])?.contains { $0["keyPath"] as? String == "knownRegions" } == true
+        })
+        XCTAssertEqual(regions["choices"] as? [String], ["ours", "theirs"], "no both for a reorder")
+        XCTAssertEqual(try workspace.bytes(), before, "nothing is written")
+
+        try decide(open, hunks: "both", into: workspace.root.appendingPathComponent("decisions.json"))
+        let refused = try pbxedit(["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj", "--decisions", "decisions.json"], in: workspace.root)
+        XCTAssertEqual(refused.status, 2, refused.stdout + refused.stderr)
+        XCTAssertTrue(refused.stderr.contains("both is not offered"), refused.stderr)
+        XCTAssertEqual(try workspace.bytes(), before)
+
+        try decide(open, hunks: "theirs", into: workspace.root.appendingPathComponent("decisions.json"))
+        let result = try pbxedit(["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj", "--decisions", "decisions.json"], in: workspace.root)
+        XCTAssertEqual(result.status, 0, result.stdout + result.stderr)
+        let lint = try pbxedit(["lint", "--project", "App.xcodeproj"], in: workspace.root)
+        XCTAssertEqual(lint.status, 0, lint.stdout)
+    }
+
     // Issue #21: two different framework links survive one merge, through the binary.
     func testDifferentFrameworkLinksMergeWithBoth() throws {
         let workspace = try workspace("both-frameworks")
