@@ -251,6 +251,17 @@ final class MergeCheckTests: XCTestCase {
         XCTAssertEqual(problem.object, "AA0000000000000000000260")
     }
 
+    // Spec: A conflict dropped from a unit's residuals fails (issue #20).
+    func testAConflictDroppedFromAUnitsResidualsFails() throws {
+        let sides = try MergeFixture.attributeConflict()
+        XCTAssertEqual(try merge(ours: sides.ours, theirs: sides.theirs).status, .decisionsNeeded, "the conflict is asked about")
+        let check = failed(try merge(ours: sides.ours, theirs: sides.theirs, faults: .ignoreAttributeConflicts))
+        XCTAssertEqual(check?.check, .E)
+        let problem = try XCTUnwrap(check?.problems.first { $0.subject.hasSuffix("fileEncoding") }, "\(check?.problems ?? [])")
+        XCTAssertEqual(problem.object, "AA0000000000000000000260")
+        XCTAssertTrue(problem.message.contains("both sides changed"), problem.message)
+    }
+
     // MARK: D
 
     func testAReplayThatEditsAnUnrelatedPathFails() throws {

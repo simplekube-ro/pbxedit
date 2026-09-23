@@ -32,7 +32,12 @@ struct MergeRenderer {
             for problem in check.problems { lines.append("  \(problem)") }
         }
         for residual in report.owed {
-            lines.append("owed: \(residual.path): \(residual.kind) \(residual.theirs.map { "= \($0)" } ?? "absent") (theirs), not written")
+            if residual.conflicting {
+                lines.append("owed: \(residual.path): \(residual.kind): ours \(residual.ours ?? "absent"), "
+                    + "theirs \(residual.theirs ?? "absent") (both sides changed it), not written")
+            } else {
+                lines.append("owed: \(residual.path): \(residual.kind) \(residual.theirs.map { "= \($0)" } ?? "absent") (theirs), not written")
+            }
         }
         for finding in report.findings { lines.append(finding.description) }
         if let error { FileHandle.standardError.write(Data(("error: " + error + "\n").utf8)) }
@@ -159,8 +164,11 @@ struct MergeRenderer {
             let object: String?
             let theirs: String?
             let merged: String?
+            /// Issue #20: ours' value, and whether both sides changed it.
+            let ours: String?
+            let conflicting: Bool
 
-            enum CodingKeys: String, CodingKey { case path, what, object, theirs, merged }
+            enum CodingKeys: String, CodingKey { case path, what, object, theirs, merged, ours, conflicting }
 
             func encode(to encoder: any Encoder) throws {
                 var container = encoder.container(keyedBy: CodingKeys.self)
@@ -169,6 +177,8 @@ struct MergeRenderer {
                 try container.encode(object, forKey: .object)
                 try container.encode(theirs, forKey: .theirs)
                 try container.encode(merged, forKey: .merged)
+                try container.encode(ours, forKey: .ours)
+                try container.encode(conflicting, forKey: .conflicting)
             }
         }
 
@@ -291,7 +301,7 @@ struct MergeRenderer {
 
     static func residual(_ residual: Residual) -> JSON.ResidualJSON {
         JSON.ResidualJSON(path: residual.path, what: residual.kind.description, object: residual.object?.rawValue, theirs: residual.theirs,
-                          merged: residual.merged)
+                          merged: residual.merged, ours: residual.ours, conflicting: residual.conflicting)
     }
 
     static func state(_ state: MembershipSnapshot.MaskedState?) -> JSON.State? {

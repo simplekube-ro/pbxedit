@@ -142,6 +142,66 @@ final class MergeEngineTests: XCTestCase {
             + "AA0000000000000000000260 /* F1.swift */; platformFilters = (ios, macos, ); };"), text(result))
     }
 
+    // Spec: A conflicting attribute makes a unit a decision.
+    // Spec: Theirs-membership owes the conflicting attribute.
+    func testAConflictingAttributeMakesAUnitADecision() throws {
+        let sides = try MergeFixture.attributeConflict()
+        let open = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded)
+        XCTAssertTrue(open.result == nil, "nothing is written")
+        XCTAssertEqual(open.units.map(\.classified.outcome), [.decision])
+        XCTAssertEqual(open.units.map(\.classified.choices), [[.ours, .theirsMembership]])
+        let residual = try XCTUnwrap(open.units.first?.classified.residuals.first { $0.conflicting },
+                                     "\(open.units.first?.classified.residuals ?? [])")
+        XCTAssertEqual(residual.kind, .attribute("fileEncoding"))
+        XCTAssertEqual(residual.object, "AA0000000000000000000260")
+        XCTAssertEqual([residual.ours, residual.theirs], ["4", "10"])
+
+        let report = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs,
+                                            decisions: try MergeFixture.decide(open, units: { _ in "theirs-membership" }))
+        let result = try merged(report)
+        XCTAssertEqual(report.owed.map(\.kind), [.attribute("fileEncoding")])
+        XCTAssertEqual(report.owed.first?.ours, "4")
+        XCTAssertEqual(result.fileReference("AA0000000000000000000260")?.object.string("fileEncoding"), "4", "ours' value, owed")
+        XCTAssertEqual(MembershipSnapshot(result).references["App/Filtered/F1.swift"]?.rows.map(\.filters), [["ios", "macos"]], "theirs' membership")
+    }
+
+    // Spec: Both sides re-filter and conflict.
+    func testBothSidesReFilterAndConflict() throws {
+        let sides = try MergeFixture.attributeConflict(oursFilters: ["macos"])
+        let open = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded)
+        XCTAssertEqual(open.units.map(\.classified.choices), [[.ours, .theirsMembership]], "not theirs")
+        let report = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs,
+                                            decisions: try MergeFixture.decide(open, units: { _ in "theirs-membership" }))
+        let result = try merged(report)
+        XCTAssertEqual(report.owed.map(\.kind), [.attribute("fileEncoding")])
+        XCTAssertEqual(MembershipSnapshot(result).references["App/Filtered/F1.swift"]?.rows.map(\.filters), [["ios", "macos"]])
+        XCTAssertEqual(result.fileReference("AA0000000000000000000260")?.object.string("fileEncoding"), "4")
+    }
+
+    // Spec: The same membership change with a conflicting attribute is not skipped.
+    func testTheSameMembershipChangeWithAConflictingAttributeIsNotSkipped() throws {
+        let base = try MergeFixture.base()
+        let oursAdded = try MergeFixture.add(["App/Views/Bar.swift"], to: base)
+        let theirsAdded = try MergeFixture.add(["App/Views/Bar.swift"], to: base, seed: 2)
+        let reference = { (project: Project) in MembershipSnapshot(project).references["App/Views/Bar.swift"]?.id }
+        let ours = try MergeFixture.attribute("fileEncoding", .string("4"), of: try XCTUnwrap(reference(oursAdded)), in: oursAdded)
+        let theirs = try MergeFixture.attribute("fileEncoding", .string("10"), of: try XCTUnwrap(reference(theirsAdded)), in: theirsAdded)
+        XCTAssertEqual(try MergeFixture.merge(ours: oursAdded, theirs: theirsAdded).units.map(\.classified.outcome), [.skipped],
+                       "without the conflict the unit is skipped")
+        let open = try MergeFixture.merge(ours: ours, theirs: theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded)
+        XCTAssertEqual(open.units.map(\.classified.outcome), [.decision])
+        XCTAssertEqual(open.units.map(\.classified.choices), [[.ours, .theirsMembership]])
+        XCTAssertEqual(open.units.first?.classified.residuals.filter(\.conflicting).map(\.kind), [.attribute("fileEncoding")])
+        let report = try MergeFixture.merge(ours: ours, theirs: theirs,
+                                            decisions: try MergeFixture.decide(open, units: { _ in "theirs-membership" }))
+        let result = try merged(report)
+        XCTAssertEqual(report.owed.map(\.kind), [.attribute("fileEncoding")])
+        XCTAssertEqual(MembershipSnapshot(result).references["App/Views/Bar.swift"]?.id, reference(ours), "ours' objects")
+    }
+
     // Spec: Build-file settings are a residual.
     func testTheirsMembershipOwesTheSettings() throws {
         let base = try MergeFixture.base()

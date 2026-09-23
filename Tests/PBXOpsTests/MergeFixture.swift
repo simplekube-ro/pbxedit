@@ -81,6 +81,28 @@ enum MergeFixture {
         return try edit(listed, replacing: "/* End XCConfigurationList section */\n", with: "/* End XCConfigurationList section */\n\n" + section)
     }
 
+    /// Issue #20: the three versions of the attribute conflict. Theirs
+    /// re-filters `App/Filtered/F1.swift` (base builds it for `ios` alone) to
+    /// `theirsFilters` and sets `fileEncoding` on its reference; ours sets a
+    /// different `fileEncoding`, and re-filters the file too when
+    /// `oursFilters` is given.
+    static func attributeConflict(ours oursEncoding: String? = "4", theirs theirsEncoding: String? = "10",
+                                  oursFilters: [String]? = nil, theirsFilters: [String] = ["ios", "macos"]) throws
+        -> (base: Project, ours: Project, theirs: Project) {
+        let base = try base()
+        let reference: ObjectID = "AA0000000000000000000260"
+        let refilter = { (project: Project, filters: [String], seed: UInt64) in
+            try add(["App/Filtered/F1.swift"], to: try remove(["App/Filtered/F1.swift"], from: project, target: "App"),
+                    targets: ["App"], platforms: filters, seed: seed)
+        }
+        var ours = base
+        if let oursFilters { ours = try refilter(base, oursFilters, 3) }
+        if let oursEncoding { ours = try attribute("fileEncoding", .string(oursEncoding), of: reference, in: ours) }
+        var theirs = try refilter(base, theirsFilters, 1)
+        if let theirsEncoding { theirs = try attribute("fileEncoding", .string(theirsEncoding), of: reference, in: theirs) }
+        return (base, ours, theirs)
+    }
+
     /// `lint.exempt` from YAML, as `.pbxedit.yml` would give it.
     static func exemptions(_ yaml: String) throws -> Exemptions {
         Exemptions(try Config.parse(yaml, file: ".pbxedit.yml").lint.exempt)

@@ -283,6 +283,40 @@ final class MergeCommandTests: XCTestCase {
     }
 
     // Spec: Stale decisions; Unknown key or refused choice.
+    // Issue #20: a conflicting attribute change reaches the user, through the binary.
+    func testAConflictingAttributeIsAskedAbout() throws {
+        let workspace = try workspace("attribute-conflict")
+        let before = try workspace.bytes()
+        let open = try pbxedit(["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj"], in: workspace.root)
+        XCTAssertEqual(open.status, 3, open.stdout + open.stderr)
+        XCTAssertTrue(open.stdout.contains("decision needed: ours | theirs-membership"), open.stdout)
+        XCTAssertTrue(open.stdout.contains("residual: App/Filtered/F1.swift (AA0000000000000000000260): "
+            + "both sides changed fileEncoding: ours 4, theirs 10"), open.stdout)
+        XCTAssertEqual(try workspace.bytes(), before, "nothing is written")
+
+        let json = try pbxedit(["merge", "--json", "b.pbxproj", "o.pbxproj", "t.pbxproj"], in: workspace.root)
+        XCTAssertEqual(json.status, 3)
+        let units = try XCTUnwrap(try jsonObject(json)["units"] as? [[String: Any]])
+        XCTAssertEqual(units.count, 1)
+        XCTAssertEqual(units[0]["choices"] as? [String], ["ours", "theirs-membership"])
+        let residual = try XCTUnwrap((units[0]["residuals"] as? [[String: Any]])?.first)
+        XCTAssertEqual(residual["what"] as? String, "fileEncoding")
+        XCTAssertEqual(residual["ours"] as? String, "4")
+        XCTAssertEqual(residual["theirs"] as? String, "10")
+        XCTAssertEqual(residual["conflicting"] as? Bool, true)
+
+        try decide(json, units: "theirs-membership", into: workspace.root.appendingPathComponent("decisions.json"))
+        let owed = try pbxedit(["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj", "--decisions", "decisions.json"], in: workspace.root)
+        XCTAssertEqual(owed.status, 0, owed.stdout + owed.stderr)
+        XCTAssertTrue(owed.stdout.contains("owed: App/Filtered/F1.swift: fileEncoding: ours 4, theirs 10 (both sides changed it), not written"),
+                      owed.stdout)
+        let merged = String(decoding: try workspace.bytes(), as: UTF8.self)
+        XCTAssertTrue(merged.contains("platformFilters = (ios, macos, );"), "theirs' membership")
+        XCTAssertTrue(merged.contains("fileEncoding = 4;"), "ours' attribute, owed")
+        let lint = try pbxedit(["lint", "--project", "App.xcodeproj"], in: workspace.root)
+        XCTAssertEqual(lint.status, 0, lint.stdout)
+    }
+
     func testStaleAndUnknownDecisions() throws {
         let workspace = try workspace("conflicting-setting")
         let before = try workspace.bytes()
