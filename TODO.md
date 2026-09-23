@@ -169,9 +169,9 @@ Issue #20: `pbxedit merge` 1.1.2 kept ours' value silently when theirs changed a
 - [x] `swift test` green: 111 syntax + 372 ops + 64 model + 127 CLI tests, 0 failures, none skipped, so the oracle lane ran (Xcode 27.0, Build version 27A266a). New: `ResidualTests` +4 (the conflict whichever value the result holds, a build-file attribute, the same value on both sides, `conflicts` without a replay), `MergeEngineTests` +3 (exit `3` with `ours | theirs-membership` and both values, `theirs-membership` owing it with theirs' filters written, and the same membership change on both sides no longer skipped), `MergeCheckTests` +1 (the `ignoreAttributeConflicts` fault seam: E fails naming `AA0000000000000000000260` `fileEncoding`), `MergeCommandTests` +1 (both repros through the binary, text and `--json`, then the `theirs-membership` re-run), the `attribute-conflict` fixture in `MergeFixtureFileTests` and in the merged-project oracle
 - [x] Release `PerformanceTests` green: the Alamofire merge takes 0.064 s to the decisions report and 0.123 s decided with all six checks (limit 2 s), the 10k-line line merge 0.004 s — 1.1.2 measured 0.063 s / 0.127 s / 0.004 s
 - [x] `docs/design.md` reconciled: status line, the `merge` Commands row (a conflicting attribute makes a unit a decision; check E fails on one that is not owed), a Motivation-table row for issue #20. The archived `merge-command` design has dated notes at D4 and D9 E
-- [ ] Archived
-- [ ] Merged
-- [ ] Manual check (RELEASING § 2)
+- [x] Archived — `openspec/changes/archive/2026-09-23-merge-attribute-conflicts-asked`; the `merge` delta synced into `openspec/specs/merge/spec.md` (three requirements modified), `openspec validate --specs --strict` green
+- [x] Merged — into `main` by PR #22 (rebase, 2026-09-23, `a598482`), closing #20
+- [x] Manual check (RELEASING § 2) — **not run** for `v1.2.0`, skipped by the release owner's decision (2026-09-24); recorded as skipped in `docs/RELEASING.md` § 2
 - [ ] Released as `v1.2.0`
 
 ### 17. merge-both-frameworks-links
@@ -181,9 +181,9 @@ Issue #21: `pbxedit merge` 1.1.2 could not keep both links when two branches eac
 - [x] `swift test` green: 111 syntax + 376 ops + 64 model + 128 CLI tests, 0 failures, none skipped, so the oracle lane ran (Xcode 27.0, Build version 27A266a). New: `HunkTests` +3 (the two links offer `both`; a removal and a reorder, and the same framework under two IDs, keep `ours` and `theirs`) replacing the old "keeps ours and theirs" test, `MergeEngineTests` +2 (all-`both` writes both links with base's entry first and checks A–F passed; `both` without the phase hunk still fails check A as 1.1.2 always did), `MergeCommandTests` +1 (the repro through the binary), the `both-frameworks` fixture in `MergeFixtureFileTests` and in the merged-project oracle
 - [x] Release `PerformanceTests` green: the Alamofire merge takes 0.063 s to the decisions report and 0.123 s decided with all six checks (limit 2 s), the 10k-line line merge 0.004 s
 - [x] `docs/design.md` reconciled: status line, the `merge` Commands row (the admitted key list and the Frameworks rule), a Motivation-table row for issue #21. The archived `merge-both-unordered-insertions` design has a dated note at D2
-- [ ] Archived
-- [ ] Merged
-- [ ] Manual check (RELEASING § 2)
+- [x] Archived — `openspec/changes/archive/2026-09-23-merge-both-frameworks-links`; the `merge` delta synced into `openspec/specs/merge/spec.md` (one requirement modified), `openspec validate --specs --strict` green
+- [x] Merged — into `main` by PR #23 (rebase, 2026-09-23, `6953852`), closing #21
+- [x] Manual check (RELEASING § 2) — **not run** for `v1.2.0`, skipped by the release owner's decision (2026-09-24); recorded as skipped in `docs/RELEASING.md` § 2
 - [ ] Released as `v1.2.0`
 
 ### 18. merge-both-order-agreement
@@ -193,8 +193,9 @@ Issue #24, found while applying § 17: since `v1.1.1` `merge` offered `both` whe
 - [x] `swift test` green: 111 syntax + 380 ops + 64 model + 129 CLI tests, 0 failures, none skipped, so the oracle lane ran (Xcode 27.0, Build version 27A266a); re-run green after the `Inputs` → `Sides` rename. New: `HunkTests` +2 (the repro refused; an insertion against a removal still offers `both`), `MergeEngineTests` +2 (the repro is `decisionsNeeded` with two choices and `both` for it is `unsupported`; the insertion-against-removal case merges to `(de, fr, en, Base)`), `MergeCommandTests` +1 (the fixture through the binary, `both` refused with exit `2`), the `reordered-array` fixture in `MergeFixtureFileTests`
 - [x] Release `PerformanceTests` green: the Alamofire merge takes 0.063 s to the decisions report and 0.123 s decided with all six checks (limit 2 s), the 10k-line line merge 0.004 s
 - [x] `docs/design.md` reconciled: status line, the `merge` Commands row, a Motivation-table row for issue #24. The archived `merge-both-unordered-insertions` and `merge-both-frameworks-links` designs have dated notes at D2 and D1
-- [ ] Archived
-- [ ] Merged
+- [x] Archived — `openspec/changes/archive/2026-09-23-merge-both-order-agreement`; the `merge` delta synced into `openspec/specs/merge/spec.md` (one requirement modified), `openspec validate --specs --strict` green
+- [x] Merged — into `main` by PR #25 (rebase, 2026-09-23, `5bd8f05`), closing #24
+- [x] Manual check (RELEASING § 2) — **not run** for `v1.2.0`, skipped by the release owner's decision (2026-09-24)
 - [ ] Released as `v1.2.0`
 
 ## After v1 — adoption in the originating project
