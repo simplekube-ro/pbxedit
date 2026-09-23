@@ -107,6 +107,34 @@ final class AddPlannerTests: XCTestCase {
         XCTAssertEqual(result.fileReference("AA0000000000000000000230"), project.fileReference("AA0000000000000000000230"))
     }
 
+    // Spec: A second add with another platform set extends membership (merge-command 1.1).
+    func testASecondAddWithAnotherPlatformSetExtendsMembership() throws {
+        let (plan, project) = try plan(["App/Services/Rate.swift"], flags: Conventions.Flags(targets: ["AppExtension"], platformFilters: ["ios"]))
+        let buildFile = try XCTUnwrap(created(plan, .createdBuildFile).first)
+        XCTAssertEqual(created(plan, .createdFileReference), [])
+        XCTAssertEqual(plan.steps, [
+            .createBuildFile(id: buildFile, fileRef: "AA0000000000000000000230", platformFilters: ["ios"]),
+            .addPhaseEntry(buildFile, to: extensionSources, position: .last),
+        ])
+        let result = try applied(plan, to: project)
+        XCTAssertEqual(result.buildFile(buildFile)?.platformFilter, "ios")
+        XCTAssertEqual(result.phases(of: buildFile).map(\.id), [extensionSources])
+        XCTAssertEqual(result.fileReferences(at: "App/Services/Rate.swift").map(\.id), ["AA0000000000000000000230"], "no second reference")
+        XCTAssertEqual(result.buildFile("BB0000000000000000000110"), project.buildFile("BB0000000000000000000110"))
+        XCTAssertNil(result.buildFile("BB0000000000000000000110").map(PlatformFilters.read)?.first, "App's build file still has no filter")
+    }
+
+    // Spec: A reused build file keeps its filter (merge-command 1.1).
+    func testAReusedBuildFileKeepsItsFilter() throws {
+        let (plan, project) = try plan(["App/tvOS/TV1.swift"], flags: Conventions.Flags(targets: ["App"], platformFilters: ["ios"]))
+        XCTAssertTrue(plan.isNoOp, "\(plan.steps)")
+        XCTAssertEqual(plan.changes.map(\.action), [.reusedFileReference, .reusedBuildFile])
+        XCTAssertEqual(plan.changes.last?.object, "BB0000000000000000000120")
+        let result = try plan.apply(to: project)
+        XCTAssertEqual(result.serialize(), project.serialize())
+        XCTAssertEqual(result.buildFile("BB0000000000000000000120").map(PlatformFilters.read), ["tvos"])
+    }
+
     // Spec: Collision with existing damage (5.2, Motivation: M4).
     func testAnM4CollisionAmongTouchedObjectsAborts() throws {
         let (plan, project) = try plan(["App/Foo.swift"], fixture: "add/m4-collision.pbxproj")

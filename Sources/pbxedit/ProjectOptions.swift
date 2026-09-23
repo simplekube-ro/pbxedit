@@ -27,14 +27,23 @@ struct ProjectOptions: ParsableArguments {
     /// that root — everything a command needs before it loads the project.
     func context() throws -> ProjectContext {
         let file = try loadConfig()
-        let pbxproj: URL
+        return try context(pbxproj: try locate(config: file), config: file)
+    }
+
+    /// The `project.pbxproj` named by `--project`, else by `file`'s
+    /// `project:`, else the single one in the current directory. Every error
+    /// it throws is about where the project is, never about the configuration.
+    func locate(config file: ConfigFile?) throws -> URL {
         if let project {
-            pbxproj = try ProjectOptions.locate(project, source: "--project")
+            return try ProjectOptions.locate(project, source: "--project")
         } else if let file, let configured = file.projectURL {
-            pbxproj = try ProjectOptions.locate(configured.path, source: "project: in \(file.url.path)")
-        } else {
-            pbxproj = try ProjectOptions.locateInCurrentDirectory()
+            return try ProjectOptions.locate(configured.path, source: "project: in \(file.url.path)")
         }
+        return try ProjectOptions.locateInCurrentDirectory()
+    }
+
+    /// `file` bound to the source root of `pbxproj`.
+    func context(pbxproj: URL, config file: ConfigFile?) throws -> ProjectContext {
         let sourceRoot = ProjectOptions.sourceRoot(of: pbxproj)
         var bound: BoundConfig?
         if let file {
@@ -49,7 +58,7 @@ struct ProjectOptions: ParsableArguments {
 
     /// `--config`, or the discovered `.pbxedit.yml`, decoded strictly; any
     /// problem is a usage error (spec: Strict validation).
-    private func loadConfig() throws -> ConfigFile? {
+    func loadConfig() throws -> ConfigFile? {
         do {
             if let config {
                 let url = URL(fileURLWithPath: config)

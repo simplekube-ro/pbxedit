@@ -14,15 +14,23 @@ public enum AddPlanner {
     /// D6); without a configuration it is `nil` and nothing changes.
     public static func plan(_ paths: [String], in project: Project, conventions: Conventions, exemptions: Exemptions? = nil,
                             minter: IDMinter = IDMinter()) throws -> Plan {
+        try plan(paths, in: project, conventions: conventions, exemptions: exemptions, minter: minter, perPhase: false)
+    }
+
+    /// `perPhase` is the merge's replay only (merge design D5): a target is
+    /// "already a member" only through a build file in a phase of the chosen
+    /// kind, so a second row (Resources beside Sources) can be written.
+    static func plan(_ paths: [String], in project: Project, conventions: Conventions, exemptions: Exemptions? = nil,
+                     minter: IDMinter = IDMinter(), perPhase: Bool) throws -> Plan {
         var builder = PlanBuilder(project: project, minter: minter)
         var claimedBuildFiles: Set<ObjectID> = []
         for path in paths {
-            try plan(path, conventions: conventions, exemptions: exemptions, builder: &builder, claimed: &claimedBuildFiles)
+            try plan(path, conventions: conventions, exemptions: exemptions, perPhase: perPhase, builder: &builder, claimed: &claimedBuildFiles)
         }
         return builder.build()
     }
 
-    private static func plan(_ path: String, conventions: Conventions, exemptions: Exemptions?, builder: inout PlanBuilder,
+    private static func plan(_ path: String, conventions: Conventions, exemptions: Exemptions?, perPhase: Bool, builder: inout PlanBuilder,
                              claimed: inout Set<ObjectID>) throws {
         let project = builder.project
         if let synchronized = project.synchronizedRootGroup(covering: path) {
@@ -107,7 +115,9 @@ public enum AddPlanner {
             guard let targetPhase = target.buildPhases.compactMap(project.buildPhase).first(where: { $0.isa == phaseIsa }) else {
                 throw PlanError.noSuchPhase(path: path, target: targetName, phase: phase.value.displayName)
             }
-            let inTarget = membership.buildFiles.filter { entry in entry.phases.contains { $0.targets.contains { $0.id == target.id } } }
+            let inTarget = membership.buildFiles.filter { entry in
+                entry.phases.contains { $0.targets.contains { $0.id == target.id } && (!perPhase || $0.phase.isa == phaseIsa) }
+            }
             if !inTarget.isEmpty {
                 for entry in inTarget {
                     builder.record(Change(path: path, action: .reusedBuildFile, object: entry.buildFile.id, detail: "build file in \(targetName)"))

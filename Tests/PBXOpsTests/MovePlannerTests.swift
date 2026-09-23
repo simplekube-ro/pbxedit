@@ -526,4 +526,24 @@ final class MovePlannerTests: XCTestCase {
         XCTAssertEqual(result.resolvedPath(of: stateTests), .relative("AppTests/Services/StateTests.swift"))
         XCTAssertEqual(result.group(state)?.children, [], "left alone")
     }
+
+    // merge-command 4.1: the rewrite `move` performs on a kept build file, shared with the merge's replay.
+    func testTheSharedFilterRewriteRespellsInPlace() throws {
+        let project = try loadProject("move/app.pbxproj")
+        let singular = try XCTUnwrap(project.buildFile(panelBuildFile))
+        XCTAssertEqual(singular.platformFilter, "ios")
+        var builder = PlanBuilder(project: project)
+        XCTAssertFalse(builder.rewriteFilters(of: singular, to: ["ios"], path: "App/iOS/Panel.swift"), "an equal value is no step")
+        XCTAssertTrue(builder.build().isNoOp)
+        XCTAssertTrue(builder.rewriteFilters(of: singular, to: ["ios", "macos"], path: "App/iOS/Panel.swift"))
+        XCTAssertEqual(builder.build().steps, [
+            .setAttribute(key: "platformFilters", of: panelBuildFile, to: .array([.string("ios"), .string("macos")])),
+            .setAttribute(key: "platformFilter", of: panelBuildFile, to: nil),
+        ])
+        XCTAssertEqual(builder.build().changes.map(\.detail), ["platformFilters = ios, macos (was ios)"])
+        XCTAssertEqual(builder.build().touched, [panelBuildFile])
+        let result = try builder.build().apply(to: project)
+        XCTAssertEqual(result.buildFile(panelBuildFile)?.platformFilters, ["ios", "macos"])
+        XCTAssertNil(result.buildFile(panelBuildFile)?.platformFilter)
+    }
 }

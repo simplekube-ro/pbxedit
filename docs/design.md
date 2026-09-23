@@ -14,10 +14,12 @@ with `--target`/`--all`, empty-group pruning and the widened check scope
 and the disk preconditions (change `move-command`); `lint --fix`, with the
 whole-project verification (change `lint-fix`); `--version`, the
 `ORACLE_REQUIRED` oracle mode and `docs/RELEASING.md` (change
-`release-distribution`, in progress — `v0.1.0` released; `v1.0.0` waits on
-the open-and-save check); the platform-filter spelling Xcode 27 writes, read
-and written everywhere (change `platform-filter-canonical-form`, issue #6,
-found by that check).
+`release-distribution`; `v1.0.0` released 2026-09-22); the platform-filter
+spelling Xcode 27 writes, read and written everywhere (change
+`platform-filter-canonical-form`, issue #6, found by the open-and-save
+check); `merge`, a semantic three-way merge of one `project.pbxproj` with
+its decisions round trip and checks A–F (change `merge-command`, issue #9,
+for `v1.1.0`).
 
 ## Purpose
 
@@ -57,6 +59,7 @@ convention.
 | Language | Swift | Every user already has the toolchain |
 | Parsing | Own **lossless** parser, not tuist/XcodeProj or the CocoaPods gem | Those re-serialize the whole file canonically (large diffs, churn against Xcode) and lag new `objectVersion`s and `isa` kinds. A lossless tree leaves untouched bytes alone and passes unknown objects through |
 | v1 commands | `add`, `move`, `remove`, `lint` (with `--fix`), `query` | All are thin layers over one model |
+| v1.1 command | `merge` | A conflicted project file was resolved outside pbxedit, exactly where "pbxedit is the only writer of membership" matters most (issue #9); the merge replays membership through the same planners and merges the rest as text |
 | Conventions | Inferred from sibling files; an optional config file overrides | Zero-config for most projects, self-consistent by construction |
 | Disk scope | `project.pbxproj` only | One responsibility; no VCS assumptions; trivially safe to dry-run |
 
@@ -190,10 +193,33 @@ them.
   The M3 fixer is add's group resolution and nothing else; the M1 fixer is
   add's target inference with the flags empty; the M2 fixer is remove's
   detach steps.
+- `Sources/PBXOps/Merge/` is `merge` (the archived `merge-command` design
+  has the detail). `MergeEngine` is a pure function of three byte arrays:
+  a `MembershipSnapshot` per version (managed references — `<group>` or
+  `SOURCE_ROOT`, plain-group parents, not a product, every build file in a
+  Sources, Resources or Headers phase — by resolved path, with their rows);
+  `MergeUnit.discover` links the paths theirs changed into units by
+  reference and build-file ID; `ClassifiedUnit.classify` makes each
+  replayed, skipped or a decision, after a trial replay against ours finds
+  the *residuals* (build-file `settings`, a group other than the
+  directory's, reference attributes) no verb can write; `Neutralise`
+  removes every unit path from base and theirs with `RemovePlanner`,
+  keeping a group it empties that theirs changed or added;
+  `ThreeWay` (Myers' diff, zealous trimming) merges the text into stable
+  regions and hunks, which `AnalysedHunk` resolves counterfactually into
+  governed `(object ID, key path)` sets; `Replay` takes each unit from what
+  the merged file holds to theirs' membership with `MovePlanner`
+  (`keepMembership`), `RemovePlanner`, `AddPlanner` (every flag set) and
+  `PlanBuilder.rewriteFilters` — the filter rewrite `move` performs,
+  extracted so both share it; `MergeChecks` A–F verify before anything is
+  written; `MergeDecisions` is the decisions file, bound to the inputs'
+  SHA-256 (CryptoKit, a system framework, not a dependency). The checks
+  carry a test-only fault seam (`MergeFaults`), so each check's Red test
+  disables the step it guards.
 
 ### 4. CLI
 
-`add`, `move`, `remove`, `lint [--fix]`, `query`.
+`add`, `move`, `remove`, `merge`, `lint [--fix]`, `query`.
 
 - `--dry-run` prints the plan and a unified diff, and exits with the code the
   real run would have. `--json` on every command.
@@ -210,7 +236,7 @@ them.
 - The "modified / not modified" line is derived from one fact: whether the
   bytes on disk were replaced — computed once, from the bytes read back.
 - Exit codes: `0` success or no-op, `1` rule violation or refused operation,
-  `2` usage or parse error. For `lint`, whose job is to report, a file that
+  `2` usage or parse error, `3` decisions needed (`merge` only). For `lint`, whose job is to report, a file that
   does not parse or load is the S1 finding and exits `1`; `2` is for usage
   errors, a project that cannot be located and a baseline that cannot be read.
   Warnings alone exit `0` unless `--strict`.
@@ -239,6 +265,7 @@ them.
 | `move <from> <to>` | Records a move that has already happened on disk: `<to>` must exist and `<from>` must not (source still present is "move the file on disk first", both present is "looks like a copy; `add` the new file"); those two `exists` questions are the only disk reads. The reference keeps its ID and becomes a child of the group for the destination directory (created as needed; a rename within one directory keeps its listing in place); `path`, `sourceTree`, `name` and — when the extension changes — `lastKnownFileType` are rewritten only where they change, by `add`'s spelling rule, and every comment naming the file follows. Membership follows the destination: targets and `platformFilters` are decided as `add` decides them (`--target`, `--platform`, config, then the destination's siblings, for the file's kind by extension or else by its current phase), the file is detached from targets no longer chosen (as `remove --target`), attached to new ones (as `add`), and retained build files get their filters rewritten; when nothing differs nothing is written for membership, so a same-target move between pathful groups is a two-line diff. `--keep-membership` leaves targets and filters as they were and only notes what the destination's siblings belong to; an inference question at the destination is refused naming both `--target` and `--keep-membership`. A `<from>` no reference resolves to but some resolve beneath is a directory move: every member goes to the corresponding path under `<to>` as one plan, groups for the old tree fall to pruning, files on disk in the destination directories that no member maps to are counted in a note. A `<to>` inside a synchronized folder removes the file's explicit entries (the folder builds it now) and says so. Groups left empty are pruned as `remove` prunes. Exit `1` on the disk preconditions, on a `<from>` not in the project (a `<from>` under a synchronized folder points to `add <to>`), on a `<to>` some reference already resolves to (named), on a child of a variant or version group, and on a synchronized folder beneath a moved directory; `2` on `<from>` equal to `<to>`, on `--keep-membership` with `--target`/`--platform`, or an unknown target. `--dry-run`, `--json` and the output shape are `add`'s, each file's block headed `<from> -> <to>` and keyed by the destination path, plus a `moves` array (`[{from, to}]`) in the JSON |
 | `remove <path>…` | The file need not exist on disk; it is never read. Removes every build file of the reference, each from every phase listing it, the reference from every group listing it, and the reference — referrers first, enumerated from the indexes so damaged membership (no phase, no group, two build files in one target) is removed just the same. A `PBXGroup` the removal leaves empty is removed too, up the chain, never the main group or the products group, never a group that was empty before; each is listed. If the reference's build files are owned by several targets, requires `--target <name>` to detach it from that target only — its phase entries go, a build file left in no phase is deleted, the reference and its group child stay, and the output notes when no target builds it any more — or `--all`. Exit `1` on a path no reference resolves to (a typo must not pass silently), on `--target` naming a target the file is not in (listing the ones it is in), on a child of a variant or version group, and on a path covered only by a synchronized folder; `2` on a target name the project does not have or `--target` with `--all`. The pre-write and post-write checks are scoped to the touched objects *and every former referrer* of a deleted one (its groups, phases and their targets), and deleted IDs are searched for as whole tokens in the result. `--dry-run`, `--json` and the output shape are `add`'s |
 | `lint` | Runs the rule set; errors before warnings, each ordered by rule then object ID. `--write-baseline <file>` records the current findings (keyed by rule and object ID) and exits 0; `--baseline <file>` reports and fails only on findings not in the baseline, and lists entries that no longer occur as resolved (`lint.baseline` in the config is the default; `--no-baseline` ignores it); `lint.exempt` globs suppress and count findings; `--disk` enables disk rules; `--strict` makes warnings fail. `--fix` repairs what is unambiguous (§ Severity and repair) as one plan and one write through the operation pipeline in whole-project verification, then reports as `lint` would on the result: each repaired finding with its decisions and changes, each remaining finding with `not fixable: <reason>` under the ones of a repairable rule, the summary with `N repaired, M not fixable`, the resolved-baseline lines and a hint to rewrite the baseline with `--write-baseline`, and the `modified` line derived from the write; the exit code is `lint`'s over what remains (baseline honoured for reporting and the exit code, never for choosing what to repair). `--fix --dry-run` adds the unified diff and writes nothing; `--dry-run` alone and `--fix --write-baseline` are usage errors. `--json` carries `modified`, `dryRun`, `repaired`, `remaining` (each with `reason`), `resolved`, `summary` (`lint`'s plus `repaired`, `notFixable`), `diff`, `error` |
+| `merge <base> <ours> <theirs>` | A non-interactive three-way merge of three versions of one `project.pbxproj`; the three inputs are only read. The output is `--output <file>`, or else the project's `project.pbxproj` located as every command locates it (none: exit `2`); it may be `<ours>` itself. `.pbxedit.yml`, bound to the located project, is read only for `lint.exempt`; with `--output` alone none is read, and a `--config` with no project to locate is exit `2`. Membership is compared per path — a managed reference's spelling, parent group and rows (target, phase kind, platform filters, build-file `settings`) — and the paths theirs changed are linked into units (both ends of a rename are one unit). A unit is *replayed* when only theirs changed it and the trial replay reproduces theirs, *skipped* when ours already has theirs' membership, else a *decision*: `ours`, `theirs`, or `theirs-membership` in its place when a residual cannot be written, which is then listed as owed. Every unit path is neutralised in base and theirs with `remove`'s planner (a group it empties that theirs changed or added stays, so theirs' change to it merges as text) and the rest is merged line by line; a conflicting hunk is decided `ours`, `theirs`, or `both` when the two sides change disjoint `(object ID, key path)` sets. Replay goes through `add`'s, `remove`'s and `move`'s planners only, keeping every surviving reference and build file. Checks before anything is written, exit `1` naming the object and key: (A) no finding neither input had, (B) every target's membership equals the expected, (C) three-way accounting of every leaf keyed by object ID, arrays with their order, (D) replay isolation, (E) per-path membership, placement and attributes against theirs, (F) no managed membership reached the merge as bytes. Exit `3` lists every open unit and hunk at once, with keys, the three versions' values, the allowed choices and a decisions template bound to the inputs' SHA-256; `--decisions <file>` feeds it back, a stale file, unknown key or refused choice exits `2`. Exit `2` too for an input that does not parse, a target theirs adds or removes or ours removes, or a hunk whose resolutions do not parse. The write is `add`'s, read back with A and B re-run. `--dry-run` adds the unified diff of ours against the merge; `--json` carries `status`, `modified`, `dryRun`, `output`, `inputs`, `units`, `hunks`, `checks`, `owed`, `findings`, `template`, `diff`, `error` |
 | `query <path>…` | Read-only: for each path, whether a file reference resolves to it, its ID, group path and groups, and each membership — target, phase, build file ID, `platformFilters` — or the synchronized group covering it. Facts, not findings: a missing group or phase is reported as such with a hint to run `lint`. Exits `1` when a path is neither a member nor covered, `2` when the project file does not load. `query --target <name>` lists every build-phase entry of a target by phase then path; an unknown name exits `2` listing the targets |
 
 ### Synchronized folders
@@ -432,8 +459,9 @@ Development is test-first.
   a snapshot of the diff. Every operation test also asserts the rule set is
   clean and `plutil -lint` passes.
 - **Oracle lane (macOS CI):** `xcodebuild -list` reads every post-operation
-  fixture (`CLITests.OracleTests`, 33 scenarios over `add`, `remove`, `move`
-  and `lint --fix` plus the repaired workload substitute). The suite skips
+  fixture (`CLITests.OracleTests`, 36 scenarios over `add`, `remove`, `move`
+  and `lint --fix` plus the repaired workload substitute, and three merges:
+  both sides adding, a rename, and a `theirs-membership` decision). The suite skips
   where `xcodebuild` is unusable, except under `ORACLE_REQUIRED=1`, which
   the CI `oracle` job sets so it fails instead; that job is a required check
   for merging and for releasing. What it guards is narrower than the name
@@ -443,6 +471,16 @@ Development is test-first.
   (measured on Xcode 27; the archived `release-distribution` design has the
   table). Object-level correctness rests on the rule set and on the manual
   open-and-save check; the lane proves Xcode still opens what pbxedit wrote.
+- **Merge:** `PBXOpsTests` cover each stage on its own — snapshots, units,
+  the line merge (with a 10k-line performance probe), classification,
+  neutralisation, hunks, the replay and the trial — and each check A–F on
+  synthesised results paired with a clean `lint` on the same result, plus a
+  fault-seam Red test per check; `MergeEngineTests` run every spec scenario
+  on bytes built from the Xcode-saved fixture and assert on the model,
+  check A and `plutil -lint`. `CLITests.MergeCommandTests` run the binary on
+  committed three-way fixtures (`Tests/Fixtures/merge/`, generated by a
+  test-only recipe that also checks them). `MergePerformanceTests` merges
+  the largest corpus file with a conflict under 2 s in a release build.
 - **Pre-release, manual:** open a post-operation project in Xcode, save, expect
   no diff — `docs/RELEASING.md` § 2, which records the Xcode version used.
 - **Regression fixtures:** one per failure in the Motivation table. The first
@@ -480,6 +518,12 @@ Mint from source.
 - Rules that depend on source-level references (for example "files used by an
   extension target must also join it"); the intersection note surfaces these
   but does not solve them.
+- For `merge` (v1.1): git integration — reading index stages, telling a
+  merge from a rebase, labelling sides, registering a merge driver; the
+  caller extracts the three files. Merging `.pbxedit.yml`, which is outside
+  the tool's write scope. A verb for build-file `settings`, for a group
+  other than the directory's, or for reference attributes: these stay
+  residuals a decision settles. Targets theirs adds or removes.
 
 ## Open items
 

@@ -60,6 +60,11 @@ public enum PlatformFilters {
         return .plural(filters)
     }
 
+    /// `filters` for reports: `none`, or the names joined by `, `.
+    static func describe(_ filters: [String]) -> String {
+        filters.isEmpty ? "none" : filters.joined(separator: ", ")
+    }
+
     /// Parses `--platform`: `none` is the empty list; otherwise comma-separated
     /// known names. Throws `PlanError.unknownPlatform` for anything else.
     public static func parse(_ argument: String) throws -> [String] {
