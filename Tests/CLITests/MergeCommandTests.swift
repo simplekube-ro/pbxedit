@@ -260,6 +260,28 @@ final class MergeCommandTests: XCTestCase {
         XCTAssertTrue(String(decoding: try workspace.bytes(), as: UTF8.self).contains(expected))
     }
 
+    // Spec: Two packages added on both sides keep their objects (issue #17).
+    func testTwoPackageObjectsAddedAtOnePlaceOfferBoth() throws {
+        let workspace = try workspace("both-objects")
+        let open = try pbxedit(["merge", "--json", "b.pbxproj", "o.pbxproj", "t.pbxproj"], in: workspace.root)
+        XCTAssertEqual(open.status, 3, open.stdout + open.stderr)
+        let hunks = try XCTUnwrap(try jsonObject(open)["hunks"] as? [[String: Any]])
+        XCTAssertEqual(hunks.count, 2)
+        XCTAssertEqual(hunks.map { $0["choices"] as? [String] }, [["ours", "theirs", "both"], ["ours", "theirs", "both"]])
+        let url = workspace.root.appendingPathComponent("decisions.json")
+        try decide(open, hunks: "both", into: url)
+        let result = try pbxedit(["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj", "--decisions", "decisions.json"], in: workspace.root)
+        XCTAssertEqual(result.status, 0, result.stdout + result.stderr)
+        let text = String(decoding: try workspace.bytes(), as: UTF8.self)
+        let list = "packageReferences = (\n"
+            + ["EF0000000000000000000001", "EF0000000000000000000002", "EF0000000000000000000003"]
+                .map { "\t\t\t\t\($0) /* XCRemoteSwiftPackageReference */,\n" }.joined() + "\t\t\t);"
+        XCTAssertTrue(text.contains(list), text)
+        for url in ["zero", "a", "b"] {
+            XCTAssertTrue(text.contains("repositoryURL = \"https://example.com/\(url)\";"), url)
+        }
+    }
+
     // Spec: Stale decisions; Unknown key or refused choice.
     func testStaleAndUnknownDecisions() throws {
         let workspace = try workspace("conflicting-setting")

@@ -3,8 +3,10 @@
 The inputs of `pbxedit merge` for the command and oracle tests
 (`Tests/CLITests/MergeCommandTests.swift`, `OracleTests`). Each directory
 holds `base.pbxproj`, `ours.pbxproj` and `theirs.pbxproj`. Every `base` is
-`xcode27/platform-filters-after-xcode27-save.pbxproj`, byte for byte; `ours`
-and `theirs` are that base after the operations below, made in memory with
+`xcode27/platform-filters-after-xcode27-save.pbxproj`, byte for byte, except
+`both-objects`, whose base is that file with a `packageReferences` list and
+one `XCRemoteSwiftPackageReference`; `ours` and `theirs` are that base after
+the operations below, made in memory with
 pbxedit's own planners (settings by a text edit of the tree), with seeded ID
 minting so the files are the same on every run. They are pbxedit's own
 fixtures, not third-party material, so they have no entry in
@@ -29,3 +31,4 @@ PBXEDIT_WRITE_MERGE_FIXTURES=1 swift test --filter MergeFixtureFileTests
 | `phase-removed` | the base | `AppKit/AppKit.h` moved from `AppKit`'s Headers to its Sources phase, and the Headers phase deleted | exit `3` (the deleted phase conflicts with ours' copy of it); decided either way, exit `1`: check F finds `AppKit.h`'s reference no longer managed in the text merge |
 | `shared-array` | `knownRegions = (de, en, Base, it, );` and `SWIFT_VERSION = 5.10;` in `1000000000000000000000A1` | `knownRegions = (fr, en, Base, es, );` and `SWIFT_VERSION = 6.2;` there | exit `3`: three hunks, two of them governing `knownRegions` (issue #12); every combination of their decisions exits `0` |
 | `both-regions` | `knownRegions = (de, en, Base, );` | `knownRegions = (fr, en, Base, );` | exit `3`: one hunk offering `ours`, `theirs` and `both` (issue #13); with `both`, exit `0` and `(de, fr, en, Base, )` |
+| `both-objects` | one more `XCRemoteSwiftPackageReference` (`EF…02`, `https://example.com/a`) in the list and its own object | one more (`EF…03`, `https://example.com/b`) | exit `3`: two hunks, the list and the two multi-line objects, both offering `ours`, `theirs` and `both` (issue #17); with both `both`, exit `0` and all three packages |

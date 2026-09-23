@@ -188,4 +188,64 @@ final class HunkTests: XCTestCase {
         let hunk = try hunk(governing: ["objects", project.rawValue, "knownRegions"], in: hunks)
         XCTAssertEqual(hunk.choices, [.ours, .theirs])
     }
+
+    // MARK: Issue #17 — multi-line objects both sides insert at one place
+
+    private let ourPackage = (id: "EF0000000000000000000002", url: "https://example.com/a")
+    private let theirPackage = (id: "EF0000000000000000000003", url: "https://example.com/b")
+
+    /// The trimmed tail the two package objects share, which zealous
+    /// trimming moves into the stable region after the hunk.
+    private let requirementTail = "\t\t\trequirement = {\n\t\t\t\tkind = upToNextMajorVersion;\n"
+        + "\t\t\t\tminimumVersion = 1.0.0;\n\t\t\t};\n\t\t};\n"
+
+    private func packageLines(_ package: (id: String, url: String)) -> String {
+        "\t\t\(package.id) /* XCRemoteSwiftPackageReference */ = {\n\t\t\tisa = XCRemoteSwiftPackageReference;\n"
+            + "\t\t\trepositoryURL = \"\(package.url)\";\n"
+    }
+
+    // Spec: Two packages added on both sides keep their objects.
+    func testTwoPackageObjectsAddedAtOnePlaceOfferBoth() throws {
+        let plain = try MergeFixture.base()
+        let hunks = try analyse(base: try MergeFixture.packages([zero], of: plain),
+                                ours: try MergeFixture.packages([zero, ourPackage], of: plain),
+                                theirs: try MergeFixture.packages([zero, theirPackage], of: plain))
+        let hunk = try hunk(governing: ["objects", ourPackage.id, "repositoryURL"], in: hunks)
+        XCTAssertEqual(Set(hunk.governed.map(\.description)),
+                       [ourPackage.id, theirPackage.id].reduce(into: Set<String>()) { set, id in
+                           for key in ["isa", "repositoryURL", "requirement.kind", "requirement.minimumVersion"] {
+                               set.insert("\(id) \(key)")
+                           }
+                       })
+        XCTAssertEqual(hunk.choices, [.ours, .theirs, .both])
+        // Design D2: ours' untrimmed text, then theirs' — the shared tail once between them.
+        XCTAssertEqual(String(decoding: TextLines.join(hunk.resolution(.both)), as: UTF8.self),
+                       packageLines(ourPackage) + requirementTail + packageLines(theirPackage))
+        let leaves = PlistLeaves(try Project.load(hunk.counterfactual(.both)))
+        XCTAssertEqual(leaves[["objects", ourPackage.id, "repositoryURL"]], .string(ourPackage.url))
+        XCTAssertEqual(leaves[["objects", theirPackage.id, "repositoryURL"]], .string(theirPackage.url))
+        XCTAssertEqual(leaves[["objects", theirPackage.id, "requirement", "minimumVersion"]], .string("1.0.0"))
+    }
+
+    // Spec: A both that the trimmed form fits keeps its lines.
+    func testATrimmedBothKeepsItsLines() throws {
+        let base = try MergeFixture.base()
+        let hunks = try analyse(ours: try MergeFixture.knownRegions(["de", "en", "Base"], of: base),
+                                theirs: try MergeFixture.knownRegions(["fr", "en", "Base"], of: base))
+        let hunk = try hunk(governing: ["objects", project.rawValue, "knownRegions"], in: hunks)
+        XCTAssertEqual(hunk.resolution(.both), hunk.hunk.ours + hunk.hunk.theirs)
+        XCTAssertEqual(String(decoding: TextLines.join(hunk.resolution(.both)), as: UTF8.self), "\t\t\t\tde,\n\t\t\t\tfr,\n")
+    }
+
+    // Spec: Two objects added under one ID keep ours and theirs.
+    func testTwoObjectsAddedUnderOneIDKeepOursAndTheirs() throws {
+        let plain = try MergeFixture.base()
+        let one = (id: ourPackage.id, url: "https://example.com/a")
+        let other = (id: ourPackage.id, url: "https://example.com/b")
+        let hunks = try analyse(base: try MergeFixture.packages([zero], of: plain),
+                                ours: try MergeFixture.packages([zero, one], of: plain),
+                                theirs: try MergeFixture.packages([zero, other], of: plain))
+        let hunk = try hunk(governing: ["objects", ourPackage.id, "repositoryURL"], in: hunks)
+        XCTAssertEqual(hunk.choices, [.ours, .theirs])
+    }
 }

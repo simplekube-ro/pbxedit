@@ -41,6 +41,10 @@ public struct AnalysedHunk: Equatable, Sendable {
     public let values: [Values]
     /// `ours`, `theirs`, and `both` when both may be taken.
     public let choices: [HunkChoice]
+    /// The lines `both` resolves to — the first form that qualified (change
+    /// `merge-both-multiline-objects`, design D3, D4) — and `nil` when
+    /// neither did, in which case `choices` holds no `both`.
+    public let bothLines: [[UInt8]]?
     /// The merge the hunk belongs to, for its counterfactual texts.
     let merge: ThreeWay.Merge
 
@@ -49,7 +53,7 @@ public struct AnalysedHunk: Equatable, Sendable {
         switch choice {
         case .ours: return hunk.ours
         case .theirs: return hunk.theirs
-        case .both: return hunk.ours + hunk.theirs
+        case .both: return bothLines ?? hunk.ours + hunk.theirs
         }
     }
 
@@ -89,7 +93,9 @@ public struct AnalysedHunk: Equatable, Sendable {
             let ours = try load(hunk.ours, .ours)
             let theirs = try load(hunk.theirs, .theirs)
             let (oursLeaves, theirsLeaves) = (PlistLeaves(ours), PlistLeaves(theirs))
-            let baseTree = try? load(hunk.base, .ours)
+            // The base's counterfactual replaces the hunk's whole stretch, so that a base
+            // the trimming's frame is no part of still loads (design D2).
+            let baseTree = try? Project.load(merge.text(replacingStretchOf: index, with: hunk.stretchBase)).tree
             let baseLeaves = baseTree.map(PlistLeaves.init)
 
             let oursTouched: Set<LeafPath>
@@ -106,26 +112,31 @@ public struct AnalysedHunk: Equatable, Sendable {
             let values = governed.map { Values(path: $0, base: baseLeaves?[$0], ours: oursLeaves[$0], theirs: theirsLeaves[$0]) }
 
             var choices: [HunkChoice] = [.ours, .theirs]
+            var bothLines: [[UInt8]]?
             let shared = oursTouched.intersection(theirsTouched)
             if let baseLeaves, let baseTree,
                shared.isEmpty || UnorderedInsertions.admits(shared, base: PlistValue(baseTree.root), ours: PlistValue(ours.root),
-                                                            theirs: PlistValue(theirs.root), theirsVersion: allTheirs),
-               let both = try? load(hunk.ours + hunk.theirs, .both) {
+                                                            theirs: PlistValue(theirs.root), theirsVersion: allTheirs) {
                 // Leaves one side changes take its value; a shared array passes check C's array rule.
                 var expected = baseLeaves.values
                 for path in oursTouched { expected[path] = oursLeaves[path] }
                 for path in theirsTouched { expected[path] = theirsLeaves[path] }
-                var actual = PlistLeaves(both).values
-                let arraysMerge = shared.allSatisfy { path in
-                    expected[path] = nil
-                    guard case .array(let was)? = baseLeaves[path], case .array(let mine)? = oursLeaves[path],
-                          case .array(let yours)? = theirsLeaves[path], case .array(let got)? = actual.removeValue(forKey: path)
-                    else { return false }
-                    return MergeChecks.arrayProblem(base: was, ours: mine, theirs: yours, result: got, unordered: false) == nil
-                }
-                if arraysMerge, actual == expected,
-                   PlistValue.duplicateKeyCount(in: both.root) <= PlistValue.duplicateKeyCount(in: baseTree.root) {
-                    choices.append(.both)
+                for path in shared { expected[path] = nil }
+                for lines in bothCandidates(hunk) {
+                    guard let both = try? load(lines, .both) else { continue }
+                    var actual = PlistLeaves(both).values
+                    let arraysMerge = shared.allSatisfy { path in
+                        guard case .array(let was)? = baseLeaves[path], case .array(let mine)? = oursLeaves[path],
+                              case .array(let yours)? = theirsLeaves[path], case .array(let got)? = actual.removeValue(forKey: path)
+                        else { return false }
+                        return MergeChecks.arrayProblem(base: was, ours: mine, theirs: yours, result: got, unordered: false) == nil
+                    }
+                    if arraysMerge, actual == expected,
+                       PlistValue.duplicateKeyCount(in: both.root) <= PlistValue.duplicateKeyCount(in: baseTree.root) {
+                        choices.append(.both)
+                        bothLines = lines
+                        break
+                    }
                 }
             }
 
@@ -143,9 +154,22 @@ public struct AnalysedHunk: Equatable, Sendable {
                 keys[key] = 1
             }
             result.append(AnalysedHunk(number: number, key: key, hunk: hunk, governed: governed, oursTouched: oursTouched,
-                                       theirsTouched: theirsTouched, values: values, choices: choices, merge: merge))
+                                       theirsTouched: theirsTouched, values: values, choices: choices, bothLines: bothLines,
+                                       merge: merge))
         }
         return result
+    }
+
+    /// Design D3: the forms `both` may take, in the order they are tried.
+    /// The trimmed `ours + theirs` first, so a `both` that qualified before
+    /// this change keeps its lines; then ours' untrimmed text followed by
+    /// theirs', which inside the trimmed frame is `ours + after + before +
+    /// theirs` — the context trimming lifted out, written once between the
+    /// two sides. A hunk trimming did not cut has the one form.
+    static func bothCandidates(_ hunk: ThreeWay.Hunk) -> [[[UInt8]]] {
+        let trimmed = hunk.ours + hunk.theirs
+        let untrimmed = hunk.ours + hunk.after + hunk.before + hunk.theirs
+        return untrimmed == trimmed ? [trimmed] : [trimmed, untrimmed]
     }
 
     /// The leaves whose value differs, or that only one side has.

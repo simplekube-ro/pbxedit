@@ -13,8 +13,8 @@ final class LineMergeTests: XCTestCase {
 
     private func stable(_ text: String) -> ThreeWay.Region { .stable(lines(text)) }
 
-    private func hunk(_ base: String, _ ours: String, _ theirs: String) -> ThreeWay.Region {
-        .hunk(ThreeWay.Hunk(base: lines(base), ours: lines(ours), theirs: lines(theirs)))
+    private func hunk(_ base: String, _ ours: String, _ theirs: String, before: String = "", after: String = "") -> ThreeWay.Region {
+        .hunk(ThreeWay.Hunk(base: lines(base), ours: lines(ours), theirs: lines(theirs), before: lines(before), after: lines(after)))
     }
 
     // MARK: Lines
@@ -87,14 +87,20 @@ final class LineMergeTests: XCTestCase {
         XCTAssertEqual(merge("abcd", "ad", "abxcd"), [stable("a"), hunk("bc", "", "bxc"), stable("d")])
     }
 
+    // Change merge-both-multiline-objects, design D1: the hunk keeps the lines trimming took from it.
     func testAHunkIsTrimmedZealously() {
-        XCTAssertEqual(merge("az", "akxlz", "akylz"), [stable("ak"), hunk("", "x", "y"), stable("lz")])
+        XCTAssertEqual(merge("az", "akxlz", "akylz"), [stable("ak"), hunk("", "x", "y", before: "k", after: "l"), stable("lz")])
+    }
+
+    func testAHunkTrimmingDidNotCutHasNoContext() {
+        XCTAssertEqual(merge("ac", "axc", "ayc"), [stable("a"), hunk("", "x", "y"), stable("c")])
     }
 
     func testTrimmingDropsCommonLinesFromTheBaseToo() {
         let trimmed = ThreeWay.trim(ThreeWay.Hunk(base: lines("kbl"), ours: lines("kxl"), theirs: lines("kyl")))
         XCTAssertEqual(trimmed.before, lines("k"))
-        XCTAssertEqual(trimmed.hunk, ThreeWay.Hunk(base: lines("b"), ours: lines("x"), theirs: lines("y")))
+        XCTAssertEqual(trimmed.hunk, ThreeWay.Hunk(base: lines("b"), ours: lines("x"), theirs: lines("y"),
+                                                   before: lines("k"), after: lines("l"), stretchBase: lines("kbl")))
         XCTAssertEqual(trimmed.after, lines("l"))
         let kept = ThreeWay.trim(ThreeWay.Hunk(base: lines("b"), ours: lines("kxl"), theirs: lines("kyl")))
         XCTAssertEqual(kept.hunk.base, lines("b"), "a base that does not share the lines keeps its own")
