@@ -115,6 +115,7 @@ Recorded checks:
 | `v1.0.0` | Xcode 27.0, Build version 27A266a | `e418e90` | no diff |
 | `v1.1.0` | Xcode 27.0, Build version 27A266a | `ae99bf9` (`347abad` on `main` after the rebase merge, identical tree) | no diff — the first run covering `merge` |
 | `v1.1.1` | Xcode 27.0, Build version 27A266a | `bf77b60` | no diff |
+| `v1.1.2` | Xcode 27.0, Build version 27A266a | `1179d34` | no diff |
 
 ## 3. Tag
 

@@ -158,7 +158,8 @@ Issue #17: `pbxedit merge` 1.1.1 offered only `ours` or `theirs` for a multi-lin
 - [x] Release `PerformanceTests` green: the Alamofire merge takes 0.063 s to the decisions report and 0.127 s decided with all six checks (limit 2 s), the 10k-line line merge 0.004 s — 1.1.1 measured 0.062 s / 0.135 s / 0.004 s
 - [x] `docs/design.md` reconciled: status line, the `merge` Commands row (the two forms of `both`), a Motivation-table row for issue #17. The archived `merge-both-unordered-insertions` design has a dated note at its Risks line, which is where this was recorded as a follow-up
 - [x] Archived — `openspec/changes/archive/2026-09-23-merge-both-multiline-objects`; the `merge` delta synced by hand into `openspec/specs/merge/spec.md` (one requirement modified, three scenarios added), `openspec validate --specs --strict` green
-- [ ] Merged
+- [x] Merged — into `main` by PR #18 (rebase, 2026-09-23, `1179d34`), closing #17
+- [x] Manual check (RELEASING § 2) on `main` `1179d34` with **Xcode 27.0, Build version 27A266a**: `add` and `move` on two sides, `merge` into `ops/` (exit `0`, checks A–F passed), `remove`, `lint --fix`; after Xcode touched, saved and quit both projects `git diff --exit-code -- '*.pbxproj'` exits `0` — no diff. Recorded in `docs/RELEASING.md` § 2
 - [ ] Released as `v1.1.2`
 
 ## After v1 — adoption in the originating project
