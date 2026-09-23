@@ -246,6 +246,52 @@ final class MergeEngineTests: XCTestCase {
         XCTAssertEqual(PlistLeaves(result)[["objects", project.rawValue, "knownRegions"]], .array(["de", "fr", "en", "Base"].map { .string($0) }))
     }
 
+    /// Issue #17: base holds one `XCRemoteSwiftPackageReference`, ours and
+    /// theirs each add another after it. The list is one hunk, the two
+    /// multi-line objects another.
+    static func packageObjectSides() throws -> (base: Project, ours: Project, theirs: Project) {
+        let plain = try MergeFixture.base()
+        let zero = (id: "EF0000000000000000000001", url: "https://example.com/zero")
+        return (try MergeFixture.packages([zero], of: plain),
+                try MergeFixture.packages([zero, ("EF0000000000000000000002", "https://example.com/a")], of: plain),
+                try MergeFixture.packages([zero, ("EF0000000000000000000003", "https://example.com/b")], of: plain))
+    }
+
+    // Spec: Two packages added on both sides keep their objects (issue #17).
+    func testTwoPackageObjectsAddedAtOnePlaceMergeWithBoth() throws {
+        let (base, ours, theirs) = try MergeEngineTests.packageObjectSides()
+        let project: ObjectID = "EE0000000000000000000001"
+        let open = try MergeFixture.merge(base: base, ours: ours, theirs: theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded)
+        XCTAssertEqual(open.hunks.map(\.analysed.choices), [[.ours, .theirs, .both], [.ours, .theirs, .both]])
+        let result = try merged(try MergeFixture.merge(base: base, ours: ours, theirs: theirs,
+                                                      decisions: try MergeFixture.decide(open, hunks: { _ in "both" })))
+        let leaves = PlistLeaves(result)
+        XCTAssertEqual(leaves[["objects", project.rawValue, "packageReferences"]],
+                       .array(["EF0000000000000000000001", "EF0000000000000000000002", "EF0000000000000000000003"].map { .string($0) }))
+        for (id, url) in [("EF0000000000000000000001", "zero"), ("EF0000000000000000000002", "a"), ("EF0000000000000000000003", "b")] {
+            XCTAssertEqual(leaves[["objects", id, "isa"]], .string("XCRemoteSwiftPackageReference"))
+            XCTAssertEqual(leaves[["objects", id, "repositoryURL"]], .string("https://example.com/\(url)"))
+            XCTAssertEqual(leaves[["objects", id, "requirement", "minimumVersion"]], .string("1.0.0"))
+        }
+    }
+
+    /// The trap the issue reports: the list decided `both` while the objects
+    /// are decided `ours` leaves theirs' entry naming nothing.
+    func testTheListBothWithTheObjectsOursStillFailsCheckA() throws {
+        let (base, ours, theirs) = try MergeEngineTests.packageObjectSides()
+        let open = try MergeFixture.merge(base: base, ours: ours, theirs: theirs)
+        let list = try XCTUnwrap(open.hunks.first).key
+        let decisions = try MergeFixture.decide(open, hunks: { $0.key == list ? "both" : "ours" })
+        let report = try MergeFixture.merge(base: base, ours: ours, theirs: theirs, decisions: decisions)
+        XCTAssertEqual(report.status, .failed)
+        let failed = try XCTUnwrap(report.checks.first { !$0.passed })
+        XCTAssertEqual(failed.check, .A)
+        XCTAssertTrue(failed.problems.contains { $0.message.contains("S2") || $0.message.contains("EF0000000000000000000003") },
+                      "\(failed.problems.map(\.message))")
+        XCTAssertNil(report.result)
+    }
+
     // Spec: Both ends of one unordered array decided both.
     func testBothEndsOfOneUnorderedArrayDecidedBoth() throws {
         let (ours, theirs) = try MergeEngineTests.sharedArraySides()

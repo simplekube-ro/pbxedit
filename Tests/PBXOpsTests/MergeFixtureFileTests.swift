@@ -13,8 +13,9 @@ import PBXModel
 final class MergeFixtureFileTests: XCTestCase {
     static let writeVariable = "PBXEDIT_WRITE_MERGE_FIXTURES"
 
-    /// Scenario → (ours, theirs); the base is the Xcode-saved fixture.
-    static func scenarios() throws -> [(name: String, ours: Project, theirs: Project)] {
+    /// Scenario → (base, ours, theirs); `base` is `nil` for the Xcode-saved
+    /// fixture, which all but one scenario start from.
+    static func scenarios() throws -> [(name: String, base: Project?, ours: Project, theirs: Project)] {
         let base = try MergeFixture.base()
         let a1: ObjectID = "1000000000000000000000A1"
 
@@ -31,28 +32,30 @@ final class MergeFixtureFileTests: XCTestCase {
         try phaseRemoved.deleteObject("CC0000000000000000000008")
 
         let sharedArray = try MergeEngineTests.sharedArraySides()
+        let packages = try MergeEngineTests.packageObjectSides()
 
         return [
-            ("both-add", try MergeFixture.add(["App/Views/Bar.swift"], to: base, seed: 1),
+            ("both-add", nil, try MergeFixture.add(["App/Views/Bar.swift"], to: base, seed: 1),
              try MergeFixture.add(["App/Services/New.swift"], to: base, platforms: ["ios"], seed: 2)),
-            ("rename", try MergeFixture.add(["App/Views/Bar.swift"], to: base, seed: 1),
+            ("rename", nil, try MergeFixture.add(["App/Views/Bar.swift"], to: base, seed: 1),
              try MergeFixture.move("App/Views/Foo.swift", to: "App/Features/Foo.swift", in: base)),
-            ("conflicting-setting", try MergeFixture.setting("SWIFT_VERSION", "5.10", in: a1, of: base),
+            ("conflicting-setting", nil, try MergeFixture.setting("SWIFT_VERSION", "5.10", in: a1, of: base),
              try MergeFixture.setting("SWIFT_VERSION", "6.2", in: a1, of: base)),
-            ("settings-residual", base, settings),
-            ("theirs-adds-target", base, try MergeEngineTests.addingTarget("Widget", to: base)),
-            ("phase-removed", base, phaseRemoved),
-            ("shared-array", sharedArray.ours, sharedArray.theirs),
-            ("both-regions", try MergeFixture.knownRegions(["de", "en", "Base"], of: base),
+            ("settings-residual", nil, base, settings),
+            ("theirs-adds-target", nil, base, try MergeEngineTests.addingTarget("Widget", to: base)),
+            ("phase-removed", nil, base, phaseRemoved),
+            ("shared-array", nil, sharedArray.ours, sharedArray.theirs),
+            ("both-regions", nil, try MergeFixture.knownRegions(["de", "en", "Base"], of: base),
              try MergeFixture.knownRegions(["fr", "en", "Base"], of: base)),
+            ("both-objects", packages.base, packages.ours, packages.theirs),
         ]
     }
 
     func testTheCommittedFixturesAreWhatTheRecipeBuilds() throws {
         let write = ProcessInfo.processInfo.environment[MergeFixtureFileTests.writeVariable] == "1"
-        let baseBytes = try MergeFixture.baseBytes()
         for scenario in try MergeFixtureFileTests.scenarios() {
             let directory = Fixtures.directory.appendingPathComponent("merge/\(scenario.name)")
+            let baseBytes = try scenario.base?.serialize() ?? MergeFixture.baseBytes()
             let files = [("base", baseBytes), ("ours", scenario.ours.serialize()), ("theirs", scenario.theirs.serialize())]
             if write { try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true) }
             for (name, bytes) in files {
@@ -72,14 +75,15 @@ final class MergeFixtureFileTests: XCTestCase {
         let expected: [String: MergeReport.Status] = [
             "both-add": .merged, "rename": .merged, "conflicting-setting": .decisionsNeeded, "settings-residual": .decisionsNeeded,
             "theirs-adds-target": .unsupported, "phase-removed": .decisionsNeeded, "shared-array": .decisionsNeeded,
-            "both-regions": .decisionsNeeded,
+            "both-regions": .decisionsNeeded, "both-objects": .decisionsNeeded,
         ]
         for scenario in try MergeFixtureFileTests.scenarios() {
-            let report = MergeEngine().run(base: try MergeFixture.baseBytes(), ours: scenario.ours.serialize(), theirs: scenario.theirs.serialize())
+            let baseBytes = try scenario.base?.serialize() ?? MergeFixture.baseBytes()
+            let report = MergeEngine().run(base: baseBytes, ours: scenario.ours.serialize(), theirs: scenario.theirs.serialize())
             XCTAssertEqual(report.status, expected[scenario.name], "\(scenario.name): \(report.error ?? "")")
             if scenario.name == "phase-removed" {
                 let decided = MergeEngine(decisions: try MergeFixture.decide(report, hunks: { _ in "theirs" }))
-                    .run(base: try MergeFixture.baseBytes(), ours: scenario.ours.serialize(), theirs: scenario.theirs.serialize())
+                    .run(base: baseBytes, ours: scenario.ours.serialize(), theirs: scenario.theirs.serialize())
                 XCTAssertEqual(decided.status, .failed)
                 XCTAssertEqual(decided.checks.last?.check, .F)
             }

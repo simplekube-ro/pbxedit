@@ -148,11 +148,28 @@ public enum ThreeWay {
         public let base: [[UInt8]]
         public let ours: [[UInt8]]
         public let theirs: [[UInt8]]
+        /// The lines zealous trimming moved out of the hunk into the stable
+        /// region before it (change `merge-both-multiline-objects`, design
+        /// D1): `before + ours + after` is ours' untrimmed text for the
+        /// stretch, `before + theirs + after` theirs'.
+        public let before: [[UInt8]]
+        /// The lines trimming moved into the stable region after the hunk.
+        public let after: [[UInt8]]
+        /// The base's own lines for the whole stretch `before` and `after`
+        /// frame, which is what `trim` was given. Trimming shortens `base`
+        /// by them only where the base has them in the same place, so this
+        /// is `base` again for a hunk it did not cut, and never more than
+        /// `before + base + after`.
+        public let stretchBase: [[UInt8]]
 
-        public init(base: [[UInt8]], ours: [[UInt8]], theirs: [[UInt8]]) {
+        public init(base: [[UInt8]], ours: [[UInt8]], theirs: [[UInt8]], before: [[UInt8]] = [], after: [[UInt8]] = [],
+                    stretchBase: [[UInt8]]? = nil) {
             self.base = base
             self.ours = ours
             self.theirs = theirs
+            self.before = before
+            self.after = after
+            self.stretchBase = stretchBase ?? base
         }
     }
 
@@ -184,6 +201,35 @@ public enum ThreeWay {
                 }
             }
             return TextLines.join(lines)
+        }
+
+        /// The merged text with the whole stretch of hunk `index` replaced by
+        /// `lines` and every other hunk resolved `ours` (change
+        /// `merge-both-multiline-objects`, design D2). The stretch is the
+        /// hunk together with the `before` and `after` that zealous trimming
+        /// moved into the stable regions on either side, so that a base that
+        /// never held those lines is not handed them twice.
+        public func text(replacingStretchOf index: Int, with lines: [[UInt8]]) -> [UInt8] {
+            var result: [[UInt8]] = []
+            var number = 0
+            var skip = 0
+            for region in regions {
+                switch region {
+                case .stable(let stable):
+                    result += stable.dropFirst(skip)
+                    skip = 0
+                case .hunk(let hunk):
+                    if number == index {
+                        result.removeLast(min(hunk.before.count, result.count))
+                        result += lines
+                        skip = hunk.after.count
+                    } else {
+                        result += hunk.ours
+                    }
+                    number += 1
+                }
+            }
+            return TextLines.join(result)
         }
     }
 
@@ -278,7 +324,7 @@ public enum ThreeWay {
         theirs = Array(theirs[prefix..<(theirs.count - suffix)])
         if base.starts(with: before) { base.removeFirst(before.count) }
         if base.count >= after.count, Array(base.suffix(after.count)) == after { base.removeLast(after.count) }
-        return (before, Hunk(base: base, ours: ours, theirs: theirs), after)
+        return (before, Hunk(base: base, ours: ours, theirs: theirs, before: before, after: after, stretchBase: hunk.base), after)
     }
 
     /// Coalesces stable text so two stable regions are never adjacent.
