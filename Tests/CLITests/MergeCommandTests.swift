@@ -283,6 +283,33 @@ final class MergeCommandTests: XCTestCase {
     }
 
     // Spec: Stale decisions; Unknown key or refused choice.
+    // Issue #21: two different framework links survive one merge, through the binary.
+    func testDifferentFrameworkLinksMergeWithBoth() throws {
+        let workspace = try workspace("both-frameworks")
+        let open = try pbxedit(["merge", "--json", "b.pbxproj", "o.pbxproj", "t.pbxproj"], in: workspace.root)
+        XCTAssertEqual(open.status, 3, open.stdout + open.stderr)
+        let hunks = try XCTUnwrap(try jsonObject(open)["hunks"] as? [[String: Any]])
+        XCTAssertEqual(hunks.count, 4)
+        XCTAssertTrue(hunks.allSatisfy { ($0["choices"] as? [String]) == ["ours", "theirs", "both"] },
+                      "\(hunks.map { $0["choices"] ?? "" })")
+        let phase = try XCTUnwrap(hunks.first { hunk in
+            (hunk["governed"] as? [[String: Any]])?.contains { $0["object"] as? String == "CC0000000000000000000002" } == true
+        })
+        XCTAssertEqual((phase["governed"] as? [[String: Any]])?.first?["keyPath"] as? String, "files")
+
+        try decide(open, hunks: "both", into: workspace.root.appendingPathComponent("decisions.json"))
+        let result = try pbxedit(["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj", "--decisions", "decisions.json"], in: workspace.root)
+        XCTAssertEqual(result.status, 0, result.stdout + result.stderr)
+        XCTAssertTrue(result.stdout.contains("check A"), result.stdout)
+        let merged = String(decoding: try workspace.bytes(), as: UTF8.self)
+        let files = try XCTUnwrap(merged.range(of: "CC0000000000000000000002 /* Frameworks */ = {").map { merged[$0.lowerBound...].prefix(400) })
+        XCTAssertTrue(files.contains("BB0000000000000000000080") && files.contains("AB0000000000000000000011")
+            && files.contains("AC0000000000000000000011"), String(files))
+        XCTAssertTrue(merged.contains("CoreHaptics.framework") && merged.contains("GameController.framework"), "both links")
+        let lint = try pbxedit(["lint", "--project", "App.xcodeproj"], in: workspace.root)
+        XCTAssertEqual(lint.status, 0, lint.stdout)
+    }
+
     // Issue #20: a conflicting attribute change reaches the user, through the binary.
     func testAConflictingAttributeIsAskedAbout() throws {
         let workspace = try workspace("attribute-conflict")

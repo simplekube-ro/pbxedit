@@ -103,6 +103,30 @@ enum MergeFixture {
         return (base, ours, theirs)
     }
 
+    /// Issue #21: `name.framework` linked into `App`'s Frameworks phase —
+    /// an SDKROOT file reference, its build file, a child of the `Frameworks`
+    /// group and an entry of the phase's `files`, all at the end, so two
+    /// sides' insertions land at one place. None of it is membership.
+    static func linking(_ name: String, reference: ObjectID, buildFile: ObjectID, in project: Project,
+                        phase: ObjectID = "CC0000000000000000000002") throws -> Project {
+        var result = project
+        try result.createObject(reference, isa: Kind.fileReference, attributes: [
+            NewEntry("lastKnownFileType", .string("wrapper.framework")), NewEntry("name", .string("\(name).framework")),
+            NewEntry("path", .string("System/Library/Frameworks/\(name).framework")), NewEntry("sourceTree", .string("SDKROOT")),
+        ])
+        try result.addChild(reference, to: "AA0000000000000000000007")
+        try result.createObject(buildFile, isa: Kind.buildFile, attributes: [NewEntry("fileRef", result.reference(to: reference))])
+        try result.addPhaseEntry(buildFile, to: phase)
+        return result
+    }
+
+    /// The two sides of issue #21: a different framework linked on each.
+    static func frameworkLinks() throws -> (ours: Project, theirs: Project) {
+        let base = try base()
+        return (try linking("CoreHaptics", reference: "AB0000000000000000000010", buildFile: "AB0000000000000000000011", in: base),
+                try linking("GameController", reference: "AC0000000000000000000010", buildFile: "AC0000000000000000000011", in: base))
+    }
+
     /// `lint.exempt` from YAML, as `.pbxedit.yml` would give it.
     static func exemptions(_ yaml: String) throws -> Exemptions {
         Exemptions(try Config.parse(yaml, file: ".pbxedit.yml").lint.exempt)

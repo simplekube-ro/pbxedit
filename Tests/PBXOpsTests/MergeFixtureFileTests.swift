@@ -32,6 +32,7 @@ final class MergeFixtureFileTests: XCTestCase {
         try phaseRemoved.deleteObject("CC0000000000000000000008")
 
         let conflict = try MergeFixture.attributeConflict()
+        let links = try MergeFixture.frameworkLinks()
         let sharedArray = try MergeEngineTests.sharedArraySides()
         let packages = try MergeEngineTests.packageObjectSides()
 
@@ -50,6 +51,7 @@ final class MergeFixtureFileTests: XCTestCase {
              try MergeFixture.knownRegions(["fr", "en", "Base"], of: base)),
             ("both-objects", packages.base, packages.ours, packages.theirs),
             ("attribute-conflict", nil, conflict.ours, conflict.theirs),
+            ("both-frameworks", nil, links.ours, links.theirs),
         ]
     }
 
@@ -78,6 +80,7 @@ final class MergeFixtureFileTests: XCTestCase {
             "both-add": .merged, "rename": .merged, "conflicting-setting": .decisionsNeeded, "settings-residual": .decisionsNeeded,
             "theirs-adds-target": .unsupported, "phase-removed": .decisionsNeeded, "shared-array": .decisionsNeeded,
             "both-regions": .decisionsNeeded, "both-objects": .decisionsNeeded, "attribute-conflict": .decisionsNeeded,
+            "both-frameworks": .decisionsNeeded,
         ]
         for scenario in try MergeFixtureFileTests.scenarios() {
             let baseBytes = try scenario.base?.serialize() ?? MergeFixture.baseBytes()

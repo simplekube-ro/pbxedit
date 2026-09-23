@@ -113,23 +113,28 @@ final class OracleTests: XCTestCase {
 
     /// merge-command task 8.4 (spec: Xcode can read the result): the
     /// both-sides-add, rename and `theirs-membership` merges of the committed
-    /// three-way fixtures (the attribute conflict of issue #20 among them),
-    /// written into the project whose file is ours.
+    /// three-way fixtures (the attribute conflict of issue #20 and the two
+    /// framework links of issue #21 among them), written into the project
+    /// whose file is ours.
     func testXcodebuildReadsEveryMergedProject() throws {
         try Self.skipWithoutXcodebuild()
-        for (scenario, units) in [("both-add", nil), ("rename", nil), ("settings-residual", "theirs-membership"),
-                                  ("attribute-conflict", "theirs-membership")] as [(String, String?)] {
+        for (scenario, units, hunks) in [("both-add", nil, nil), ("rename", nil, nil), ("settings-residual", "theirs-membership", nil),
+                                        ("attribute-conflict", "theirs-membership", nil),
+                                        ("both-frameworks", nil, "both")] as [(String, String?, String?)] {
             let project = try TemporaryProject(fixture: "merge/\(scenario)/ours.pbxproj")
             for (name, file) in [("b", "base"), ("o", "ours"), ("t", "theirs")] {
                 try Data(try Fixtures.load("merge/\(scenario)/\(file).pbxproj")).write(to: project.root.appendingPathComponent("\(name).pbxproj"))
             }
             var merge = ["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj"]
-            if let units {
+            if units != nil || hunks != nil {
                 let open = try pbxedit(merge + ["--json", "--project", "App.xcodeproj"], in: project.root)
                 XCTAssertEqual(open.status, 3, "\(scenario): \(open.stdout)\(open.stderr)")
                 var template = try XCTUnwrap(try jsonObject(open)["template"] as? [String: Any])
-                let keys = (template["units"] as? [String: Any])?.keys.map { $0 } ?? []
-                template["units"] = Dictionary(uniqueKeysWithValues: keys.map { ($0, units) })
+                for (field, choice) in [("units", units), ("hunks", hunks)] {
+                    guard let choice else { continue }
+                    let keys = (template[field] as? [String: Any])?.keys.map { $0 } ?? []
+                    template[field] = Dictionary(uniqueKeysWithValues: keys.map { ($0, choice) })
+                }
                 try JSONSerialization.data(withJSONObject: template).write(to: project.root.appendingPathComponent("decisions.json"))
                 merge += ["--decisions", "decisions.json"]
             }
