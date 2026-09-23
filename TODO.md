@@ -160,7 +160,7 @@ Issue #17: `pbxedit merge` 1.1.1 offered only `ours` or `theirs` for a multi-lin
 - [x] Archived — `openspec/changes/archive/2026-09-23-merge-both-multiline-objects`; the `merge` delta synced by hand into `openspec/specs/merge/spec.md` (one requirement modified, three scenarios added), `openspec validate --specs --strict` green
 - [x] Merged — into `main` by PR #18 (rebase, 2026-09-23, `1179d34`), closing #17
 - [x] Manual check (RELEASING § 2) on `main` `1179d34` with **Xcode 27.0, Build version 27A266a**: `add` and `move` on two sides, `merge` into `ops/` (exit `0`, checks A–F passed), `remove`, `lint --fix`; after Xcode touched, saved and quit both projects `git diff --exit-code -- '*.pbxproj'` exits `0` — no diff. Recorded in `docs/RELEASING.md` § 2
-- [ ] Released as `v1.1.2`
+- [x] Released as `v1.1.2` — tagged on `1179d34` (2026-09-23); `release.yml` run 35893375066 green (test 8m20s, oracle 3m20s, build/verify/publish 4m22s): https://github.com/simplekube-ro/pbxedit/releases/tag/v1.1.2 (universal `x86_64 arm64`, both slices `minos 13.0`, sha256 `6533a34b493224d5ea1b9fc2358ad5179ad6fdbbde8e11adc8ed0b626fa3d419`); tap commit `257b4e1` in `simplekube-ro/homebrew-tap`; `brew upgrade simplekube-ro/tap/pbxedit` 1.1.1 → 1.1.2, `pbxedit --version` prints `1.1.2`, `brew test pbxedit` passes; the pinned download verifies and a wrong checksum extracts nothing. `Version.swift` bumped to `1.1.3-dev`
 
 ## After v1 — adoption in the originating project
 
