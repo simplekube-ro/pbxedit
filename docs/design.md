@@ -40,7 +40,7 @@ sides' values when each side changed it (change
 An array both sides change and order differently kept in one hunk, so
 `ours` or `theirs` yields that side's whole array, and check C refusing any
 result that drops an element base, ours and theirs all hold (change
-`merge-reorder-whole-array`, issue #32).
+`merge-reorder-whole-array`, issue #32, released as `v1.4.0` 2026-09-24).
 
 ## Purpose
 
