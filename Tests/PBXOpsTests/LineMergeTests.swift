@@ -106,6 +106,33 @@ final class LineMergeTests: XCTestCase {
         XCTAssertEqual(kept.hunk.base, lines("b"), "a base that does not share the lines keeps its own")
     }
 
+    // Change merge-reorder-whole-array, design D1: every change inside a
+    // span both sides change is one hunk.
+
+    func testAReorderSplitAcrossAHunkIsOneHunkInsideItsSpan() {
+        // Ours moves `a` after `b`; theirs appends `c`. Read line by line, ours
+        // deletes `a` where theirs keeps it, and only the insertion point conflicts.
+        XCTAssertEqual(merge("(ab)", "(ba)", "(abc)"), [stable("(b"), hunk("", "a", "c"), stable(")")])
+        let whole = ThreeWay.merge(base: lines("(ab)"), ours: lines("(ba)"), theirs: lines("(abc)"), wholeSpans: [0..<4]).regions
+        XCTAssertEqual(whole, [stable("("), hunk("ab", "ba", "abc"), stable(")")])
+    }
+
+    func testChangesThatDoNotOverlapInsideASpanAreOneHunk() {
+        XCTAssertEqual(merge("(abcde)", "(bcdea)", "(abcfde)"), [stable("(bcfdea)")])
+        let whole = ThreeWay.merge(base: lines("(abcde)"), ours: lines("(bcdea)"), theirs: lines("(abcfde)"), wholeSpans: [0..<7]).regions
+        XCTAssertEqual(whole, [stable("("), hunk("abcde", "bcdea", "abcfde"), stable(")")])
+    }
+
+    func testASpanOnlyOneSideChangesStaysStable() {
+        let regions = ThreeWay.merge(base: lines("x(ab)y"), ours: lines("x(ba)y"), theirs: lines("x(ab)t"), wholeSpans: [1..<5]).regions
+        XCTAssertEqual(regions, [stable("x(ba)t")])
+    }
+
+    func testAHunkOutsideASpanIsNotWidened() {
+        let regions = ThreeWay.merge(base: lines("x(ab)y"), ours: lines("x(ba)o"), theirs: lines("x(ab)t"), wholeSpans: [1..<5]).regions
+        XCTAssertEqual(regions, [stable("x(ba)"), hunk("y", "o", "t")])
+    }
+
     func testTextResolvesEachHunk() {
         let merged = ThreeWay.merge(base: lines("abcd"), ours: lines("axcy"), theirs: lines("azcw"))
         XCTAssertEqual(merged.hunks.count, 2)

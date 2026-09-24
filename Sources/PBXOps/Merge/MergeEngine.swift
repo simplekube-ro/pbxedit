@@ -128,8 +128,9 @@ public struct MergeEngine {
         } catch {
             return stop(.failed, "neutralisation failed, which is a defect: \(error)")
         }
+        let wholeSpans = faults.contains(.narrowArrayHunks) ? [] : ReorderedArrays.spans(base: neutralBase, ours: ours, theirs: neutralTheirs)
         let merge = ThreeWay.merge(base: TextLines.split(neutralBase.serialize()), ours: TextLines.split(oursBytes),
-                                   theirs: TextLines.split(neutralTheirs.serialize()))
+                                   theirs: TextLines.split(neutralTheirs.serialize()), wholeSpans: wholeSpans)
         let analysed: [AnalysedHunk]
         do {
             analysed = try AnalysedHunk.analyse(merge, sides: AnalysedHunk.Sides(ours: ours, theirs: neutralTheirs))

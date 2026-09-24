@@ -215,6 +215,45 @@ final class MergeCheckTests: XCTestCase {
         XCTAssertEqual(check?.problems.map(\.subject), ["EE0000000000000000000001 knownRegions"])
     }
 
+    // Issue #32: with the hunk left narrow, `theirs` drops `en`, which base,
+    // ours and theirs all hold, and check C must say so.
+    func testTheNarrowArrayHunksFaultFailsAccountingOnAReorder() throws {
+        let (base, ours, theirs) = try MergeEngineTests.reorderedArraySides()
+        func run(_ faults: MergeFaults, decisions: MergeDecisions? = nil) -> MergeReport {
+            var engine = engine(faults)
+            engine.decisions = decisions
+            return engine.run(base: base.serialize(), ours: ours.serialize(), theirs: theirs.serialize())
+        }
+        for faults: MergeFaults in [[], .narrowArrayHunks] {
+            let open = run(faults)
+            XCTAssertEqual(open.status, .decisionsNeeded)
+            let decided = run(faults, decisions: try MergeFixture.decide(open, hunks: { _ in "theirs" }))
+            if faults.isEmpty {
+                XCTAssertEqual(decided.status, .merged, "\(decided.checks)")
+                continue
+            }
+            let check = failed(decided)
+            XCTAssertEqual(check?.check, .C)
+            XCTAssertEqual(check?.problems.map(\.subject), ["EE0000000000000000000001 knownRegions"])
+            XCTAssertTrue(check?.problems.first?.message.contains("en") == true, "\(check?.problems ?? [])")
+        }
+    }
+
+    // Issue #32: the elements base, ours and theirs all hold, counted, that the result lacks.
+    func testTheElementsAllThreeHoldThatAResultDrops() {
+        func strings(_ values: String...) -> [PlistValue] { values.map { .string($0) } }
+        XCTAssertEqual(MergeChecks.droppedByNoSide(base: strings("en", "Base"), ours: strings("Base", "en"),
+                                                   theirs: strings("en", "Base", "fr"), result: strings("Base", "fr")), strings("en"))
+        XCTAssertEqual(MergeChecks.droppedByNoSide(base: strings("en", "Base"), ours: strings("Base", "en"),
+                                                   theirs: strings("en", "Base", "fr"), result: strings("en", "Base", "fr")), [])
+        XCTAssertEqual(MergeChecks.droppedByNoSide(base: strings("en", "Base"), ours: strings("Base"),
+                                                   theirs: strings("en", "Base", "fr"), result: strings("Base", "fr")), [],
+                       "ours removed en")
+        XCTAssertEqual(MergeChecks.droppedByNoSide(base: strings("a", "a", "b"), ours: strings("a", "a", "b"),
+                                                   theirs: strings("a", "b", "a"), result: strings("a", "b")), strings("a"),
+                       "counted: all three hold a twice")
+    }
+
     // MARK: F
 
     // Spec: Membership smuggled as bytes fails.

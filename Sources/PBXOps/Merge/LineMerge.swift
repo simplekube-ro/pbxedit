@@ -233,7 +233,11 @@ public enum ThreeWay {
         }
     }
 
-    public static func merge(base: [[UInt8]], ours: [[UInt8]], theirs: [[UInt8]]) -> Merge {
+    /// `wholeSpans` are base line ranges each kept in one piece (change
+    /// `merge-reorder-whole-array`, design D1): every change inside one joins
+    /// a single cluster, so a stretch both sides changed there is one hunk
+    /// whose `ours` and `theirs` are each side's whole text for it.
+    public static func merge(base: [[UInt8]], ours: [[UInt8]], theirs: [[UInt8]], wholeSpans: [Range<Int>] = []) -> Merge {
         var interner = LineDiff.Interner()
         let (b, o, t) = (interner.intern(base), interner.intern(ours), interner.intern(theirs))
         let changes = LineDiff.changes(b, o).map { Side(change: $0, ours: true) }
@@ -252,6 +256,15 @@ public enum ThreeWay {
             } else {
                 clusters.append((side.change.base, [side]))
             }
+        }
+
+        for span in wholeSpans {
+            let inside = clusters.indices.filter { within(clusters[$0].range, span) }
+            guard let first = inside.first, let last = inside.last, first < last,
+                  let end = clusters[first...last].map(\.range.upperBound).max()
+            else { continue }
+            let joined = (range: clusters[first].range.lowerBound..<end, changes: clusters[first...last].flatMap(\.changes))
+            clusters.replaceSubrange(first...last, with: [joined])
         }
 
         var builder = RegionBuilder()
@@ -293,6 +306,15 @@ public enum ThreeWay {
         case (true, false): return next.lowerBound < stretch.lowerBound && stretch.lowerBound < next.upperBound
         case (false, true): return stretch.lowerBound < next.lowerBound && next.lowerBound < stretch.upperBound
         }
+    }
+
+    /// A cluster lies within a whole span when it overlaps it; an insertion,
+    /// when it falls strictly between the span's first and last line — after
+    /// the line that opens it and before the line that closes it.
+    static func within(_ range: Range<Int>, _ span: Range<Int>) -> Bool {
+        range.isEmpty
+            ? span.lowerBound < range.lowerBound && range.lowerBound < span.upperBound
+            : range.lowerBound < span.upperBound && span.lowerBound < range.upperBound
     }
 
     /// One side's text for `range` of the base: its changes there applied.

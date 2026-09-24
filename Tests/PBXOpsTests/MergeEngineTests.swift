@@ -410,10 +410,45 @@ final class MergeEngineTests: XCTestCase {
         XCTAssertEqual(refused.status, .unsupported)
         XCTAssertTrue(refused.error?.contains("both is not offered") == true, refused.error ?? "")
 
-        // And ours or theirs resolves it. The line merge reads ours' move as a
-        // deletion of the head line plus an insertion after `Base`, and only the
-        // insertion point conflicts, so `theirs` keeps that deletion: `(Base, fr)`.
-        for (choice, regions) in [("ours", ["Base", "en"]), ("theirs", ["Base", "fr"])] {
+        // And ours or theirs resolves it to that side's array (issue #32).
+        for (choice, regions) in [("ours", ["Base", "en"]), ("theirs", ["en", "Base", "fr"])] {
+            let result = try merged(try MergeFixture.merge(base: base, ours: ours, theirs: theirs,
+                                                          decisions: try MergeFixture.decide(open, hunks: { _ in choice })))
+            XCTAssertEqual(PlistLeaves(result)[["objects", "EE0000000000000000000001", "knownRegions"]],
+                           .array(regions.map { .string($0) }), choice)
+        }
+    }
+
+    // MARK: Issue #32 — a reorder against an insertion is one hunk over the array
+
+    // Spec: A reorder against an insertion is decided as a whole array.
+    func testAReorderAgainstAnInsertionIsOneHunkOverTheArray() throws {
+        let (base, ours, theirs) = try MergeEngineTests.reorderedArraySides()
+        let open = try MergeFixture.merge(base: base, ours: ours, theirs: theirs)
+        XCTAssertEqual(open.hunks.count, 1)
+        let hunk = try XCTUnwrap(open.hunks.first?.analysed)
+        func text(_ lines: [[UInt8]]) -> String { String(decoding: TextLines.join(lines), as: UTF8.self) }
+        XCTAssertEqual(text(hunk.hunk.base), "\t\t\t\ten,\n\t\t\t\tBase,\n")
+        XCTAssertEqual(text(hunk.hunk.ours), "\t\t\t\tBase,\n\t\t\t\ten,\n")
+        XCTAssertEqual(text(hunk.hunk.theirs), "\t\t\t\ten,\n\t\t\t\tBase,\n\t\t\t\tfr,\n")
+        let values = try XCTUnwrap(hunk.values.first { $0.path == ["objects", "EE0000000000000000000001", "knownRegions"] })
+        XCTAssertEqual(values.base, .array(["en", "Base"].map { .string($0) }))
+        XCTAssertEqual(values.ours, .array(["Base", "en"].map { .string($0) }))
+        XCTAssertEqual(values.theirs, .array(["en", "Base", "fr"].map { .string($0) }))
+    }
+
+    // Spec: A reorder and an insertion that do not overlap are one hunk.
+    // On 1.3.0 the line merge found no conflict and check C refused every
+    // result, since no order honours both sides: exit 1, with nothing to decide.
+    func testAReorderAndAnInsertionThatDoNotOverlapAreOneHunk() throws {
+        let plain = try MergeFixture.base()
+        let base = try MergeFixture.knownRegions(["en", "Base", "de", "it", "es"], of: plain)
+        let ours = try MergeFixture.knownRegions(["Base", "de", "it", "es", "en"], of: plain)
+        let theirs = try MergeFixture.knownRegions(["en", "Base", "de", "fr", "it", "es"], of: plain)
+        let open = try MergeFixture.merge(base: base, ours: ours, theirs: theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded, "\(open.checks)")
+        XCTAssertEqual(open.hunks.map(\.analysed.choices), [[.ours, .theirs]])
+        for (choice, regions) in [("ours", ["Base", "de", "it", "es", "en"]), ("theirs", ["en", "Base", "de", "fr", "it", "es"])] {
             let result = try merged(try MergeFixture.merge(base: base, ours: ours, theirs: theirs,
                                                           decisions: try MergeFixture.decide(open, hunks: { _ in choice })))
             XCTAssertEqual(PlistLeaves(result)[["objects", "EE0000000000000000000001", "knownRegions"]],
