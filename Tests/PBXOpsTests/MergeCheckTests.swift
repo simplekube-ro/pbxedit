@@ -178,8 +178,10 @@ final class MergeCheckTests: XCTestCase {
         return engine
     }
 
-    private func merge(ours: Project, theirs: Project, faults: MergeFaults = []) throws -> MergeReport {
-        engine(faults).run(base: try MergeFixture.baseBytes(), ours: ours.serialize(), theirs: theirs.serialize())
+    private func merge(ours: Project, theirs: Project, faults: MergeFaults = [], decisions: MergeDecisions? = nil) throws -> MergeReport {
+        var engine = engine(faults)
+        engine.decisions = decisions
+        return engine.run(base: try MergeFixture.baseBytes(), ours: ours.serialize(), theirs: theirs.serialize())
     }
 
     private func failed(_ report: MergeReport, file: StaticString = #filePath, line: UInt = #line) -> CheckResult? {
@@ -261,6 +263,27 @@ final class MergeCheckTests: XCTestCase {
         let problem = try XCTUnwrap(check?.problems.first { $0.subject.hasSuffix("fileEncoding") }, "\(check?.problems ?? [])")
         XCTAssertEqual(problem.object, "AA0000000000000000000260")
         XCTAssertTrue(problem.message.contains("both sides changed"), problem.message)
+    }
+
+    /// Issue #28: the same seam over a build file's `settings`, which the
+    /// classification of `v1.2.0` reported without the conflict, so the unit
+    /// offered a plain `theirs` that leaves ours' settings unaccounted for.
+    func testAConflictingSettingsDroppedFromAUnitsResidualsFails() throws {
+        let sides = try MergeFixture.settingsConflict()
+        let asked = try merge(ours: sides.ours, theirs: sides.theirs)
+        XCTAssertEqual(asked.status, .decisionsNeeded, "the conflict is asked about")
+        XCTAssertEqual(asked.units.map(\.classified.choices), [[.ours, .theirsMembership]])
+        let blind = try merge(ours: sides.ours, theirs: sides.theirs, faults: .ignoreAttributeConflicts)
+        XCTAssertEqual(blind.units.map(\.classified.choices), [[.ours, .theirs]], "the fault offers a plain theirs")
+        let decided = try merge(ours: sides.ours, theirs: sides.theirs, faults: .ignoreAttributeConflicts,
+                                decisions: try MergeFixture.decide(blind, units: { _ in "theirs" }))
+        XCTAssertTrue(decided.owed.isEmpty, "nothing is owed")
+        let check = failed(decided)
+        XCTAssertEqual(check?.check, .E)
+        let problem = try XCTUnwrap(check?.problems.first { $0.subject.hasSuffix("settings of the build file in App") },
+                                    "\(check?.problems ?? [])")
+        XCTAssertEqual(problem.object, "AA0000000000000000000260", "the residual's source: the reference the row belongs to")
+        XCTAssertTrue(problem.message.contains("both sides changed settings"), problem.message)
     }
 
     // MARK: D

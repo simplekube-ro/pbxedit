@@ -103,6 +103,33 @@ enum MergeFixture {
         return (base, ours, theirs)
     }
 
+    /// Issue #28: the three versions of the settings conflict, the same
+    /// shape as `attributeConflict` with the build file's `settings` in
+    /// place of the reference's `fileEncoding`. Theirs re-filters
+    /// `App/Filtered/F1.swift` (base builds it for `ios` alone, with no
+    /// `settings`) to `theirsFilters` and sets `COMPILER_FLAGS` on the build
+    /// file it then holds; ours sets a different one, and re-filters the
+    /// file too when `oursFilters` is given.
+    static func settingsConflict(ours oursFlags: String? = "-w", theirs theirsFlags: String? = "-Wall",
+                                 oursFilters: [String]? = nil, theirsFilters: [String] = ["ios", "macos"]) throws
+        -> (base: Project, ours: Project, theirs: Project) {
+        let base = try base()
+        let path = "App/Filtered/F1.swift"
+        let refilter = { (project: Project, filters: [String], seed: UInt64) in
+            try add([path], to: try remove([path], from: project, target: "App"), targets: ["App"], platforms: filters, seed: seed)
+        }
+        let settings = { (flags: String) in NewValue.dictionary([NewEntry("COMPILER_FLAGS", .string(flags))]) }
+        let buildFile = { (project: Project) throws -> ObjectID in
+            try XCTUnwrap(MembershipSnapshot(project).references[path]?.rows.first { $0.target == "App" }?.buildFile)
+        }
+        var ours = base
+        if let oursFilters { ours = try refilter(base, oursFilters, 3) }
+        if let oursFlags { ours = try attribute("settings", settings(oursFlags), of: try buildFile(ours), in: ours) }
+        var theirs = try refilter(base, theirsFilters, 1)
+        if let theirsFlags { theirs = try attribute("settings", settings(theirsFlags), of: try buildFile(theirs), in: theirs) }
+        return (base, ours, theirs)
+    }
+
     /// Issue #21: `name.framework` linked into `App`'s Frameworks phase —
     /// an SDKROOT file reference, its build file, a child of the `Frameworks`
     /// group and an entry of the phase's `files`, all at the end, so two

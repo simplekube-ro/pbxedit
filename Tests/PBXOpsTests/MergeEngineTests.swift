@@ -202,6 +202,54 @@ final class MergeEngineTests: XCTestCase {
         XCTAssertEqual(MembershipSnapshot(result).references["App/Views/Bar.swift"]?.id, reference(ours), "ours' objects")
     }
 
+    // Spec: Settings both sides changed are a conflict whichever value the result holds.
+    // Spec: Theirs-membership owes the conflicting settings.
+    func testConflictingSettingsMakeAUnitADecisionAndAreOwed() throws {
+        let sides = try MergeFixture.settingsConflict()
+        let open = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded)
+        XCTAssertTrue(open.result == nil, "nothing is written")
+        XCTAssertEqual(open.units.map(\.classified.outcome), [.decision])
+        XCTAssertEqual(open.units.map(\.classified.choices), [[.ours, .theirsMembership]], "not theirs")
+        let residual = try XCTUnwrap(open.units.first?.classified.residuals.first,
+                                     "\(open.units.first?.classified.residuals ?? [])")
+        XCTAssertEqual(residual.kind, .settings(target: "App"))
+        XCTAssertTrue(residual.conflicting, "\(residual)")
+        XCTAssertEqual([residual.ours, residual.theirs], ["{COMPILER_FLAGS = \"-w\"; }", "{COMPILER_FLAGS = \"-Wall\"; }"])
+
+        let report = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs,
+                                            decisions: try MergeFixture.decide(open, units: { _ in "theirs-membership" }))
+        let result = try merged(report)
+        XCTAssertEqual(report.owed.map(\.kind), [.settings(target: "App")])
+        XCTAssertEqual(report.owed.first?.conflicting, true)
+        XCTAssertEqual([report.owed.first?.ours, report.owed.first?.theirs],
+                       ["{COMPILER_FLAGS = \"-w\"; }", "{COMPILER_FLAGS = \"-Wall\"; }"])
+        let row = try XCTUnwrap(MembershipSnapshot(result).references["App/Filtered/F1.swift"]?.rows.first { $0.target == "App" })
+        XCTAssertEqual(row.settings?.description, "{COMPILER_FLAGS = \"-w\"; }", "ours' settings, owed")
+        XCTAssertEqual(row.filters, ["ios", "macos"], "theirs' membership")
+    }
+
+    /// Issue #28's variant: each side re-filters the file as well.
+    func testBothSidesReFilterAndConflictOverSettings() throws {
+        let sides = try MergeFixture.settingsConflict(oursFilters: ["macos"], theirsFilters: ["ios"])
+        let open = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs)
+        XCTAssertEqual(open.status, .decisionsNeeded)
+        XCTAssertEqual(open.units.map(\.classified.choices), [[.ours, .theirsMembership]], "not theirs")
+        let residual = try XCTUnwrap(open.units.first?.classified.residuals.first { $0.kind == .settings(target: "App") },
+                                     "\(open.units.first?.classified.residuals ?? [])")
+        XCTAssertTrue(residual.conflicting, "\(residual)")
+        XCTAssertEqual([residual.ours, residual.theirs], ["{COMPILER_FLAGS = \"-w\"; }", "{COMPILER_FLAGS = \"-Wall\"; }"])
+
+        let report = try MergeFixture.merge(ours: sides.ours, theirs: sides.theirs,
+                                            decisions: try MergeFixture.decide(open, units: { _ in "theirs-membership" }))
+        let result = try merged(report)
+        XCTAssertEqual(report.owed.map(\.kind), [.settings(target: "App")])
+        XCTAssertEqual(report.owed.first?.ours, "{COMPILER_FLAGS = \"-w\"; }")
+        let row = try XCTUnwrap(MembershipSnapshot(result).references["App/Filtered/F1.swift"]?.rows.first { $0.target == "App" })
+        XCTAssertEqual(row.settings?.description, "{COMPILER_FLAGS = \"-w\"; }")
+        XCTAssertEqual(row.filters, ["ios"], "theirs' filters")
+    }
+
     // Spec: Build-file settings are a residual.
     func testTheirsMembershipOwesTheSettings() throws {
         let base = try MergeFixture.base()

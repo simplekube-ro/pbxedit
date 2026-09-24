@@ -37,6 +37,8 @@ A conflicting key is a residual **whatever value the result holds**. Accepting t
 
 Where ours holds no counterpart object at all, ours changed nothing about it and theirs' value stands, exactly as today; a key both sides changed to the *same* value is not conflicting and stays settled.
 
+*Note, 2026-09-24 (`merge-settings-conflicts-named`, issue #28):* this design left a build file's `settings` outside the rule because it was already compared against theirs' directly, so a conflict there was already a residual. It was — but an unlabelled one, `conflicting: false` with `ours: null`, which a consumer cannot tell from a change only theirs made. The rule now covers `settings` (whatever the result holds, as here) and labels a spelling or parent-group difference that survives the replay; rows and presence stay outside it.
+
 ### D2. The conflict rides on `Residual`, not on a new kind
 
 `Residual` gains `ours: String?` and `conflicting: Bool`, both defaulted, and `description` branches on the flag:

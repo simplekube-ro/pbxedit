@@ -32,6 +32,7 @@ final class MergeFixtureFileTests: XCTestCase {
         try phaseRemoved.deleteObject("CC0000000000000000000008")
 
         let conflict = try MergeFixture.attributeConflict()
+        let settingsConflict = try MergeFixture.settingsConflict()
         let links = try MergeFixture.frameworkLinks()
         let reordered = try MergeEngineTests.reorderedArraySides()
         let sharedArray = try MergeEngineTests.sharedArraySides()
@@ -52,6 +53,7 @@ final class MergeFixtureFileTests: XCTestCase {
              try MergeFixture.knownRegions(["fr", "en", "Base"], of: base)),
             ("both-objects", packages.base, packages.ours, packages.theirs),
             ("attribute-conflict", nil, conflict.ours, conflict.theirs),
+            ("settings-conflict", nil, settingsConflict.ours, settingsConflict.theirs),
             ("both-frameworks", nil, links.ours, links.theirs),
             ("reordered-array", reordered.base, reordered.ours, reordered.theirs),
         ]
@@ -82,7 +84,7 @@ final class MergeFixtureFileTests: XCTestCase {
             "both-add": .merged, "rename": .merged, "conflicting-setting": .decisionsNeeded, "settings-residual": .decisionsNeeded,
             "theirs-adds-target": .unsupported, "phase-removed": .decisionsNeeded, "shared-array": .decisionsNeeded,
             "both-regions": .decisionsNeeded, "both-objects": .decisionsNeeded, "attribute-conflict": .decisionsNeeded,
-            "both-frameworks": .decisionsNeeded, "reordered-array": .decisionsNeeded,
+            "settings-conflict": .decisionsNeeded, "both-frameworks": .decisionsNeeded, "reordered-array": .decisionsNeeded,
         ]
         for scenario in try MergeFixtureFileTests.scenarios() {
             let baseBytes = try scenario.base?.serialize() ?? MergeFixture.baseBytes()
