@@ -220,7 +220,7 @@ Issue #32, a follow-up to #24: in `pbxedit merge` 1.3.0, deciding `theirs` on th
 - [x] Archived — `openspec/changes/archive/2026-09-24-merge-reorder-whole-array`; the `merge` delta synced into `openspec/specs/merge/spec.md` (two requirements modified), `openspec validate --specs --strict` green
 - [x] Merged — into `main` by PR #33 (rebase, 2026-09-24, `392244d`), closing #32
 - [x] Manual check (RELEASING § 2) — **not run** for `v1.4.0`, skipped by the release owner's decision (2026-09-24); recorded as skipped in `docs/RELEASING.md` § 2
-- [ ] Released as `v1.4.0`
+- [x] Released as `v1.4.0` — tagged on `1038e93` (2026-09-24); `release.yml` run 35985159791 green (test, oracle, build/verify/publish), and `main` CI run 35984361981 green on the same commit: https://github.com/simplekube-ro/pbxedit/releases/tag/v1.4.0 (universal `x86_64 arm64`, both slices `minos 13.0`, sha256 `c483a20a4a4b98dc7c513b6175c3ecd5679d371d6054b4d54a77e01a4f8b3b8c`, `--version` prints `1.4.0` from the downloaded binary, checksum verified with `shasum -a 256 -c` and a wrong one extracts nothing); tap commit `45a2766` in `simplekube-ro/homebrew-tap`, its formula naming that url and sha256; `pbxedit --version` prints `1.4.0` from the Homebrew keg and `brew test pbxedit` passes. RELEASING § 2 was not run for this release, by the release owner's decision. `Version.swift` bumped to `1.4.1-dev`
 
 ## After v1 — adoption in the originating project
 
