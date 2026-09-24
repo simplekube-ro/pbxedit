@@ -208,7 +208,7 @@ Issue #28, a follow-up to #20: `pbxedit merge` 1.2.0 asked about a build file's 
 - [x] Archived — `openspec/changes/archive/2026-09-24-merge-settings-conflicts-named`; the `merge` delta synced into `openspec/specs/merge/spec.md` (one requirement modified, five scenarios added), `openspec validate --specs --strict` green
 - [x] Merged — into `main` by PR #29 (rebase, 2026-09-24, `d1353c5`), closing #28
 - [x] Manual check (RELEASING § 2) — **not run** for `v1.3.0`, skipped by the release owner's decision (2026-09-24); recorded as skipped in `docs/RELEASING.md` § 2
-- [ ] Released as `v1.3.0`
+- [x] Released as `v1.3.0` — tagged on `92b4572` (2026-09-24); `release.yml` run 35959082894 green (test, oracle, build/verify/publish): https://github.com/simplekube-ro/pbxedit/releases/tag/v1.3.0 (universal `x86_64 arm64`, both slices `minos 13.0`, sha256 `6105f6218b7463e007416a0aeefcb362c4c7d5033c3c470aa6791c2a638034ad`, `--version` prints `1.3.0` from the downloaded binary, checksum verified with `shasum -a 256 -c` and a wrong one extracts nothing); tap commit `67ccb1d` in `simplekube-ro/homebrew-tap`, its formula naming that url and sha256; `pbxedit --version` prints `1.3.0` from the Homebrew keg and `brew test pbxedit` passes. RELEASING § 2 was not run for this release, by the release owner's decision. `Version.swift` bumped to `1.3.1-dev`
 
 ## After v1 — adoption in the originating project
 

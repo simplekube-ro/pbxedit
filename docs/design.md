@@ -36,7 +36,7 @@ the files, which the hunk's own texts can hide (change
 together as `v1.2.0` (2026-09-24). A build file's `settings`, and a spelling
 or placement difference the replay leaves, reported as a conflict with both
 sides' values when each side changed it (change
-`merge-settings-conflicts-named`, issue #28).
+`merge-settings-conflicts-named`, issue #28, released as `v1.3.0` 2026-09-24).
 
 ## Purpose
 
