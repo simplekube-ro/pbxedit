@@ -6,11 +6,19 @@ import PBXModel
 
 /// An in-memory file system: a set of file paths; directories are implied.
 /// Counts every call so a test can prove the reader was never consulted.
+/// A case-insensitive disk folds case in `exists` and `files(in:)`, as APFS
+/// does by default; `existsAsSpelled` never folds.
 final class MemoryDisk: DiskReader, @unchecked Sendable {
     let files: Set<String>
+    let caseInsensitive: Bool
     private(set) var calls = 0
 
-    init(_ files: [String]) { self.files = Set(files) }
+    init(_ files: [String], caseInsensitive: Bool = false) {
+        self.files = Set(files)
+        self.caseInsensitive = caseInsensitive
+    }
+
+    private func fold(_ path: String) -> String { caseInsensitive ? path.lowercased() : path }
 
     private var directories: Set<String> {
         var result: Set<String> = [""]
@@ -26,13 +34,18 @@ final class MemoryDisk: DiskReader, @unchecked Sendable {
 
     func exists(_ path: String) -> Bool {
         calls += 1
+        return files.map(fold).contains(fold(path)) || directories.map(fold).contains(fold(path))
+    }
+
+    func existsAsSpelled(_ path: String) -> Bool {
+        calls += 1
         return files.contains(path) || directories.contains(path)
     }
 
     func files(in path: String) -> [String] {
         calls += 1
-        let prefix = path.isEmpty ? "" : path + "/"
-        return files.filter { $0.hasPrefix(prefix) && !$0.dropFirst(prefix.count).contains("/") }
+        let prefix = path.isEmpty ? "" : fold(path) + "/"
+        return files.filter { fold($0).hasPrefix(prefix) && !$0.dropFirst(prefix.count).contains("/") }
             .map { String($0.dropFirst(prefix.count)) }.sorted()
     }
 }

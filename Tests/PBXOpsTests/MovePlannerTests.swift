@@ -29,9 +29,9 @@ final class MovePlannerTests: XCTestCase {
     /// (the destination alone, unless said otherwise).
     private func plan(_ from: String, _ to: String, project: Project? = nil, files: [String]? = nil,
                       flags: Conventions.Flags = Conventions.Flags(), keepMembership: Bool = false,
-                      exemptions: Exemptions? = nil) throws -> (Plan, Project, MemoryDisk) {
+                      exemptions: Exemptions? = nil, caseInsensitive: Bool = false) throws -> (Plan, Project, MemoryDisk) {
         let project = try project ?? loadProject("move/app.pbxproj")
-        let disk = MemoryDisk(files ?? [to])
+        let disk = MemoryDisk(files ?? [to], caseInsensitive: caseInsensitive)
         let plan = try MovePlanner.plan(
             from: from, to: to, in: project, conventions: Conventions(flags: flags), keepMembership: keepMembership,
             disk: disk, exemptions: exemptions, minter: IDMinter(generator: FixedGenerator()))
@@ -377,6 +377,62 @@ final class MovePlannerTests: XCTestCase {
         // And it is the only thing read from the disk: two questions per file.
         let (_, _, disk) = try plan(from, to)
         XCTAssertEqual(disk.calls, 2)
+    }
+
+    // Spec: A case-only rename performed on disk; A case-only rename not yet performed
+    // (move-case-only-rename 2.1; design D1).
+    func testACaseOnlyRenameOnACaseInsensitiveDiskIsAMove() throws {
+        let from = "App/Views/Foo.swift"
+        let to = "App/Views/foo.swift"
+        for keepMembership in [false, true] {
+            let (plan, project, disk) = try plan(from, to, keepMembership: keepMembership, caseInsensitive: true)
+            XCTAssertEqual(plan.steps, [.setAttribute(key: "path", of: foo, to: .string("foo.swift"))], "keepMembership: \(keepMembership)")
+            XCTAssertEqual(plan.changes.filter { $0.action == .setAttribute }.map(\.detail), ["path = foo.swift (was Foo.swift)"])
+            XCTAssertEqual(disk.calls, 4, "two questions, then the spelled two")
+            let result = try applied(plan, to: project)
+            XCTAssertEqual(result.fileReferences(at: to).map(\.id), [foo])
+            XCTAssertEqual(result.fileReferences(at: from), [])
+            XCTAssertEqual(result.group(views)?.children, project.group(views)?.children, "the listing stays in place")
+            XCTAssertEqual(result.buildFile(fooBuildFile)?.fileRef, foo)
+            XCTAssertEqual(result.buildPhase(appSources)?.files, project.buildPhase(appSources)?.files)
+            let text = String(decoding: result.serialize(), as: UTF8.self)
+            XCTAssertFalse(text.contains("Foo.swift"), text)
+            XCTAssertTrue(text.contains("\t\tBB0000000000000000000020 /* foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000120 /* foo.swift */; };\n"), text)
+        }
+        // Not yet renamed: the directory still holds the old spelling.
+        XCTAssertThrowsError(try plan(from, to, files: [from], caseInsensitive: true)) { error in
+            XCTAssertEqual(error as? PlanError, .notMovedOnDisk(from: from, to: to))
+        }
+        // Two entries is a copy; a third spelling leaves neither path as given.
+        XCTAssertThrowsError(try plan(from, to, files: [from, to], caseInsensitive: true)) { error in
+            XCTAssertEqual(error as? PlanError, .looksLikeACopy(from: from, to: to))
+        }
+        XCTAssertThrowsError(try plan(from, to, files: ["App/Views/FOO.swift"], caseInsensitive: true)) { error in
+            XCTAssertEqual(error as? PlanError, .destinationMissing(from: from, to: to))
+        }
+        // A case-sensitive disk answers the first two questions and stops there.
+        let (_, _, sensitive) = try plan(from, to)
+        XCTAssertEqual(sensitive.calls, 2)
+    }
+
+    // Spec: A directory renamed by case (move-case-only-rename 2.1; design D3).
+    func testADirectoryRenamedByCaseMovesEveryMember() throws {
+        let destinations = legacyMembers.map { "App/Views/legacy/" + $0 }
+        let (plan, project, _) = try plan("App/Views/Legacy", "App/Views/legacy", files: destinations, caseInsensitive: true)
+        XCTAssertEqual(plan.moves.map(\.to), destinations)
+        XCTAssertEqual(plan.deletedObjects, [legacy, legacyA, legacyB])
+        XCTAssertEqual(plan.notes, [])
+        let result = try applied(plan, to: project)
+        for (member, id) in zip(destinations, legacyReferences) {
+            XCTAssertEqual(result.fileReferences(at: member).map(\.id), [id], member)
+        }
+        XCTAssertEqual(result.groups(at: "App/Views/Legacy"), [])
+        XCTAssertEqual(result.buildFiles.map(\.id), project.buildFiles.map(\.id), "every build file keeps its ID")
+        // Not yet renamed: the first member is refused, nothing is planned.
+        XCTAssertThrowsError(try self.plan("App/Views/Legacy", "App/Views/legacy", files: legacyMembers.map { "App/Views/Legacy/" + $0 },
+                                           caseInsensitive: true)) { error in
+            XCTAssertEqual(error as? PlanError, .notMovedOnDisk(from: "App/Views/Legacy/Top.swift", to: "App/Views/legacy/Top.swift"))
+        }
     }
 
     // Spec: Unknown source; Destination already a member; Localized variant (3.2).

@@ -371,4 +371,47 @@ final class MoveCommandTests: XCTestCase {
         let lint = try pbxedit(["lint", "--project", "App.xcodeproj"], in: project.root)
         XCTAssertEqual(lint.status, 0, "after every move the project is clean: \(lint.stdout)")
     }
+
+    // Spec: A case-only rename performed on disk; A case-only rename not yet performed (issue #36).
+    // On a case-sensitive volume the old spelling is simply gone, and the test passes either way.
+    func testACaseOnlyRenameIsAMove() throws {
+        let project = try project()
+        let old = try project.touch("App/Views/Foo.swift")
+        let before = try project.bytes()
+        let early = try pbxedit(["move", "--keep-membership", "App/Views/Foo.swift", "App/Views/foo.swift", "--project", "App.xcodeproj"], in: project.root)
+        XCTAssertEqual(early.status, 1, early.stderr)
+        XCTAssertTrue(early.stderr.contains("move the file on disk first"), early.stderr)
+        XCTAssertEqual(try project.bytes(), before)
+        try FileManager.default.moveItem(at: old, to: project.root.appendingPathComponent("App/Views/foo.swift"))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: project.root.appendingPathComponent("App/Views").path), ["foo.swift"])
+        let result = try pbxedit(["move", "--keep-membership", "App/Views/Foo.swift", "App/Views/foo.swift", "--project", "App.xcodeproj"], in: project.root)
+        XCTAssertEqual(result.status, 0, result.stderr)
+        XCTAssertEqual(result.stdout, """
+            App/Views/Foo.swift -> App/Views/foo.swift
+              location: path = foo.swift; sourceTree = <group>; in group Views (AA0000000000000000000003) (structure)
+              targets: App (flag)
+              reused file reference AA0000000000000000000120: file reference App/Views/Foo.swift
+              set attribute of AA0000000000000000000120: path = foo.swift (was Foo.swift)
+              reused build file BB0000000000000000000020: build file in App
+              membership: App (Sources)
+            project.pbxproj: modified
+
+            """)
+        let text = String(decoding: try project.bytes(), as: UTF8.self)
+        XCTAssertFalse(text.contains("Foo.swift"), text)
+        XCTAssertTrue(text.contains("\t\tAA0000000000000000000120 /* foo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = foo.swift; sourceTree = \"<group>\"; };\n"), text)
+        XCTAssertTrue(text.contains("\t\tBB0000000000000000000020 /* foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000120 /* foo.swift */; };\n"), text)
+        let query = try pbxedit(["query", "App/Views/foo.swift", "--project", "App.xcodeproj"], in: project.root)
+        XCTAssertEqual(query.status, 0, query.stderr)
+        XCTAssertTrue(query.stdout.contains("  target: App, phase: Sources, build file: BB0000000000000000000020"), query.stdout)
+        let lint = try pbxedit(["lint", "--project", "App.xcodeproj"], in: project.root)
+        XCTAssertEqual(lint.status, 0, lint.stdout)
+        let plutil = Process()
+        plutil.executableURL = URL(fileURLWithPath: "/usr/bin/plutil")
+        plutil.arguments = ["-lint", project.pbxproj.path]
+        plutil.standardOutput = FileHandle.nullDevice
+        try plutil.run()
+        plutil.waitUntilExit()
+        XCTAssertEqual(plutil.terminationStatus, 0)
+    }
 }
