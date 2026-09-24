@@ -113,13 +113,14 @@ final class OracleTests: XCTestCase {
 
     /// merge-command task 8.4 (spec: Xcode can read the result): the
     /// both-sides-add, rename and `theirs-membership` merges of the committed
-    /// three-way fixtures (the attribute conflict of issue #20 and the two
-    /// framework links of issue #21 among them), written into the project
-    /// whose file is ours.
+    /// three-way fixtures (the attribute conflict of issue #20, the settings
+    /// conflict of issue #28 and the two framework links of issue #21 among
+    /// them), written into the project whose file is ours.
     func testXcodebuildReadsEveryMergedProject() throws {
         try Self.skipWithoutXcodebuild()
         for (scenario, units, hunks) in [("both-add", nil, nil), ("rename", nil, nil), ("settings-residual", "theirs-membership", nil),
                                         ("attribute-conflict", "theirs-membership", nil),
+                                        ("settings-conflict", "theirs-membership", nil),
                                         ("both-frameworks", nil, "both")] as [(String, String?, String?)] {
             let project = try TemporaryProject(fixture: "merge/\(scenario)/ours.pbxproj")
             for (name, file) in [("b", "base"), ("o", "ours"), ("t", "theirs")] {

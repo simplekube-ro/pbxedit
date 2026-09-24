@@ -370,6 +370,48 @@ final class MergeCommandTests: XCTestCase {
         XCTAssertEqual(lint.status, 0, lint.stdout)
     }
 
+    // Issue #28: settings both sides changed are reported as a conflict, through the binary.
+    func testConflictingSettingsAreReportedAsAConflict() throws {
+        let workspace = try workspace("settings-conflict")
+        let before = try workspace.bytes()
+        let open = try pbxedit(["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj"], in: workspace.root)
+        XCTAssertEqual(open.status, 3, open.stdout + open.stderr)
+        XCTAssertTrue(open.stdout.contains("decision needed: ours | theirs-membership"), open.stdout)
+        XCTAssertTrue(open.stdout.contains("residual: App/Filtered/F1.swift (BB0000000000000000000140): both sides changed "
+            + "settings of the build file in App: ours {COMPILER_FLAGS = \"-w\"; }, theirs {COMPILER_FLAGS = \"-Wall\"; }"), open.stdout)
+        XCTAssertEqual(try workspace.bytes(), before, "nothing is written")
+
+        let json = try pbxedit(["merge", "--json", "b.pbxproj", "o.pbxproj", "t.pbxproj"], in: workspace.root)
+        XCTAssertEqual(json.status, 3)
+        let units = try XCTUnwrap(try jsonObject(json)["units"] as? [[String: Any]])
+        XCTAssertEqual(units.count, 1)
+        XCTAssertEqual(units[0]["choices"] as? [String], ["ours", "theirs-membership"])
+        let residual = try XCTUnwrap((units[0]["residuals"] as? [[String: Any]])?.first)
+        XCTAssertEqual(residual["what"] as? String, "settings of the build file in App")
+        XCTAssertEqual(residual["ours"] as? String, "{COMPILER_FLAGS = \"-w\"; }")
+        XCTAssertEqual(residual["theirs"] as? String, "{COMPILER_FLAGS = \"-Wall\"; }")
+        XCTAssertEqual(residual["conflicting"] as? Bool, true)
+
+        try decide(json, units: "theirs-membership", into: workspace.root.appendingPathComponent("decisions.json"))
+        let done = try pbxedit(["merge", "--json", "b.pbxproj", "o.pbxproj", "t.pbxproj", "--decisions", "decisions.json"], in: workspace.root)
+        XCTAssertEqual(done.status, 0, done.stdout + done.stderr)
+        let owed = try XCTUnwrap((try jsonObject(done)["owed"] as? [[String: Any]])?.first)
+        XCTAssertEqual(owed["what"] as? String, "settings of the build file in App")
+        XCTAssertEqual(owed["ours"] as? String, "{COMPILER_FLAGS = \"-w\"; }")
+        XCTAssertEqual(owed["conflicting"] as? Bool, true)
+        let merged = String(decoding: try workspace.bytes(), as: UTF8.self)
+        XCTAssertTrue(merged.contains("platformFilters = (ios, macos, );"), "theirs' membership")
+        XCTAssertTrue(merged.contains("settings = {COMPILER_FLAGS = \"-w\"; };"), "ours' settings, owed")
+        let plutil = Process()
+        plutil.executableURL = URL(fileURLWithPath: "/usr/bin/plutil")
+        plutil.arguments = ["-lint", workspace.pbxproj.path]
+        try plutil.run()
+        plutil.waitUntilExit()
+        XCTAssertEqual(plutil.terminationStatus, 0, "plutil -lint accepts the written file")
+        let lint = try pbxedit(["lint", "--project", "App.xcodeproj"], in: workspace.root)
+        XCTAssertEqual(lint.status, 0, lint.stdout)
+    }
+
     func testStaleAndUnknownDecisions() throws {
         let workspace = try workspace("conflicting-setting")
         let before = try workspace.bytes()

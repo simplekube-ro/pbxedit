@@ -209,7 +209,10 @@ public enum Trial {
 /// The per-path comparison of merge design D9 E, shared by the trial and
 /// check E: spelling, parent group and rows equal theirs'; every other
 /// attribute of the reference and its build files equals theirs' where
-/// only theirs changed it and ours' where only ours did.
+/// only theirs changed it and ours' where only ours did. A value each side
+/// changed to a different value is *conflicting* and carries both values
+/// (issue #20 for the attributes, #28 for a build file's `settings` and for
+/// a spelling or placement difference the replay leaves).
 public enum PathComparison {
     /// Design D3 (issue #20): the attributes base, ours and theirs do not
     /// agree on, found without a replay. Conflict is a property of the three
@@ -240,27 +243,43 @@ public enum PathComparison {
                 guard theirsValue != mergedValue else { return }
                 residuals.append(Residual(path: path, kind: kind, object: object, source: source, theirs: theirsValue, merged: mergedValue))
             }
-            // Issue #20: both sides changed the attribute, to different
-            // values. That is a residual whatever value the result holds:
-            // keeping either drops the other side's change unnamed.
-            func conflict(_ kind: Residual.Kind, theirs t: PlistValue?, ours o: PlistValue?, has m: PlistValue?,
+            // Issue #20: both sides changed the value, to different values.
+            // That is a residual whatever value the result holds for a value
+            // no verb writes: keeping either drops the other side's change
+            // unnamed.
+            func conflict(_ kind: Residual.Kind, theirs t: String?, ours o: String?, has m: String?,
                           object: ObjectID? = merged.id, source: ObjectID? = wanted.id) {
-                residuals.append(Residual(path: path, kind: kind, object: object, source: source, theirs: t?.description,
-                                          merged: m?.description, ours: o?.description, conflicting: true))
+                residuals.append(Residual(path: path, kind: kind, object: object, source: source, theirs: t,
+                                          merged: m, ours: o, conflicting: true))
             }
-            differ(.spelling("path"), wanted.path, merged.path)
-            differ(.spelling("name"), wanted.name, merged.name)
-            differ(.spelling("sourceTree"), wanted.sourceTree, merged.sourceTree)
-            differ(.parentGroup, wanted.groupPaths.joined(separator: ", "), merged.groupPaths.joined(separator: ", "))
 
             // Counterparts in base and ours: by the ID theirs kept, else by path.
             let before = base.byID[wanted.id] ?? base.references[path]
             let held = before.flatMap { ours.byID[$0.id] } ?? ours.references[path]
+
+            // Issue #28: spelling and placement are what `move` and `add`
+            // write, so the conflict labels a difference that survived the
+            // replay; a value the replay reproduced is no conflict (design D2).
+            func written(_ kind: Residual.Kind, _ value: (MembershipSnapshot.Reference) -> String?) {
+                let (theirsValue, mergedValue) = (value(wanted), value(merged))
+                guard theirsValue != mergedValue else { return }
+                if let held, conflicting(base: before.flatMap(value), ours: value(held), theirs: theirsValue) {
+                    conflict(kind, theirs: theirsValue, ours: value(held), has: mergedValue)
+                } else {
+                    differ(kind, theirsValue, mergedValue)
+                }
+            }
+            written(.spelling("path")) { $0.path }
+            written(.spelling("name")) { $0.name }
+            written(.spelling("sourceTree")) { $0.sourceTree }
+            written(.parentGroup) { $0.groupPaths.joined(separator: ", ") }
+
             let referenceKeys = [wanted.attributes, merged.attributes, before?.attributes ?? [:], held?.attributes ?? [:]].flatMap(\.keys)
             for key in Set(referenceKeys).sorted() {
                 // Where ours holds no counterpart, ours changed nothing about it: theirs' value stands.
                 if let held, conflicting(base: before?.attributes[key], ours: held.attributes[key], theirs: wanted.attributes[key]) {
-                    conflict(.attribute(key), theirs: wanted.attributes[key], ours: held.attributes[key], has: merged.attributes[key])
+                    conflict(.attribute(key), theirs: wanted.attributes[key]?.description, ours: held.attributes[key]?.description,
+                             has: merged.attributes[key]?.description)
                     continue
                 }
                 let fromTheirs = held == nil || wanted.attributes[key] != before?.attributes[key]
@@ -280,14 +299,21 @@ public enum PathComparison {
                 guard let want = wanted.rows.first(where: { $0.target == target }),
                       let have = merged.rows.first(where: { $0.target == target })
                 else { continue }
-                differ(.settings(target: target), want.settings?.description, have.settings?.description, object: have.buildFile)
                 let was = before?.rows.first { $0.target == target }
                 let ourRow = held?.rows.first { $0.target == target }
+                // Issue #28: no verb writes `settings`, so a conflict there is
+                // a residual whatever the result holds, as for an attribute.
+                if let ourRow, conflicting(base: was?.settings, ours: ourRow.settings, theirs: want.settings) {
+                    conflict(.settings(target: target), theirs: want.settings?.description, ours: ourRow.settings?.description,
+                             has: have.settings?.description, object: have.buildFile)
+                } else {
+                    differ(.settings(target: target), want.settings?.description, have.settings?.description, object: have.buildFile)
+                }
                 let rowKeys = [want.attributes, have.attributes, was?.attributes ?? [:], ourRow?.attributes ?? [:]].flatMap(\.keys)
                 for key in Set(rowKeys).sorted() {
                     if let ourRow, conflicting(base: was?.attributes[key], ours: ourRow.attributes[key], theirs: want.attributes[key]) {
-                        conflict(.buildFileAttribute(target: target, key: key), theirs: want.attributes[key], ours: ourRow.attributes[key],
-                                 has: have.attributes[key], object: have.buildFile)
+                        conflict(.buildFileAttribute(target: target, key: key), theirs: want.attributes[key]?.description,
+                                 ours: ourRow.attributes[key]?.description, has: have.attributes[key]?.description, object: have.buildFile)
                         continue
                     }
                     let expected = ourRow == nil ? want.attributes[key]
@@ -307,10 +333,11 @@ public enum PathComparison {
         theirs != base ? theirs : ours
     }
 
-    /// Design D1: each side changed the key, to different values. An absent
-    /// value counts as a value, so dropping an attribute base held is a
-    /// change like rewriting it.
-    static func conflicting(base: PlistValue?, ours: PlistValue?, theirs: PlistValue?) -> Bool {
+    /// Design D1 of issue #20, generic over the compared value since issue
+    /// #28 (design D1): each side changed it, to different values. An absent
+    /// value counts as a value, so dropping a value base held is a change
+    /// like rewriting it.
+    static func conflicting<Value: Equatable>(base: Value?, ours: Value?, theirs: Value?) -> Bool {
         ours != base && theirs != base && ours != theirs
     }
 }

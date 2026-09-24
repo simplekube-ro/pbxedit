@@ -125,6 +125,80 @@ final class ResidualTests: XCTestCase {
         XCTAssertEqual(conflict.theirs, "\"-DTHEIRS\"")
     }
 
+    // MARK: Conflicting settings, spelling and placement (issue #28)
+
+    // Spec: Settings both sides changed are a conflict whichever value the result holds.
+    func testSettingsBothSidesChangedAreAConflictWhicheverValueTheResultHolds() throws {
+        let sides = try MergeFixture.settingsConflict()
+        let found = residuals(try trial(["App/Filtered/F1.swift"], theirs: sides.theirs, ours: sides.ours))
+        XCTAssertEqual(found.map(\.kind), [.settings(target: "App")], "\(found)")
+        let residual = try XCTUnwrap(found.first)
+        XCTAssertTrue(residual.conflicting, "\(residual)")
+        XCTAssertEqual(residual.ours, "{COMPILER_FLAGS = \"-w\"; }")
+        XCTAssertEqual(residual.theirs, "{COMPILER_FLAGS = \"-Wall\"; }")
+        XCTAssertEqual(residual.merged, "{COMPILER_FLAGS = \"-w\"; }", "the replay keeps ours' build file")
+        XCTAssertTrue(residual.description.contains("both sides changed settings of the build file in App"), residual.description)
+
+        // The same conflict on a result that holds theirs' settings.
+        let asTheirs = PathComparison.compare(paths: ["App/Filtered/F1.swift"], base: MembershipSnapshot(sides.base),
+                                              ours: MembershipSnapshot(sides.ours), theirs: MembershipSnapshot(sides.theirs),
+                                              result: MembershipSnapshot(sides.theirs))
+        let conflicts = asTheirs.filter(\.conflicting)
+        XCTAssertEqual(conflicts.map(\.kind), [.settings(target: "App")], "\(asTheirs)")
+        XCTAssertEqual(conflicts.first?.ours, "{COMPILER_FLAGS = \"-w\"; }")
+        XCTAssertEqual(conflicts.first?.merged, "{COMPILER_FLAGS = \"-Wall\"; }")
+    }
+
+    // Spec: Settings only theirs changed are not a conflict.
+    func testSettingsOnlyOneSideChangedAreNotAConflict() throws {
+        let theirsOnly = try MergeFixture.settingsConflict(ours: nil)
+        let found = residuals(try trial(["App/Filtered/F1.swift"], theirs: theirsOnly.theirs, ours: theirsOnly.ours))
+        let residual = try XCTUnwrap(found.first { $0.kind == .settings(target: "App") }, "\(found)")
+        XCTAssertFalse(residual.conflicting, "\(residual)")
+        XCTAssertNil(residual.ours)
+        XCTAssertEqual(residual.theirs, "{COMPILER_FLAGS = \"-Wall\"; }")
+        XCTAssertNil(residual.merged)
+
+        let same = try MergeFixture.settingsConflict(ours: "-w", theirs: "-w")
+        XCTAssertEqual(residuals(try trial(["App/Filtered/F1.swift"], theirs: same.theirs, ours: same.ours)), [])
+    }
+
+    // Spec: A name both sides changed is a conflict.
+    func testANameBothSidesChangedIsAConflict() throws {
+        let base = try MergeFixture.base()
+        let reference: ObjectID = "AA0000000000000000000260"
+        let ours = try MergeFixture.attribute("name", .string("OursName.swift"), of: reference, in: base)
+        let refiltered = try MergeFixture.add(["App/Filtered/F1.swift"],
+                                              to: try MergeFixture.remove(["App/Filtered/F1.swift"], from: base, target: "App"),
+                                              targets: ["App"], platforms: ["ios", "macos"])
+        let theirs = try MergeFixture.attribute("name", .string("TheirsName.swift"), of: reference, in: refiltered)
+        let found = residuals(try trial(["App/Filtered/F1.swift"], theirs: theirs, ours: ours))
+        let residual = try XCTUnwrap(found.first { $0.kind == .spelling("name") }, "\(found)")
+        XCTAssertTrue(residual.conflicting, "\(residual)")
+        XCTAssertEqual(residual.ours, "OursName.swift")
+        XCTAssertEqual(residual.theirs, "TheirsName.swift")
+        XCTAssertEqual(residual.merged, "OursName.swift")
+    }
+
+    /// Design D2: the replay writes spelling and placement, so three
+    /// different paths are a faithful replay, not a conflict.
+    func testBothSidesMovingOneFileDifferentlyIsNoConflict() throws {
+        let base = try MergeFixture.base()
+        let ours = try MergeFixture.move("App/Filtered/F1.swift", to: "App/Views/F1.swift", in: base)
+        let theirs = try MergeFixture.move("App/Filtered/F1.swift", to: "App/Other/F1.swift", in: base, seed: 7)
+        let (b, o, t) = (MembershipSnapshot(base), MembershipSnapshot(ours), MembershipSnapshot(theirs))
+        XCTAssertEqual([b.references["App/Filtered/F1.swift"]?.groupPath, o.references["App/Views/F1.swift"]?.groupPath,
+                        t.references["App/Other/F1.swift"]?.groupPath],
+                       ["App/Filtered", "App/Views", "App/Other"], "the three versions place it in three groups")
+        let paths = ["App/Filtered/F1.swift", "App/Other/F1.swift", "App/Views/F1.swift"]
+        XCTAssertEqual(residuals(Trial.run(paths: paths, base: b, ours: ours, theirs: t,
+                                           minter: IDMinter(generator: SplitMix(seed: 5)))), [])
+        let classified = ClassifiedUnit.classify(MergeUnit.discover(base: b, ours: o, theirs: t), base: b, ours: ours,
+                                                 oursSnapshot: o, theirs: t)
+        XCTAssertEqual(classified.map(\.outcome), [.decision])
+        XCTAssertEqual(classified.first?.choices, [.ours, .theirs])
+    }
+
     func testAnAttributeBothSidesChangedToTheSameValueHasNoResidual() throws {
         let sides = try MergeFixture.attributeConflict(ours: "4", theirs: "4")
         XCTAssertEqual(residuals(try trial(["App/Filtered/F1.swift"], theirs: sides.theirs, ours: sides.ours)), [])
