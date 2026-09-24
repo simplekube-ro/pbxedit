@@ -121,7 +121,7 @@ final class OracleTests: XCTestCase {
         for (scenario, units, hunks) in [("both-add", nil, nil), ("rename", nil, nil), ("settings-residual", "theirs-membership", nil),
                                         ("attribute-conflict", "theirs-membership", nil),
                                         ("settings-conflict", "theirs-membership", nil),
-                                        ("both-frameworks", nil, "both")] as [(String, String?, String?)] {
+                                        ("both-frameworks", nil, "both"), ("reordered-array", nil, "theirs")] as [(String, String?, String?)] {
             let project = try TemporaryProject(fixture: "merge/\(scenario)/ours.pbxproj")
             for (name, file) in [("b", "base"), ("o", "ours"), ("t", "theirs")] {
                 try Data(try Fixtures.load("merge/\(scenario)/\(file).pbxproj")).write(to: project.root.appendingPathComponent("\(name).pbxproj"))

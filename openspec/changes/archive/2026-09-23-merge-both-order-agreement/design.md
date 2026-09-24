@@ -36,6 +36,8 @@ The elements *only one* side holds carry no constraint, and the test ignores the
 
 *Alternative considered:* keep the Frameworks-only test and add order agreement beside it. Rejected: two file-wide tests where one implies what matters, and the subsequence test would keep refusing the insert-against-remove shape for Frameworks links alone, for no reason a reader could reconstruct.
 
+*Note, 2026-09-24 (`merge-reorder-whole-array`, issue #32):* refusing `both` was right but not enough. The hunk this design refused `both` for covered only half of ours' move: the line merge split the swap into a clean deletion of `en` and a conflicting insertion, so `theirs` gave `(Base, fr)`, dropping an element all three sides hold, with exit `0`. Order disagreement, the test this design introduced, now also tells the line merge to keep such an array in one hunk, and check C refuses any result that drops an element base, ours and theirs all hold.
+
 ### D2. Where the test runs
 
 `admits` already receives the two sides as the line merge read them (`AnalysedHunk.Sides`; the neutralised theirs in the engine, where neutralisation never touches an unmanaged array). With the subsequence test gone, base is not needed there at all, so `Inputs` — which carried it for `merge-both-frameworks-links` — becomes `Sides` with ours and theirs alone. The check goes there, beside the counterfactual conditions, so a leaf must pass both: the counterfactual conditions say what each side did to *this hunk*, and order agreement says the two sides do not contradict each other in the files. Nothing else moves.

@@ -66,6 +66,8 @@ struct MergeFaults: OptionSet, Sendable {
     static let replayRemoveAll = MergeFaults(rawValue: 1 << 5)
     /// The classification does not see a conflicting attribute (issue #20).
     static let ignoreAttributeConflicts = MergeFaults(rawValue: 1 << 6)
+    /// The line merge keeps no span whole: a reorder split across a hunk stays split (issue #32).
+    static let narrowArrayHunks = MergeFaults(rawValue: 1 << 7)
 }
 
 /// A hunk and the choice that resolved it.
@@ -132,7 +134,7 @@ public enum MergeChecks {
             }
             let oursChanged = !same(mine, was)
             let theirsChanged = !same(yours, was)
-            let problem: String?
+            var problem: String?
             let governors = governing[path] ?? []
             if governors.count == 1, let only = governors.first, only.choice != .both {
                 // A decided hunk governs the leaf, whoever changed it.
@@ -151,6 +153,14 @@ public enum MergeChecks {
                 problem = arrayProblem(base: wasArray, ours: mineArray, theirs: yoursArray, result: gotArray, unordered: unordered)
             } else {
                 problem = "both sides changed it (ours \(show(mine)), theirs \(show(yours))) and no decided hunk governs it"
+            }
+            if problem == nil, case .array(let wasArray)? = was, case .array(let mineArray)? = mine,
+               case .array(let yoursArray)? = yours, case .array(let gotArray)? = got {
+                // Issue #32: whatever governs the leaf, what every side holds stays.
+                let dropped = droppedByNoSide(base: wasArray, ours: mineArray, theirs: yoursArray, result: gotArray)
+                if !dropped.isEmpty {
+                    problem = "the merge drops \(show(.array(dropped))), which base, ours and theirs all hold; it has \(show(got))"
+                }
             }
             if let problem { problems.append(CheckProblem(object: path.objectID, subject: path.description, message: problem)) }
         }
@@ -386,6 +396,12 @@ public enum MergeChecks {
             }
         }
         return nil
+    }
+
+    /// Issue #32: the elements base, ours and theirs all hold, counted, that
+    /// `result` lacks. No side removed them, so no decision may.
+    static func droppedByNoSide(base: [PlistValue], ours: [PlistValue], theirs: [PlistValue], result: [PlistValue]) -> [PlistValue] {
+        (Multiset(base).intersection(Multiset(ours)).intersection(Multiset(theirs)) - Multiset(result)).sorted()
     }
 
     static func isSubsequence(_ needle: [PlistValue], of haystack: [PlistValue]) -> Bool {

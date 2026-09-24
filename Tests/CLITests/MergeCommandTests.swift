@@ -302,11 +302,23 @@ final class MergeCommandTests: XCTestCase {
         XCTAssertTrue(refused.stderr.contains("both is not offered"), refused.stderr)
         XCTAssertEqual(try workspace.bytes(), before)
 
-        try decide(open, hunks: "theirs", into: workspace.root.appendingPathComponent("decisions.json"))
-        let result = try pbxedit(["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj", "--decisions", "decisions.json"], in: workspace.root)
-        XCTAssertEqual(result.status, 0, result.stdout + result.stderr)
-        let lint = try pbxedit(["lint", "--project", "App.xcodeproj"], in: workspace.root)
-        XCTAssertEqual(lint.status, 0, lint.stdout)
+        // Issue #32: each choice writes that side's whole array.
+        for (choice, regions) in [("theirs", ["en", "Base", "fr"]), ("ours", ["Base", "en"])] {
+            try decide(open, hunks: choice, into: workspace.root.appendingPathComponent("decisions.json"))
+            let result = try pbxedit(["merge", "b.pbxproj", "o.pbxproj", "t.pbxproj", "--decisions", "decisions.json"], in: workspace.root)
+            XCTAssertEqual(result.status, 0, result.stdout + result.stderr)
+            let merged = String(decoding: try workspace.bytes(), as: UTF8.self)
+            let expected = "\t\t\tknownRegions = (\n" + regions.map { "\t\t\t\t\($0),\n" }.joined() + "\t\t\t);\n"
+            XCTAssertTrue(merged.contains(expected), "\(choice): \(expected)")
+            let lint = try pbxedit(["lint", "--project", "App.xcodeproj"], in: workspace.root)
+            XCTAssertEqual(lint.status, 0, lint.stdout)
+            let plutil = Process()
+            plutil.executableURL = URL(fileURLWithPath: "/usr/bin/plutil")
+            plutil.arguments = ["-lint", workspace.pbxproj.path]
+            try plutil.run()
+            plutil.waitUntilExit()
+            XCTAssertEqual(plutil.terminationStatus, 0, "plutil -lint accepts the written file")
+        }
     }
 
     // Issue #21: two different framework links survive one merge, through the binary.

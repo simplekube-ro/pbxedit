@@ -79,6 +79,12 @@ enum UnorderedInsertions {
             return elements
         }
         guard let mine = array(ours), let yours = array(theirs) else { return false }
+        return ordersAgree(mine, yours)
+    }
+
+    /// Two arrays restricted to the elements both hold, counted, are equal
+    /// (issue #32 asks it of every array both sides change).
+    static func ordersAgree(_ mine: [PlistValue], _ yours: [PlistValue]) -> Bool {
         let common = Multiset(mine).intersection(Multiset(yours))
         func restricted(_ elements: [PlistValue]) -> [PlistValue] {
             var left = common
