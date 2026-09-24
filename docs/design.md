@@ -43,7 +43,8 @@ result that drops an element base, ours and theirs all hold (change
 `merge-reorder-whole-array`, issue #32, released as `v1.4.0` 2026-09-24).
 A case-only rename accepted by `move` on a case-insensitive volume: when
 both paths resolve on disk, the spelling each directory lists decides
-(change `move-case-only-rename`, issue #36).
+(change `move-case-only-rename`, issue #36, released as `v1.5.0`
+2026-09-24).
 
 ## Purpose
 

@@ -232,7 +232,7 @@ Issue #36, found by the RandomPlayer ship review: on a case-insensitive APFS vol
 - [x] Archived: `openspec/changes/archive/2026-09-24-move-case-only-rename`, with the `move` delta synced into `openspec/specs/move/spec.md` (one requirement modified) and `openspec validate --specs --strict` green
 - [x] Merged — into `main` by PR #37 (rebase, 2026-09-24, `9b8db7e`), closing #36
 - [x] Manual check (RELEASING § 2) — **not run** for `v1.5.0`, skipped by the release owner's decision (2026-09-24); recorded as skipped in `docs/RELEASING.md` § 2
-- [ ] Released as `v1.5.0`
+- [x] Released as `v1.5.0` — tagged on `637df46` (2026-09-24); `release.yml` run 36027302705 green (test, oracle, build/verify/publish), and `main` CI run 36025872400 green on the same commit: https://github.com/simplekube-ro/pbxedit/releases/tag/v1.5.0 (universal `x86_64 arm64`, both slices `minos 13.0`, sha256 `d645a63758fd5b07d2e41f8bb24a1d21b1f40a8031135adfd94a34871cd2aec9`, `--version` prints `1.5.0` from the downloaded binary, checksum verified with `shasum -a 256 -c` and a wrong one extracts nothing); tap commit `775fa91` in `simplekube-ro/homebrew-tap`, its formula naming that url and sha256; `pbxedit --version` prints `1.5.0` from the Homebrew keg, `brew test pbxedit` passes, and the keg's binary accepts issue #36's repro (exit `0`). RELEASING § 2 was not run for this release, by the release owner's decision. `Version.swift` bumped to `1.5.1-dev`
 
 ## After v1 — adoption in the originating project
 
