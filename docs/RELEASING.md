@@ -116,6 +116,7 @@ Recorded checks:
 | `v1.1.0` | Xcode 27.0, Build version 27A266a | `ae99bf9` (`347abad` on `main` after the rebase merge, identical tree) | no diff — the first run covering `merge` |
 | `v1.1.1` | Xcode 27.0, Build version 27A266a | `bf77b60` | no diff |
 | `v1.1.2` | Xcode 27.0, Build version 27A266a | `1179d34` | no diff |
+| `v1.3.0` | — | `d1353c5` | **not run** — skipped by the release owner's decision (2026-09-24); the oracle lane (`xcodebuild -list`, `merge` of the `settings-conflict` fixture among them) passed on the tagged commit, so Xcode can read the result, but nothing was measured about Xcode leaving the written bytes alone |
 | `v1.2.0` | — | `5bd8f05` | **not run** — skipped by the release owner's decision (2026-09-24); the oracle lane (`xcodebuild -list`) passed on the tagged commit, so Xcode can read the result, but nothing was measured about Xcode leaving the written bytes alone |
 
 ## 3. Tag

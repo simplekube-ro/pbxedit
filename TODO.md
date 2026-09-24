@@ -206,8 +206,8 @@ Issue #28, a follow-up to #20: `pbxedit merge` 1.2.0 asked about a build file's 
 - [x] Release `PerformanceTests` green: the Alamofire merge takes 0.065 s to the decisions report and 0.131 s decided with all six checks (limit 2 s), the 10k-line line merge 0.004 s — `v1.2.0` measured 0.063 s / 0.123 s / 0.004 s
 - [x] `docs/design.md` reconciled: status line, the `merge` Commands row (which values conflict and which are only labelled; check E's wording), a Motivation-table row for issue #28. The archived `merge-attribute-conflicts-asked` design has a dated note at D1, where `settings` was left outside the rule
 - [x] Archived — `openspec/changes/archive/2026-09-24-merge-settings-conflicts-named`; the `merge` delta synced into `openspec/specs/merge/spec.md` (one requirement modified, five scenarios added), `openspec validate --specs --strict` green
-- [ ] Merged
-- [ ] Manual check (RELEASING § 2)
+- [x] Merged — into `main` by PR #29 (rebase, 2026-09-24, `d1353c5`), closing #28
+- [x] Manual check (RELEASING § 2) — **not run** for `v1.3.0`, skipped by the release owner's decision (2026-09-24); recorded as skipped in `docs/RELEASING.md` § 2
 - [ ] Released as `v1.3.0`
 
 ## After v1 — adoption in the originating project
