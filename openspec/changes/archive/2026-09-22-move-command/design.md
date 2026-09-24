@@ -48,6 +48,8 @@ Inference ambiguity raises the same `PlanError`s as in `add` (`noCommonTarget`, 
 
 The planner takes a `DiskReader` (`FileSystemDiskReader` from the CLI, `MemoryDisk` in tests) and checks, per moved file, `<to>` exists and `<from>` does not, before anything else is planned. These are the only disk reads, and they run under `--dry-run` too, since a dry run reports the exit code the real run would have. Three refusals: `notMovedOnDisk` (source present, destination absent: "move the file on disk first"), `looksLikeACopy` (both present: "use `add` for the new file"), `destinationMissing` (neither present).
 
+*Note, 2026-09-24 (`move-case-only-rename`, issue #36):* on a case-insensitive volume, the macOS default, `exists` answers yes for every spelling of a name, so a case-only rename (`Foo.swift` → `foo.swift`) always looked like a copy. When both questions answer yes, the planner now asks a third, `DiskReader.existsAsSpelled`: whether each directory on the path lists the component spelled exactly so. It maps those answers through the same table. Every other move still costs two questions.
+
 Injecting the reader is the one departure from "planners see only the model": the directory-mode decision (D5) needs the project, the per-member disk check needs the member list, and the note about extra files at the destination needs both, so splitting the check into the CLI would duplicate the mapping.
 
 ### D5. Directory mode is decided by the project, not the disk

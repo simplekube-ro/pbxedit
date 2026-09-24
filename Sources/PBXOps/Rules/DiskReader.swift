@@ -7,10 +7,20 @@ import Foundation
 public protocol DiskReader: Sendable {
     /// Whether anything — file, directory or link — exists at `path`.
     func exists(_ path: String) -> Bool
+    /// Whether an entry exists at `path` with every component below the
+    /// source root spelled exactly as its directory lists it. On a
+    /// case-insensitive volume `exists` answers yes for any spelling of a
+    /// name; this answers yes only for the one the directory holds.
+    func existsAsSpelled(_ path: String) -> Bool
     /// The names (not paths) of the entries directly inside `path` that Xcode
     /// shows as files: regular files, and the bundle directories of
     /// `DiskEntry.bundleExtensions`. Empty when `path` is not a directory.
     func files(in path: String) -> [String]
+}
+
+extension DiskReader {
+    /// Exact for every reader that is not a case-insensitive file system.
+    public func existsAsSpelled(_ path: String) -> Bool { exists(path) }
 }
 
 public enum DiskEntry {
@@ -33,6 +43,21 @@ public struct FileSystemDiskReader: DiskReader {
 
     public func exists(_ path: String) -> Bool {
         FileManager.default.fileExists(atPath: url(path).path)
+    }
+
+    /// Walks the components from the source root (or `/`), each one looked
+    /// up in its directory's listing; `.` and `..` are followed unchecked.
+    public func existsAsSpelled(_ path: String) -> Bool {
+        var directory = path.hasPrefix("/") ? URL(fileURLWithPath: "/") : sourceRoot
+        for component in path.split(separator: "/").map(String.init) {
+            if component != "." && component != ".." {
+                guard let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path), names.contains(component) else {
+                    return false
+                }
+            }
+            directory.appendPathComponent(component)
+        }
+        return true
     }
 
     public func files(in path: String) -> [String] {

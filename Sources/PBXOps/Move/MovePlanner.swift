@@ -92,11 +92,18 @@ public enum MovePlanner {
         }
     }
 
-    /// Design D4: two questions per file, and nothing else is read from the disk.
+    /// Design D4: two questions per file, and nothing else is read from the
+    /// disk — unless both answer yes, as both spellings of one name do on a
+    /// case-insensitive volume; then the spelling each directory holds decides
+    /// (`move-case-only-rename` design D1).
     private static func checkDisk(_ moves: [FileMove], disk: any DiskReader) throws {
         for move in moves {
-            let destinationExists = disk.exists(move.to)
-            let sourceExists = disk.exists(move.from)
+            var destinationExists = disk.exists(move.to)
+            var sourceExists = disk.exists(move.from)
+            if sourceExists && destinationExists {
+                destinationExists = disk.existsAsSpelled(move.to)
+                sourceExists = disk.existsAsSpelled(move.from)
+            }
             switch (sourceExists, destinationExists) {
             case (true, false): throw PlanError.notMovedOnDisk(from: move.from, to: move.to)
             case (false, false): throw PlanError.destinationMissing(from: move.from, to: move.to)
