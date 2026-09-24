@@ -230,8 +230,8 @@ Issue #36, found by the RandomPlayer ship review: on a case-insensitive APFS vol
 - [x] Release `PerformanceTests` green: the Alamofire merge takes 0.070 s to the decisions report and 0.129 s decided (limit 2 s), and the 10k-line line merge 0.006 s; `v1.4.0` measured 0.069 s / 0.132 s / 0.004 s. No performance test exercises `move`
 - [x] `docs/design.md` reconciled: status line, the `move` Commands row, a Motivation-table row for issue #36. The archived `move-command` design has a dated note at D4
 - [x] Archived: `openspec/changes/archive/2026-09-24-move-case-only-rename`, with the `move` delta synced into `openspec/specs/move/spec.md` (one requirement modified) and `openspec validate --specs --strict` green
-- [ ] Merged
-- [ ] Manual check (RELEASING § 2)
+- [x] Merged — into `main` by PR #37 (rebase, 2026-09-24, `9b8db7e`), closing #36
+- [x] Manual check (RELEASING § 2) — **not run** for `v1.5.0`, skipped by the release owner's decision (2026-09-24); recorded as skipped in `docs/RELEASING.md` § 2
 - [ ] Released as `v1.5.0`
 
 ## After v1 — adoption in the originating project
