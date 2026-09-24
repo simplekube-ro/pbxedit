@@ -8,7 +8,7 @@ import Foundation
 /// `-dev` — appends `+<hash>` when `PBXEDIT_BUILD_HASH` names the commit; a
 /// release build ignores the environment, so its version is this literal.
 enum Version {
-    static let base = "1.5.0-dev"
+    static let base = "1.5.1-dev"
 
     static let developmentSuffix = "-dev"
     static let buildHashVariable = "PBXEDIT_BUILD_HASH"
