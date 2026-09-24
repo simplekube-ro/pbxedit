@@ -218,8 +218,8 @@ Issue #32, a follow-up to #24: in `pbxedit merge` 1.3.0, deciding `theirs` on th
 - [x] Release `PerformanceTests` green: the Alamofire merge takes 0.069 s to the decisions report and 0.132 s decided with all six checks (limit 2 s), the 10k-line line merge 0.004 s — `v1.3.0` measured 0.065 s / 0.131 s / 0.004 s
 - [x] `docs/design.md` reconciled: status line, the `merge` Commands row (the whole-array rule; check C's element rule), a Motivation-table row for issue #32. The archived `merge-both-order-agreement` design has a dated note at D1
 - [x] Archived — `openspec/changes/archive/2026-09-24-merge-reorder-whole-array`; the `merge` delta synced into `openspec/specs/merge/spec.md` (two requirements modified), `openspec validate --specs --strict` green
-- [ ] Merged
-- [ ] Manual check (RELEASING § 2)
+- [x] Merged — into `main` by PR #33 (rebase, 2026-09-24, `392244d`), closing #32
+- [x] Manual check (RELEASING § 2) — **not run** for `v1.4.0`, skipped by the release owner's decision (2026-09-24); recorded as skipped in `docs/RELEASING.md` § 2
 - [ ] Released as `v1.4.0`
 
 ## After v1 — adoption in the originating project
